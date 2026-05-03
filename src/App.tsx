@@ -205,6 +205,7 @@ export default function App() {
     if (!selectedProject) return
 
     loadConcepts(selectedProject)
+    refreshGraph(selectedProject)
   }, [selectedProject])
 
   async function loadConcepts(projectId?: string) {
@@ -329,8 +330,10 @@ export default function App() {
     refreshBaselines()
   }, [])
 
-  async function refreshGraph() {
-    const data = await fetch(`${API}/graph`).then((r) => r.json())
+  async function refreshGraph(projectId?: string) {
+    if (!projectId) return
+
+    const data = await fetch(`${API}/graph/${projectId}`).then((r) => r.json())
     setGraph(data)
   }
 
