@@ -20,6 +20,15 @@ type Revision = {
   createdBy: string
 }
 
+type Project = {
+  id: string
+  key: string
+  name: string
+  description: string
+  createdBy: string
+  createdAt: string
+}
+
 export const brutal = {
   box: {
     border: "2px solid black",
@@ -141,6 +150,9 @@ function Editor({
 }
 
 export default function App() {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [selectedProject, setSelectedProject] = useState<string>("")
+
   const [concepts, setConcepts] = useState<Concept[]>([])
   const [selectedConcept, setSelectedConcept] = useState<string>("")
 
@@ -173,17 +185,46 @@ export default function App() {
   const [selectedBaseline, setSelectedBaseline] = useState<any | null>(null)
 
   useEffect(() => {
-    fetch(`${API}/concepts`)
-      .then((r) => r.json())
+    fetch(`${API}/projects`)
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        setConcepts(data)
+        setProjects(data)
 
         if (data.length > 0) {
-          setSelectedConcept(data[0].id)
-          loadRevisions(data[0].id)
+          setSelectedProject(data[0].id)
+        } else {
+          loadConcepts()
         }
       })
+      .catch(() => {
+        loadConcepts()
+      })
   }, [])
+
+  useEffect(() => {
+    if (!selectedProject) return
+
+    loadConcepts(selectedProject)
+  }, [selectedProject])
+
+  async function loadConcepts(projectId?: string) {
+    const url = projectId
+      ? `${API}/projects/${projectId}/concepts`
+      : `${API}/concepts`
+
+    const res = await fetch(url)
+    const data = await res.json()
+
+    setConcepts(data)
+
+    if (data.length > 0) {
+      setSelectedConcept(data[0].id)
+      loadRevisions(data[0].id)
+    } else {
+      setSelectedConcept("")
+      setEditorValue("")
+    }
+  }
 
   async function loadRevisions(conceptId: string) {
     const res = await fetch(`${API}/concepts/${conceptId}/revisions`)
@@ -260,7 +301,11 @@ export default function App() {
   async function createConcept() {
     if (!newConceptKey.trim()) return
 
-    const res = await fetch(`${API}/concepts`, {
+    const url = selectedProject
+      ? `${API}/projects/${selectedProject}/concepts`
+      : `${API}/concepts`
+
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -300,14 +345,37 @@ export default function App() {
 
       <hr />
 
-      <div style={{ marginBottom: 10 }}>
+      <section>
         <div style={brutal.title}>User</div>
         <input
           value={user}
           onChange={(e) => setUser(e.target.value)}
           style={brutal.input}
         />
-      </div>
+      </section>
+
+      <hr />
+
+      <section>
+        <div style={brutal.title}>Projects</div>
+
+        {projects.length > 0 && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ marginBottom: 6 }}>PROJECT</div>
+            <select
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+              style={{ ...brutal.input, marginBottom: 6, cursor: "pointer" }}
+            >
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.key} — {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </section>
 
       <hr />
 
