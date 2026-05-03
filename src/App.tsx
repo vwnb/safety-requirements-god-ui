@@ -391,7 +391,7 @@ export default function App() {
         </div>
       )}
 
-      <img src={logo} alt="Logo" style={{ maxWidth: "500px", height: "auto" }} />
+      <img src={logo} alt="Logo" style={{ maxWidth: "100%", width: "500px",height: "auto" }} />
 
       <hr />
 
