@@ -1,3 +1,4 @@
+import logo from "./assets/logo.png"
 import { useEffect, useMemo, useState } from "react"
 import { Diff, Hunk, parseDiff, type HunkData } from "react-diff-view"
 import "react-diff-view/style/index.css"
@@ -392,7 +393,7 @@ export default function App() {
         </div>
       )}
 
-      <h1>Motherfunkin' Safety Management System</h1>
+      <img src={logo} alt="Logo" style={{ maxWidth: "500px", height: "auto" }} />
 
       <hr />
 
