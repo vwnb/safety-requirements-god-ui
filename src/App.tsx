@@ -391,7 +391,7 @@ export default function App() {
         </div>
       )}
 
-      <img src={logo} alt="Logo" style={{ maxWidth: "100%", width: "500px",height: "auto" }} />
+      <img src={logo} alt="Logo" style={{ maxWidth: "100%", width: "500px", height: "auto" }} />
 
       <hr />
 
@@ -465,9 +465,9 @@ export default function App() {
         <hr />
 
         {concepts.length === 0 ? (
-          <div style={{ fontStyle: "italic", color: "#666", marginBottom: 10 }}>
-            No concepts yet. Create one above.
-          </div>
+          <>
+            No concepts for this project.
+          </>
         ) : (
           concepts.map((c) => (
             <button
@@ -525,66 +525,67 @@ export default function App() {
         <div style={brutal.title}>Revisions</div>
 
         {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
-          <div style={{ padding: 12, fontStyle: "italic", color: "#666", border: "2px solid black" }}>
+          <>
+            <hr />
             No revisions for this concept.
-          </div>
+          </>
         ) : (
           <div style={brutal.list}>
             {(revisionsByConcept[selectedConcept] || []).map((r) => {
-            const isBase = r.id === baseId
-            const isTarget = r.id === targetId
+              const isBase = r.id === baseId
+              const isTarget = r.id === targetId
 
-            return (
-              <div
-                key={r.id}
-                style={{
-                  ...brutal.row,
-                  ...(isBase ? brutal.rowBase : {}),
-                  ...(isTarget ? brutal.rowTarget : {}),
-                }}
-              >
-                <div style={brutal.cellId}>{r.id.slice(0, 6)}</div>
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    ...brutal.row,
+                    ...(isBase ? brutal.rowBase : {}),
+                    ...(isTarget ? brutal.rowTarget : {}),
+                  }}
+                >
+                  <div style={brutal.cellId}>{r.id.slice(0, 6)}</div>
 
-                <div style={brutal.cellText}>{r.markdown}</div>
+                  <div style={brutal.cellText}>{r.markdown}</div>
 
-                <div style={brutal.actions}>
-                  <button
-                    onClick={() => setEditorValue(r.markdown)}
-                    style={brutal.button}
-                  >
-                    LOAD
-                  </button>
+                  <div style={brutal.actions}>
+                    <button
+                      onClick={() => setEditorValue(r.markdown)}
+                      style={brutal.button}
+                    >
+                      LOAD
+                    </button>
 
-                  <div style={{
-                    borderLeft: "2px solid black", margin: "0 1rem",
-                    ...(isBase || isTarget ? { borderColor: "white" } : {})
-                  }} />
+                    <div style={{
+                      borderLeft: "2px solid black", margin: "0 1rem",
+                      ...(isBase || isTarget ? { borderColor: "white" } : {})
+                    }} />
 
-                  <button
-                    onClick={() => setBaseId(r.id)}
-                    style={{
-                      ...brutal.button,
-                      ...(isBase ? brutal.active : {}),
-                    }}
-                  >
-                    BASE
-                  </button>
+                    <button
+                      onClick={() => setBaseId(r.id)}
+                      style={{
+                        ...brutal.button,
+                        ...(isBase ? brutal.active : {}),
+                      }}
+                    >
+                      BASE
+                    </button>
 
-                  <button
-                    onClick={() => setTargetId(r.id)}
-                    style={{
-                      ...brutal.button,
-                      ...(isTarget ? brutal.active : {}),
-                    }}
-                  >
-                    HEAD
-                  </button>
+                    <button
+                      onClick={() => setTargetId(r.id)}
+                      style={{
+                        ...brutal.button,
+                        ...(isTarget ? brutal.active : {}),
+                      }}
+                    >
+                      HEAD
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-            </div>
-          )}
+              )
+            })}
+          </div>
+        )}
         {baseId && targetId && hunks.length === 0 && (
           <div style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
             No differences between these revisions.
@@ -683,37 +684,50 @@ export default function App() {
           style={{ ...brutal.input, marginBottom: 8 }}
         />
 
-        <div style={brutal.list}>
-          {Object.values(revisionsByConcept)
-            .flat()
-            .map((r) => {
-              const checked = selectedRevisions.includes(r.id)
+        <hr />
 
-              return (
-                <div
-                  key={r.id}
-                  onClick={() => toggleRevision(r.id)}
-                  style={{
-                    padding: 6,
-                    borderBottom: "1px solid black",
-                    background: checked ? "black" : "white",
-                    color: checked ? "white" : "black",
-                    cursor: "pointer",
-                  }}
-                >
-                  {r.id.slice(0, 6)} — {r.markdown.slice(0, 40)}
-                </div>
-              )
-            })}
-        </div>
+        {Object.keys(revisionsByConcept).length === 0 ? (
+          <>
+            No revisions for this concept.
+          </>
+        ) : (
+          <>
+            <div style={brutal.list}>
+              {Object.values(revisionsByConcept)
+                .flat()
+                .map((r) => {
+                  const checked = selectedRevisions.includes(r.id)
 
-        <button
-          onClick={createBaseline}
-          style={{ ...brutal.button, marginTop: 8 }}
-        >
-          CREATE BASELINE
-        </button>
+                  return (
+                    <div
+                      key={r.id}
+                      onClick={() => toggleRevision(r.id)}
+                      style={{
+                        padding: 6,
+                        borderBottom: "1px solid black",
+                        background: checked ? "black" : "white",
+                        color: checked ? "white" : "black",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {r.id.slice(0, 6)} — {r.markdown.slice(0, 40)}
+                    </div>
+                  )
+                })}
+            </div>
+
+            <button
+              onClick={createBaseline}
+              style={{ ...brutal.button, marginTop: 8 }}
+            >
+              CREATE BASELINE
+            </button>
+          </>
+        )}
       </section>
+
+      <hr />
+
     </div>
   )
 }
