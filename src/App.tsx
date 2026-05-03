@@ -183,22 +183,40 @@ export default function App() {
 
   const [baselines, setBaselines] = useState<any[]>([])
   const [selectedBaseline, setSelectedBaseline] = useState<any | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState("Loading...")
+
+  async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
+    setLoading(true)
+    setLoadingMessage(message)
+
+    try {
+      return await fn()
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    fetch(`${API}/projects`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        setProjects(data)
+    async function initProjects() {
+      await withLoading("Loading projects...", async () => {
+        try {
+          const res = await fetch(`${API}/projects`)
+          const data = res.ok ? await res.json() : []
+          setProjects(data)
 
-        if (data.length > 0) {
-          setSelectedProject(data[0].id)
-        } else {
-          loadConcepts()
+          if (data.length > 0) {
+            setSelectedProject(data[0].id)
+          } else {
+            await loadConcepts()
+          }
+        } catch {
+          await loadConcepts()
         }
       })
-      .catch(() => {
-        loadConcepts()
-      })
+    }
+
+    initProjects()
   }, [])
 
   useEffect(() => {
@@ -209,34 +227,38 @@ export default function App() {
   }, [selectedProject])
 
   async function loadConcepts(projectId?: string) {
-    const url = projectId
-      ? `${API}/projects/${projectId}/concepts`
-      : `${API}/concepts`
+    return withLoading("Loading concepts...", async () => {
+      const url = projectId
+        ? `${API}/projects/${projectId}/concepts`
+        : `${API}/concepts`
 
-    const res = await fetch(url)
-    const data = await res.json()
+      const res = await fetch(url)
+      const data = await res.json()
 
-    setConcepts(data)
+      setConcepts(data)
 
-    if (data.length > 0) {
-      setSelectedConcept(data[0].id)
-      loadRevisions(data[0].id)
-    } else {
-      setSelectedConcept("")
-      setEditorValue("")
-    }
+      if (data.length > 0) {
+        setSelectedConcept(data[0].id)
+        await loadRevisions(data[0].id)
+      } else {
+        setSelectedConcept("")
+        setEditorValue("")
+      }
+    })
   }
 
   async function loadRevisions(conceptId: string) {
-    const res = await fetch(`${API}/concepts/${conceptId}/revisions`)
-    const data = await res.json()
+    return withLoading("Loading revisions...", async () => {
+      const res = await fetch(`${API}/concepts/${conceptId}/revisions`)
+      const data = await res.json()
 
-    setRevisionsByConcept((prev) => ({
-      ...prev,
-      [conceptId]: data,
-    }))
+      setRevisionsByConcept((prev) => ({
+        ...prev,
+        [conceptId]: data,
+      }))
 
-    setEditorValue(data[data.length - 1]?.markdown || "")
+      setEditorValue(data[data.length - 1]?.markdown || "")
+    })
   }
 
   function getRevisionText(id: string) {
@@ -344,6 +366,32 @@ export default function App() {
 
   return (
     <div style={{ padding: 20, fontFamily: "monospace" }}>
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(255,255,255,0.92)",
+            zIndex: 9999,
+            display: "grid",
+            placeItems: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              border: "2px solid black",
+              background: "white",
+              padding: 18,
+              fontFamily: "monospace",
+              fontSize: 16,
+            }}
+          >
+            {loadingMessage}
+          </div>
+        </div>
+      )}
+
       <h1>Motherfunkin' Safety Management System</h1>
 
       <hr />
