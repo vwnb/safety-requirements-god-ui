@@ -295,7 +295,7 @@ export default function App() {
     })
 
     await loadRevisions(selectedConcept)
-    await refreshGraph()
+    await refreshGraph(selectedProject)
   }
 
   function toggleRevision(id: string) {
@@ -345,17 +345,15 @@ export default function App() {
     setNewConceptKey("")
 
     await loadRevisions(created.id)
-    await refreshGraph()
+    await refreshGraph(selectedProject)
   }
 
   useEffect(() => {
-    refreshGraph()
+    refreshGraph(selectedProject)
     refreshBaselines()
   }, [])
 
-  async function refreshGraph(projectId?: string) {
-    if (!projectId) return
-
+  async function refreshGraph(projectId: string) {
     const data = await fetch(`${API}/graph/${projectId}`).then((r) => r.json())
     setGraph(data)
   }
@@ -497,7 +495,7 @@ export default function App() {
             revisions={graph.revisions}
             concepts={graph.concepts}
             relations={graph.relations}
-            onRelationCreated={refreshGraph}
+            onRelationCreated={() => { refreshGraph(selectedProject) }}
             API={API}
           />
         </div>
