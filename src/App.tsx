@@ -56,8 +56,8 @@ export const brutal = {
     boxSizing: "border-box" as const,
   },
   active: {
-    background: "black",
-    color: "white",
+    background: "white",
+    color: "black",
     borderColor: "white"
   },
   input: {
@@ -464,25 +464,31 @@ export default function App() {
 
         <hr />
 
-        {concepts.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => {
-              setSelectedConcept(c.id)
-              loadRevisions(c.id)
-            }}
-            style={{
-              ...brutal.button,
-              ...(selectedConcept === c.id ? brutal.active : {}),
-              display: "block",
-              width: "100%",
-              marginBottom: 4,
-              textAlign: "left",
-            } as React.CSSProperties}
-          >
-            {c.key} ({c.type})
-          </button>
-        ))}
+        {concepts.length === 0 ? (
+          <div style={{ fontStyle: "italic", color: "#666", marginBottom: 10 }}>
+            No concepts yet. Create one above.
+          </div>
+        ) : (
+          concepts.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => {
+                setSelectedConcept(c.id)
+                loadRevisions(c.id)
+              }}
+              style={{
+                ...brutal.button,
+                ...(selectedConcept === c.id ? brutal.active : {}),
+                display: "block",
+                width: "100%",
+                marginBottom: 4,
+                textAlign: "left",
+              } as React.CSSProperties}
+            >
+              {c.key} ({c.type})
+            </button>
+          ))
+        )}
       </section>
 
       <hr />
@@ -518,8 +524,13 @@ export default function App() {
       <section>
         <div style={brutal.title}>Revisions</div>
 
-        <div style={brutal.list}>
-          {(revisionsByConcept[selectedConcept] || []).map((r) => {
+        {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
+          <div style={{ padding: 12, fontStyle: "italic", color: "#666", border: "2px solid black" }}>
+            No revisions for this concept.
+          </div>
+        ) : (
+          <div style={brutal.list}>
+            {(revisionsByConcept[selectedConcept] || []).map((r) => {
             const isBase = r.id === baseId
             const isTarget = r.id === targetId
 
@@ -572,7 +583,8 @@ export default function App() {
               </div>
             )
           })}
-        </div>
+            </div>
+          )}
         {baseId && targetId && hunks.length === 0 && (
           <div style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
             No differences between these revisions.
@@ -603,18 +615,24 @@ export default function App() {
       <section>
         <div style={brutal.title}>Baselines</div>
 
-        {baselines.map((b) => (
-          <button
-            key={b.id}
-            onClick={async () => {
-              const full = await fetch(`${API}/baselines/${b.id}`).then((r) => r.json())
-              setSelectedBaseline(full)
-            }}
-            style={{ ...brutal.button, display: "block", marginBottom: 4 }}
-          >
-            {b.name}
-          </button>
-        ))}
+        {baselines.length === 0 ? (
+          <div style={{ fontStyle: "italic", color: "#666", marginBottom: 10 }}>
+            No baselines yet.
+          </div>
+        ) : (
+          baselines.map((b) => (
+            <button
+              key={b.id}
+              onClick={async () => {
+                const full = await fetch(`${API}/baselines/${b.id}`).then((r) => r.json())
+                setSelectedBaseline(full)
+              }}
+              style={{ ...brutal.button, display: "block", marginBottom: 4 }}
+            >
+              {b.name}
+            </button>
+          ))
+        )}
 
       </section>
 
