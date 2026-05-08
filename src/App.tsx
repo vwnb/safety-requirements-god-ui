@@ -12,6 +12,9 @@ type Concept = {
   id: string
   key: string
   type: string
+  title: string
+  phase?: string
+  asil?: string
 }
 
 type Revision = {
@@ -174,7 +177,10 @@ export default function App() {
   })
 
   const [newConceptKey, setNewConceptKey] = useState("")
-  const [newConceptType, setNewConceptType] = useState("REQUIREMENT")
+  const [newConceptType, setNewConceptType] = useState("ITEM")
+  const [newConceptTitle, setNewConceptTitle] = useState("")
+  const [newConceptPhase, setNewConceptPhase] = useState("ITEM_DEFINITION")
+  const [newConceptAsil, setNewConceptAsil] = useState("QM")
 
   const [graph, setGraph] = useState({
     concepts: [],
@@ -335,6 +341,9 @@ export default function App() {
       body: JSON.stringify({
         key: newConceptKey,
         type: newConceptType,
+        title: newConceptTitle,
+        phase: newConceptPhase,
+        asil: newConceptAsil,
       }),
     })
 
@@ -343,6 +352,9 @@ export default function App() {
     setConcepts((prev) => [...prev, created])
     setSelectedConcept(created.id)
     setNewConceptKey("")
+    setNewConceptTitle("")
+    setNewConceptPhase("")
+    setNewConceptAsil("QM")
 
     await loadRevisions(created.id)
     await refreshGraph(selectedProject)
@@ -436,6 +448,58 @@ export default function App() {
           style={{ ...brutal.input, marginBottom: 6 }}
         />
 
+        <input
+          placeholder="TITLE"
+          value={newConceptTitle}
+          onChange={(e) => setNewConceptTitle(e.target.value)}
+          style={{ ...brutal.input, marginBottom: 6 }}
+        />
+
+        <select
+          value={newConceptPhase}
+          onChange={(e) => setNewConceptPhase(e.target.value)}
+          style={{
+            ...brutal.input,
+            marginBottom: 6,
+            cursor: "pointer",
+          }}
+        >
+          {[
+            "ITEM_DEFINITION",
+            "HARA",
+            "FUNCTIONAL_SAFETY",
+            "TECHNICAL_SAFETY",
+            "SYSTEM_DESIGN",
+            "SOFTWARE_DESIGN",
+            "IMPLEMENTATION",
+            "VERIFICATION",
+            "VALIDATION",
+            "PRODUCTION",
+            "OPERATION",
+            "DECOMMISSIONING",
+          ].map((phase) => (
+            <option key={phase} value={phase}>
+              {phase}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={newConceptAsil}
+          onChange={(e) => setNewConceptAsil(e.target.value)}
+          style={{
+            ...brutal.input,
+            marginBottom: 6,
+            cursor: "pointer",
+          }}
+        >
+          {['QM', 'ASIL_A', 'ASIL_B', 'ASIL_C', 'ASIL_D'].map((asil) => (
+            <option key={asil} value={asil}>
+              {asil}
+            </option>
+          ))}
+        </select>
+
         <select
           value={newConceptType}
           onChange={(e) => setNewConceptType(e.target.value)}
@@ -445,12 +509,29 @@ export default function App() {
             cursor: "pointer",
           }}
         >
-          <option value="REQUIREMENT">REQUIREMENT</option>
-          <option value="TEST">TEST</option>
-          <option value="HAZARD">HAZARD</option>
-          <option value="CONTROL">CONTROL</option>
-          <option value="ASSUMPTION">ASSUMPTION</option>
-          <option value="CONSTRAINT">CONSTRAINT</option>
+          {["ITEM",
+            "HAZARD",
+            "HARM",
+            "SAFETY_GOAL",
+            "FSR",
+            "TSR",
+            "SSR",
+            "HARDWARE_REQUIREMENT",
+            "SOFTWARE_REQUIREMENT",
+            "ASSUMPTION",
+            "CONSTRAINT",
+            "TEST_CASE",
+            "TEST_RESULT",
+            "VERIFICATION_REPORT",
+            "VALIDATION_REPORT",
+            "SAFETY_CASE",
+            "SAFETY_MANUAL",
+            "CHANGE_REQUEST",
+            "ANOMALY"].map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
         </select>
 
         <button onClick={createConcept} style={brutal.button}>
