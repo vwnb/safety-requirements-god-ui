@@ -371,7 +371,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ padding: 20, fontFamily: "monospace" }}>
+    <div style={{ padding: 20, fontFamily: "monospace", background: "white" }}>
       {loading && (
         <div
           style={{
