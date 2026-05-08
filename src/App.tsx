@@ -163,6 +163,7 @@ export default function App() {
   const [revisionsByConcept, setRevisionsByConcept] =
     useState<Record<string, Revision[]>>({})
 
+  const [activeRevisionId, setActiveRevisionId] = useState<string | null>(null)
   const [editorValue, setEditorValue] = useState("")
   const [user, setUser] = useState("alice")
 
@@ -265,6 +266,9 @@ export default function App() {
       }))
 
       setEditorValue(data[data.length - 1]?.markdown || "")
+      setActiveRevisionId(data[data.length - 1]?.id || null)
+
+      return data
     })
   }
 
@@ -300,7 +304,11 @@ export default function App() {
       }),
     })
 
-    await loadRevisions(selectedConcept)
+    const revisions = await loadRevisions(selectedConcept)
+
+    const latest = revisions.at(-1)
+    setActiveRevisionId(latest?.id || null)
+
     await refreshGraph(selectedProject)
   }
 
@@ -588,6 +596,12 @@ export default function App() {
       <section>
         <div style={brutal.title}>Editor</div>
 
+        {activeRevisionId && (
+          <div style={{ fontFamily: "monospace", marginBottom: 8, textAlign: "left" }}>
+            revision: {activeRevisionId.slice(0, 6)}
+          </div>
+        )}
+
         <Editor value={editorValue} onChange={setEditorValue} />
 
         <button onClick={revise} style={{ ...brutal.button, marginTop: 8 }}>
@@ -626,7 +640,10 @@ export default function App() {
 
                   <div style={brutal.actions}>
                     <button
-                      onClick={() => setEditorValue(r.markdown)}
+                      onClick={() => {
+                        setEditorValue(r.markdown)
+                        setActiveRevisionId(r.id)
+                      }}
                       style={brutal.button}
                     >
                       LOAD
