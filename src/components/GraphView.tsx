@@ -3,12 +3,13 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  Handle,
+  Position,
 } from "reactflow"
 import type { Node, Edge } from "reactflow"
 import "reactflow/dist/style.css"
-import { brutal } from "../App"
-import RelationTypePicker from "./RelationTypePicker"
 import dagre from "dagre"
+import RelationTypePicker from "./RelationTypePicker"
 
 type Revision = {
   id: string
@@ -18,6 +19,8 @@ type Revision = {
 
 type Concept = {
   id: string
+  key?: string
+  title?: string
   type: string
 }
 
@@ -29,154 +32,165 @@ type Relation = {
 }
 
 const typeColor: Record<string, string> = {
-  REQUIREMENT: "#4f8cff",
-  TEST: "#22c55e",
+  ITEM: "#93c5fd",
   HAZARD: "#ef4444",
-  CONTROL: "#eab308",
-  ASSUMPTION: "#a855f7",
+  SAFETY_GOAL: "#f59e0b",
+  FSR: "#22c55e",
+  TSR: "#06b6d4",
+  SOFTWARE_REQUIREMENT: "#a78bfa",
+  ASSUMPTION: "#64748b",
   CONSTRAINT: "#14b8a6",
+  TEST_CASE: "#eab308",
 }
 
-const nodeWidth = 180
-const nodeHeight = 60
+const nodeWidth = 220
+const nodeHeight = 80
 
-export function layoutGraph(nodes: any[], edges: any[]) {
+function layoutGraph(nodes: Node[], edges: Edge[]) {
   const g = new dagre.graphlib.Graph()
-
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: "LR", nodesep: 120, ranksep: 120 })
+  g.setGraph({ rankdir: "LR", nodesep: 120, ranksep: 140 })
 
-  nodes.forEach((node) => {
-    g.setNode(node.id, {
-      width: nodeWidth,
-      height: nodeHeight,
-    })
+  nodes.forEach((n) => {
+    g.setNode(n.id, { width: nodeWidth, height: nodeHeight })
   })
 
-  edges.forEach((edge) => {
-    g.setEdge(edge.source, edge.target)
+  edges.forEach((e) => {
+    g.setEdge(e.source, e.target)
   })
 
   dagre.layout(g)
 
-  const layoutedNodes = nodes.map((node) => {
-    const pos = g.node(node.id)
+  const layoutedNodes = nodes.map((n) => {
+    const pos = g.node(n.id)
 
     return {
-      ...node,
-      position: {
-        x: pos.x - nodeWidth / 2,
-        y: pos.y - nodeHeight / 2,
-      },
+      ...n,
+      position: pos
+        ? {
+          x: pos.x - nodeWidth / 2,
+          y: pos.y - nodeHeight / 2,
+        }
+        : n.position,
     }
   })
 
-  return { nodes: layoutedNodes, edges: edges }
+  return { nodes: layoutedNodes, edges }
+}
+
+function ConceptNode({ data }: any) {
+  return (
+    <div
+      style={{
+        padding: 10,
+        borderRadius: 8,
+        border: "2px solid black",
+        background: data.color || "white",
+        fontFamily: "monospace",
+        fontSize: 12,
+        width: nodeWidth,
+      }}
+    >
+      <div style={{ fontWeight: "bold" }}>{data.label}</div>
+      <div style={{ opacity: 0.7 }}>{data.type}</div>
+
+      <Handle type="source" position={Position.Right} />
+      <Handle type="target" position={Position.Left} />
+    </div>
+  )
+}
+
+const nodeTypes = {
+  concept: ConceptNode,
 }
 
 export default function GraphView({
-  revisions,
   concepts,
+  revisions,
   relations,
   onRelationCreated,
-  API
+  API,
 }: {
-  revisions: Revision[]
   concepts: Concept[]
+  revisions: Revision[]
   relations: Relation[]
   onRelationCreated: () => void
   API: string
 }) {
-  const [connectFrom, setConnectFrom] = useState<string | null>(null)
-
-  const conceptMap = useMemo(() => {
-    const m = new Map()
-    concepts.forEach((c) => m.set(c.id, c))
-    return m
-  }, [concepts])
-
-  const nodes: Node[] = useMemo(() => {
-    return revisions.map((r, i) => {
-      const concept = conceptMap.get(r.conceptId)
-
-      return {
-        id: r.id,
-        position: {
-          x: (i % 5) * 250,
-          y: Math.floor(i / 5) * 150,
-        },
-        data: {
-          label: r.markdown.slice(0, 40) || "(empty)",
-        },
-        style: {
-          border:
-            r.id === connectFrom
-              ? "4px solid blue"
-              : "2px solid black",
-          padding: 8,
-          background: typeColor[concept?.type || ""] || "white",
-          color: "black",
-          fontFamily: "monospace",
-          width: 180,
-        },
-      }
-    })
-  }, [revisions, conceptMap])
-
-  const edges: Edge[] = useMemo(() => {
-    return relations.map((rel) => ({
-      id: rel.id,
-      source: rel.fromId,
-      target: rel.toId,
-      label: rel.type,
-      animated: rel.type === "VIOLATES",
-      style: {
-        stroke: rel.type === "VIOLATES" ? "red" : "black",
-      },
-    }))
-  }, [relations])
-
   const [pendingConnection, setPendingConnection] = useState<{
     from: string
     to: string
   } | null>(null)
 
-  const { nodes: layoutedNodes, edges: layoutedEdges } =
-    useMemo(() => {
-      return layoutGraph(nodes, edges)
-    }, [nodes, edges])
+  const conceptMap = useMemo(() => {
+    const m = new Map<string, Concept>()
+    concepts.forEach((c) => m.set(c.id, c))
+    return m
+  }, [concepts])
+
+  const nodes: Node[] = useMemo(() => {
+    return revisions.map((r) => {
+      const concept = conceptMap.get(r.conceptId)
+
+      return {
+        id: r.id,
+        type: "concept",
+        data: {
+          label: concept?.title || r.markdown.slice(0, 40),
+          type: concept?.type,
+          color: typeColor[concept?.type || ""],
+        },
+        position: { x: 0, y: 0 },
+      }
+    })
+  }, [revisions, conceptMap])
+
+  const edges: Edge[] = useMemo(() => {
+    return relations.map((r) => ({
+      id: r.id,
+      source: r.fromId, // 🔥 revision.id
+      target: r.toId,   // 🔥 revision.id
+      label: r.type,
+      animated: r.type === "VIOLATES",
+      style: {
+        stroke:
+          r.type === "VIOLATES"
+            ? "#ef4444"
+            : r.type === "MITIGATES"
+              ? "#22c55e"
+              : "#555",
+      },
+    }))
+  }, [relations])
+
+  const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
+    return layoutGraph(nodes, edges)
+  }, [nodes, edges])
 
   return (
     <>
-      <div style={{ height: 500, border: "2px solid black" }}>
-
-        {connectFrom && (
-          <div style={{ marginBottom: 8 }}>
-            Connecting from: {connectFrom.slice(0, 6)}
-            <button
-              onClick={() => setConnectFrom(null)}
-              style={{ ...brutal.button, marginLeft: 8 }}
-            >
-              CANCEL
-            </button>
-          </div>
-        )}
+      <div style={{ height: 600, border: "2px solid black" }}>
         <ReactFlow
           nodes={layoutedNodes}
           edges={layoutedEdges}
+          nodeTypes={nodeTypes}
+          fitView
+          nodeExtent={[[0, 0], [3000, 3000]]}
           onConnect={(params) => {
+            if (!params.source || !params.target) return
+
             setPendingConnection({
-              from: params.source!,
-              to: params.target!,
+              from: params.source,
+              to: params.target,
             })
           }}
-          fitView
         >
           <MiniMap />
           <Controls />
           <Background />
         </ReactFlow>
-      </div >
+      </div>
+
       {pendingConnection && (
         <RelationTypePicker
           onSelect={async (type) => {

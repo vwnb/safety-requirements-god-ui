@@ -348,11 +348,6 @@ export default function App() {
     await refreshGraph(selectedProject)
   }
 
-  useEffect(() => {
-    refreshGraph(selectedProject)
-    refreshBaselines()
-  }, [])
-
   async function refreshGraph(projectId: string) {
     const data = await fetch(`${API}/graph/${projectId}`).then((r) => r.json())
     setGraph(data)
