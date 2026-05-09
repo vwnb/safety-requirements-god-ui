@@ -592,6 +592,22 @@ export default function App() {
       <hr />
 
       <section>
+        <div style={brutal.title}>Graph</div>
+
+        <div style={brutal.box}>
+          <GraphView
+            revisions={graph.revisions}
+            concepts={graph.concepts}
+            relations={graph.relations}
+            onRelationCreated={() => { refreshGraph(selectedProject) }}
+            API={API}
+          />
+        </div>
+      </section>
+
+      <hr />
+
+      <section>
 
         <div style={brutal.title}>Concepts</div>
 
@@ -620,22 +636,6 @@ export default function App() {
             </button>
           ))
         )}
-      </section>
-
-      <hr />
-
-      <section>
-        <div style={brutal.title}>Graph</div>
-
-        <div style={brutal.box}>
-          <GraphView
-            revisions={graph.revisions}
-            concepts={graph.concepts}
-            relations={graph.relations}
-            onRelationCreated={() => { refreshGraph(selectedProject) }}
-            API={API}
-          />
-        </div>
       </section>
 
       <hr />
