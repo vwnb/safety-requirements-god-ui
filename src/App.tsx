@@ -293,6 +293,22 @@ export default function App() {
     setDiff({ hunks: diff?.hunks || [] })
   }, [baseId, targetId, revisionsByConcept])
 
+  useEffect(() => {
+    if (!selectedConcept) {
+      setEditorValue("")
+      return
+    }
+
+    const load = async () => {
+      const revisions = await loadRevisions(selectedConcept)
+      if (revisions.length === 0) {
+        const concept = concepts.find(c => c.id === selectedConcept)
+        setEditorValue(concept?.title ? `# ${concept.title}` : "")
+      }
+    }
+    load()
+  }, [selectedConcept, concepts])
+
   async function revise() {
     await fetch(`${API}/workflow/submit-change`, {
       method: "POST",
