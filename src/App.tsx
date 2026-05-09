@@ -68,6 +68,7 @@ export const brutal = {
     border: "2px solid black",
     padding: "6px",
     fontFamily: "monospace",
+    textAlign: "left" as const,
     width: "100%",
     boxSizing: "border-box" as const,
   },
@@ -77,6 +78,7 @@ export const brutal = {
     border: "2px solid black",
     padding: "6px",
     fontFamily: "monospace",
+    textAlign: "left" as const,
     width: "100%",
     boxSizing: "border-box" as const,
     cursor: "pointer",
@@ -134,6 +136,7 @@ export const brutal = {
   label: {
     width: 100,
     marginRight: 10,
+    textAlign: "left" as const,
   },
 }
 
@@ -463,7 +466,6 @@ export default function App() {
 
         {projects.length > 0 && (
           <div style={{ marginBottom: 10 }}>
-            <div style={{ marginBottom: 6 }}>PROJECT</div>
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
@@ -482,9 +484,7 @@ export default function App() {
       <hr />
 
       <section>
-        <div style={brutal.title}>Concepts</div>
-
-        <div style={{ marginBottom: 6 }}>NEW CONCEPT</div>
+        <div style={brutal.title}>New concept</div>
 
         <div style={brutal.formRow}>
           <div style={brutal.label}>KEY</div>
@@ -587,7 +587,13 @@ export default function App() {
           CREATE
         </button>
 
-        <hr />
+      </section>
+
+      <hr />
+
+      <section>
+
+        <div style={brutal.title}>Concepts</div>
 
         {concepts.length === 0 ? (
           <>
@@ -750,6 +756,8 @@ export default function App() {
       <section>
         <div style={brutal.title}>Baselines</div>
 
+        <hr />
+
         {baselines.length === 0 ? (
           <div style={{ fontStyle: "italic", color: "#666", marginBottom: 10 }}>
             No baselines yet.
@@ -809,7 +817,7 @@ export default function App() {
       <hr />
 
       <section>
-        <div style={brutal.title}>Baseline Builder</div>
+        <div style={brutal.title}>New baseline</div>
 
         <input
           placeholder="BASELINE NAME"
