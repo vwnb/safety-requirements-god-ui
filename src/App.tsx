@@ -465,98 +465,114 @@ export default function App() {
 
         <div style={{ marginBottom: 6 }}>NEW CONCEPT</div>
 
-        <input
-          placeholder="KEY (e.g. BRAKE_FAILURE)"
-          value={newConceptKey}
-          onChange={(e) => setNewConceptKey(e.target.value)}
-          style={{ ...brutal.input, marginBottom: 6 }}
-        />
+        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
+          <label style={{ width: 100, marginRight: 10 }}>KEY</label>
+          <input
+            placeholder="e.g. BRAKE_FAILURE"
+            value={newConceptKey}
+            onChange={(e) => setNewConceptKey(e.target.value)}
+            style={{ ...brutal.input, flex: 1 }}
+          />
+        </div>
 
-        <input
-          placeholder="TITLE"
-          value={newConceptTitle}
-          onChange={(e) => setNewConceptTitle(e.target.value)}
-          style={{ ...brutal.input, marginBottom: 6 }}
-        />
+        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
+          <label style={{ width: 100, marginRight: 10 }}>TITLE</label>
+          <input
+            placeholder="optional"
+            value={newConceptTitle}
+            onChange={(e) => setNewConceptTitle(e.target.value)}
+            style={{ ...brutal.input, flex: 1 }}
+          />
+        </div>
 
-        <select
-          value={newConceptPhase}
-          onChange={(e) => setNewConceptPhase(e.target.value)}
-          style={{
-            ...brutal.input,
-            marginBottom: 6,
-            cursor: "pointer",
-          }}
-        >
-          {[
-            "ITEM_DEFINITION",
-            "HARA",
-            "FUNCTIONAL_SAFETY",
-            "TECHNICAL_SAFETY",
-            "SYSTEM_DESIGN",
-            "SOFTWARE_DESIGN",
-            "IMPLEMENTATION",
-            "VERIFICATION",
-            "VALIDATION",
-            "PRODUCTION",
-            "OPERATION",
-            "DECOMMISSIONING",
-          ].map((phase) => (
-            <option key={phase} value={phase}>
-              {phase}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={newConceptAsil}
-          onChange={(e) => setNewConceptAsil(e.target.value)}
-          style={{
-            ...brutal.input,
-            marginBottom: 6,
-            cursor: "pointer",
-          }}
-        >
-          {['QM', 'ASIL_A', 'ASIL_B', 'ASIL_C', 'ASIL_D'].map((asil) => (
-            <option key={asil} value={asil}>
-              {asil}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={newConceptType}
-          onChange={(e) => setNewConceptType(e.target.value)}
-          style={{
-            ...brutal.input,
-            marginBottom: 6,
-            cursor: "pointer",
-          }}
-        >
-          {["ITEM",
-            "HAZARD",
-            "HARM",
-            "SAFETY_GOAL",
-            "FSR",
-            "TSR",
-            "SSR",
-            "HARDWARE_REQUIREMENT",
-            "SOFTWARE_REQUIREMENT",
-            "ASSUMPTION",
-            "CONSTRAINT",
-            "TEST_CASE",
-            "TEST_RESULT",
-            "VERIFICATION_REPORT",
-            "VALIDATION_REPORT",
-            "SAFETY_CASE",
-            "SAFETY_MANUAL",
-            "CHANGE_REQUEST",
-            "ANOMALY"].map((type) => (
-              <option key={type} value={type}>
-                {type}
+        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
+          <label style={{ width: 100, marginRight: 10 }}>PHASE</label>
+          <select
+            value={newConceptPhase}
+            onChange={(e) => setNewConceptPhase(e.target.value)}
+            style={{
+              ...brutal.input,
+              flex: 1,
+              cursor: "pointer",
+            }}
+          >
+            {[
+              "ITEM_DEFINITION",
+              "HARA",
+              "FUNCTIONAL_SAFETY",
+              "TECHNICAL_SAFETY",
+              "SYSTEM_DESIGN",
+              "SOFTWARE_DESIGN",
+              "IMPLEMENTATION",
+              "VERIFICATION",
+              "VALIDATION",
+              "PRODUCTION",
+              "OPERATION",
+              "DECOMMISSIONING",
+            ].map((phase) => (
+              <option key={phase} value={phase}>
+                {phase}
               </option>
             ))}
-        </select>
+          </select>
+        </div>
+
+        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
+          <label style={{ width: 100, marginRight: 10 }}>ASIL</label>
+          <select
+            value={newConceptAsil}
+            onChange={(e) => setNewConceptAsil(e.target.value)}
+            style={{
+              ...brutal.input,
+              flex: 1,
+              cursor: "pointer",
+            }}
+          >
+            {['QM', 'ASIL_A', 'ASIL_B', 'ASIL_C', 'ASIL_D'].map((asil) => (
+              <option key={asil} value={asil}>
+                {asil}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
+          <label style={{ width: 100, marginRight: 10 }}>TYPE</label>
+          <select
+            value={newConceptType}
+            onChange={(e) => setNewConceptType(e.target.value)}
+            style={{
+              ...brutal.input,
+              flex: 1,
+              cursor: "pointer",
+            }}
+          >
+            {["ITEM",
+              "HAZARD",
+              "HARM",
+              "SAFETY_GOAL",
+              "FSR",
+              "TSR",
+              "SSR",
+              "HARDWARE_REQUIREMENT",
+              "SOFTWARE_REQUIREMENT",
+              "ASSUMPTION",
+              "CONSTRAINT",
+              "TEST_CASE",
+              "TEST_RESULT",
+              "VERIFICATION_REPORT",
+              "VALIDATION_REPORT",
+              "SAFETY_CASE",
+              "SAFETY_MANUAL",
+              "CHANGE_REQUEST",
+              "ANOMALY"].map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+          </select>
+
+        </div>
 
         <button onClick={createConcept} style={brutal.button}>
           CREATE
