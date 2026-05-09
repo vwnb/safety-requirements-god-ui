@@ -72,6 +72,16 @@ export const brutal = {
     boxSizing: "border-box" as const,
   },
 
+  select: {
+    all: "unset" as any,
+    border: "2px solid black",
+    padding: "6px",
+    fontFamily: "monospace",
+    width: "100%",
+    boxSizing: "border-box" as const,
+    cursor: "pointer",
+  },
+
   list: {
     border: "2px solid black",
     maxHeight: 240,
@@ -113,6 +123,17 @@ export const brutal = {
   actions: {
     display: "flex",
     gap: "4px",
+  },
+
+  formRow: {
+    display: "flex",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+
+  label: {
+    width: 100,
+    marginRight: 10,
   },
 }
 
@@ -446,7 +467,7 @@ export default function App() {
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              style={{ ...brutal.input, marginBottom: 6, cursor: "pointer" }}
+              style={{ ...brutal.select, marginBottom: 6 }}
             >
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
@@ -465,8 +486,8 @@ export default function App() {
 
         <div style={{ marginBottom: 6 }}>NEW CONCEPT</div>
 
-        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
-          <label style={{ width: 100, marginRight: 10 }}>KEY</label>
+        <div style={brutal.formRow}>
+          <div style={brutal.label}>KEY</div>
           <input
             placeholder="e.g. BRAKE_FAILURE"
             value={newConceptKey}
@@ -475,8 +496,8 @@ export default function App() {
           />
         </div>
 
-        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
-          <label style={{ width: 100, marginRight: 10 }}>TITLE</label>
+        <div style={brutal.formRow}>
+          <div style={brutal.label}>TITLE</div>
           <input
             placeholder="optional"
             value={newConceptTitle}
@@ -485,16 +506,12 @@ export default function App() {
           />
         </div>
 
-        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
-          <label style={{ width: 100, marginRight: 10 }}>PHASE</label>
+        <div style={brutal.formRow}>
+          <div style={brutal.label}>PHASE</div>
           <select
             value={newConceptPhase}
             onChange={(e) => setNewConceptPhase(e.target.value)}
-            style={{
-              ...brutal.input,
-              flex: 1,
-              cursor: "pointer",
-            }}
+            style={{ ...brutal.select, flex: 1 }}
           >
             {[
               "ITEM_DEFINITION",
@@ -517,16 +534,12 @@ export default function App() {
           </select>
         </div>
 
-        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
-          <label style={{ width: 100, marginRight: 10 }}>ASIL</label>
+        <div style={brutal.formRow}>
+          <div style={brutal.label}>ASIL</div>
           <select
             value={newConceptAsil}
             onChange={(e) => setNewConceptAsil(e.target.value)}
-            style={{
-              ...brutal.input,
-              flex: 1,
-              cursor: "pointer",
-            }}
+            style={{ ...brutal.select, flex: 1 }}
           >
             {['QM', 'ASIL_A', 'ASIL_B', 'ASIL_C', 'ASIL_D'].map((asil) => (
               <option key={asil} value={asil}>
@@ -536,16 +549,12 @@ export default function App() {
           </select>
         </div>
 
-        <div style={{ display: "flex", textAlign: "left", alignItems: "center", marginBottom: 6 }}>
-          <label style={{ width: 100, marginRight: 10 }}>TYPE</label>
+        <div style={brutal.formRow}>
+          <div style={brutal.label}>TYPE</div>
           <select
             value={newConceptType}
             onChange={(e) => setNewConceptType(e.target.value)}
-            style={{
-              ...brutal.input,
-              flex: 1,
-              cursor: "pointer",
-            }}
+            style={{ ...brutal.select, flex: 1 }}
           >
             {["ITEM",
               "HAZARD",
