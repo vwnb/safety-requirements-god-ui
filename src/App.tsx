@@ -44,7 +44,6 @@ export const brutal = {
     fontFamily: "monospace",
     fontWeight: "bold",
     color: "#000",
-    textAlign: "left" as const,
     fontSize: 28,
     marginBottom: "1em",
     marginTop: "1em",
@@ -68,7 +67,6 @@ export const brutal = {
     border: "2px solid black",
     padding: "6px",
     fontFamily: "monospace",
-    textAlign: "left" as const,
     width: "100%",
     boxSizing: "border-box" as const,
   },
@@ -78,7 +76,6 @@ export const brutal = {
     border: "2px solid black",
     padding: "6px",
     fontFamily: "monospace",
-    textAlign: "left" as const,
     width: "100%",
     boxSizing: "border-box" as const,
     cursor: "pointer",
@@ -136,7 +133,6 @@ export const brutal = {
   label: {
     width: 100,
     marginRight: 10,
-    textAlign: "left" as const,
   },
 }
 
@@ -642,7 +638,6 @@ export default function App() {
                 display: "block",
                 width: "100%",
                 marginBottom: 4,
-                textAlign: "left",
               } as React.CSSProperties}
             >
               {c.key} ({c.type})
@@ -657,7 +652,7 @@ export default function App() {
         <div style={brutal.title}>Editor</div>
 
         {activeRevisionId && (
-          <div style={{ fontFamily: "monospace", marginBottom: 8, textAlign: "left" }}>
+          <div style={{ fontFamily: "monospace", marginBottom: 8}}>
             revision: {activeRevisionId.slice(0, 6)}
           </div>
         )}
