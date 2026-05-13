@@ -153,9 +153,10 @@ function Editor({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
         height: 300,
         border: "2px solid black",
+        minHeight: 0,
       }}
     >
       <textarea
@@ -166,11 +167,23 @@ function Editor({
           padding: 12,
           fontFamily: "monospace",
           borderRight: "2px solid black",
+          width: "100%",
+          height: "100%",
+          boxSizing: "border-box",
+          overflow: "auto",
+          resize: "none",
+          minWidth: 0,
         }}
       />
 
       <div
-        style={{ padding: 12, fontFamily: "monospace" }}
+        style={{
+          padding: 12,
+          fontFamily: "monospace",
+          overflow: "auto",
+          minWidth: 0,
+          minHeight: 0,
+        }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </div>

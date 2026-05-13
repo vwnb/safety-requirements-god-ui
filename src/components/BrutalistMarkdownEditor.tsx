@@ -4,9 +4,10 @@ import { useMemo } from "react"
 const styles: Record<string, React.CSSProperties> = {
   container: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
     height: "400px",
     border: "2px solid black",
+    minHeight: 0,
   },
 
   editor: {
@@ -19,6 +20,11 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: "pre",
     background: "#fff",
     color: "#000",
+    width: "100%",
+    height: "100%",
+    boxSizing: "border-box",
+    resize: "none",
+    minWidth: 0,
   },
 
   preview: {
@@ -28,6 +34,8 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "auto",
     background: "#f8f8f8",
     color: "#000",
+    minWidth: 0,
+    minHeight: 0,
   },
 }
 
