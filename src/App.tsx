@@ -538,7 +538,7 @@ export default function App() {
           )}
         </section>
 
-        <div style={{width:"2px", height: "100%", background: "black"}} />
+        <div className="horizontal-divider" />
 
         <section>
           <div style={brutal.title}>New concept</div>
