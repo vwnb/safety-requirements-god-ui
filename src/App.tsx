@@ -455,8 +455,8 @@ export default function App() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 20, alignItems: "flex-start", marginBottom: 20 }}>
-        <img src={logo} alt="Logo" style={{ width: "300px", height: "auto", flexShrink: 0 }} />
+      <div className="top-header">
+        <img src={logo} alt="Logo" className="logo" />
 
         <section style={{ flex: 1 }}>
           <div style={brutal.title}>User</div>
@@ -508,7 +508,7 @@ export default function App() {
 
       <hr />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 0 1fr", gap: 20, alignItems: "start" }}>
+      <div className="concepts-layout">
         <section>
           <div style={brutal.title}>Concepts</div>
 

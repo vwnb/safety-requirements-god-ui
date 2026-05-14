@@ -109,3 +109,35 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+.top-header {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.top-header .logo {
+  width: 300px;
+  height: auto;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.concepts-layout {
+  display: grid;
+  grid-template-columns: 1fr 0 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .top-header .logo {
+    width: 220px;
+  }
+
+  .concepts-layout {
+    grid-template-columns: 1fr;
+  }
+}
