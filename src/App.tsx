@@ -24,7 +24,7 @@ type Revision = {
   createdBy: string
 }
 
-type Project = {
+type WorkItem = {
   id: string
   key: string
   name: string
@@ -187,8 +187,8 @@ function Editor({
 }
 
 export default function App() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [selectedProject, setSelectedProject] = useState<string>("")
+  const [workItems, setWorkItems] = useState<WorkItem[]>([])
+  const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
 
   const [concepts, setConcepts] = useState<Concept[]>([])
   const [selectedConcept, setSelectedConcept] = useState<string>("")
@@ -239,15 +239,15 @@ export default function App() {
   }
 
   useEffect(() => {
-    async function initProjects() {
-      await withLoading("Loading projects...", async () => {
+    async function initWorkItems() {
+      await withLoading("Loading work items...", async () => {
         try {
-          const res = await fetch(`${API}/projects`)
+          const res = await fetch(`${API}/work-items`)
           const data = res.ok ? await res.json() : []
-          setProjects(data)
+          setWorkItems(data)
 
           if (data.length > 0) {
-            setSelectedProject(data[0].id)
+            setSelectedWorkItem(data[0].id)
           } else {
             await loadConcepts()
           }
@@ -257,20 +257,20 @@ export default function App() {
       })
     }
 
-    initProjects()
+    initWorkItems()
   }, [])
 
   useEffect(() => {
-    if (!selectedProject) return
+    if (!selectedWorkItem) return
 
-    loadConcepts(selectedProject)
-    refreshGraph(selectedProject)
-  }, [selectedProject])
+    loadConcepts(selectedWorkItem)
+    refreshGraph(selectedWorkItem)
+  }, [selectedWorkItem])
 
-  async function loadConcepts(projectId?: string) {
+  async function loadConcepts(workItemId?: string) {
     return withLoading("Loading concepts...", async () => {
-      const url = projectId
-        ? `${API}/projects/${projectId}/concepts`
+      const url = workItemId
+        ? `${API}/work-items/${workItemId}/concepts`
         : `${API}/concepts`
 
       const res = await fetch(url)
@@ -358,7 +358,7 @@ export default function App() {
     const latest = revisions.at(-1)
     setActiveRevisionId(latest?.id || null)
 
-    await refreshGraph(selectedProject)
+    await refreshGraph(selectedWorkItem)
   }
 
   function toggleRevision(id: string) {
@@ -388,8 +388,8 @@ export default function App() {
   async function createConcept() {
     if (!newConceptKey.trim()) return
 
-    const url = selectedProject
-      ? `${API}/projects/${selectedProject}/concepts`
+    const url = selectedWorkItem
+      ? `${API}/work-items/${selectedWorkItem}/concepts`
       : `${API}/concepts`
 
     const res = await fetch(url, {
@@ -414,11 +414,11 @@ export default function App() {
     setNewConceptAsil("QM")
 
     await loadRevisions(created.id)
-    await refreshGraph(selectedProject)
+    await refreshGraph(selectedWorkItem)
   }
 
-  async function refreshGraph(projectId: string) {
-    const data = await fetch(`${API}/graph/${projectId}`).then((r) => r.json())
+  async function refreshGraph(workItemId: string) {
+    const data = await fetch(`${API}/graph/${workItemId}`).then((r) => r.json())
     setGraph(data)
   }
 
@@ -471,18 +471,18 @@ export default function App() {
       <hr />
 
       <section>
-        <div style={brutal.title}>Projects</div>
+        <div style={brutal.title}>Work items</div>
 
-        {projects.length > 0 && (
+        {workItems.length > 0 && (
           <div style={{ marginBottom: 10 }}>
             <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
+              value={selectedWorkItem}
+              onChange={(e) => setSelectedWorkItem(e.target.value)}
               style={{ ...brutal.select, marginBottom: 6 }}
             >
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.key} — {project.name}
+              {workItems.map((workItem) => (
+                <option key={workItem.id} value={workItem.id}>
+                  {workItem.key} — {workItem.name}
                 </option>
               ))}
             </select>
@@ -500,7 +500,7 @@ export default function App() {
             revisions={graph.revisions}
             concepts={graph.concepts}
             relations={graph.relations}
-            onRelationCreated={() => { refreshGraph(selectedProject) }}
+            onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
             API={API}
           />
         </div>
@@ -514,7 +514,7 @@ export default function App() {
 
           {concepts.length === 0 ? (
             <>
-              No concepts for this project.
+              No concepts for this work item.
             </>
           ) : (
             concepts.map((c) => (
