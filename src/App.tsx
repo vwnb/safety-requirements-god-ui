@@ -44,7 +44,7 @@ export const brutal = {
     fontFamily: "monospace",
     fontWeight: "bold",
     color: "#000",
-    fontSize: 28,
+    fontSize: 20,
     marginBottom: "1em",
     marginTop: "1em",
   },
@@ -455,7 +455,7 @@ export default function App() {
         </div>
       )}
 
-      <img src={logo} alt="Logo" style={{ maxWidth: "100%", width: "500px", height: "auto" }} />
+      <img src={logo} alt="Logo" style={{ maxWidth: "100%", width: "300px", height: "auto" }} />
 
       <hr />
 
@@ -508,143 +508,144 @@ export default function App() {
 
       <hr />
 
-      <section>
-        <div style={brutal.title}>New concept</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 0 1fr", gap: 20, alignItems: "start" }}>
+        <section>
+          <div style={brutal.title}>Concepts</div>
 
-        <div style={brutal.formRow}>
-          <div style={brutal.label}>KEY</div>
-          <input
-            placeholder="e.g. BRAKE_FAILURE"
-            value={newConceptKey}
-            onChange={(e) => setNewConceptKey(e.target.value)}
-            style={{ ...brutal.input, flex: 1 }}
-          />
-        </div>
+          {concepts.length === 0 ? (
+            <>
+              No concepts for this project.
+            </>
+          ) : (
+            concepts.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedConcept(c.id)
+                  loadRevisions(c.id)
+                }}
+                style={{
+                  ...brutal.button,
+                  ...(selectedConcept === c.id ? brutal.active : {}),
+                  display: "block",
+                  width: "100%",
+                  marginBottom: 4,
+                } as React.CSSProperties}
+              >
+                {c.key} ({c.type})
+              </button>
+            ))
+          )}
+        </section>
 
-        <div style={brutal.formRow}>
-          <div style={brutal.label}>TITLE</div>
-          <input
-            placeholder="optional"
-            value={newConceptTitle}
-            onChange={(e) => setNewConceptTitle(e.target.value)}
-            style={{ ...brutal.input, flex: 1 }}
-          />
-        </div>
+        <div style={{width:"2px", height: "100%", background: "black"}} />
 
-        <div style={brutal.formRow}>
-          <div style={brutal.label}>PHASE</div>
-          <select
-            value={newConceptPhase}
-            onChange={(e) => setNewConceptPhase(e.target.value)}
-            style={{ ...brutal.select, flex: 1 }}
-          >
-            {[
-              "ITEM_DEFINITION",
-              "HARA",
-              "FUNCTIONAL_SAFETY",
-              "TECHNICAL_SAFETY",
-              "SYSTEM_DESIGN",
-              "SOFTWARE_DESIGN",
-              "IMPLEMENTATION",
-              "VERIFICATION",
-              "VALIDATION",
-              "PRODUCTION",
-              "OPERATION",
-              "DECOMMISSIONING",
-            ].map((phase) => (
-              <option key={phase} value={phase}>
-                {phase}
-              </option>
-            ))}
-          </select>
-        </div>
+        <section>
+          <div style={brutal.title}>New concept</div>
 
-        <div style={brutal.formRow}>
-          <div style={brutal.label}>ASIL</div>
-          <select
-            value={newConceptAsil}
-            onChange={(e) => setNewConceptAsil(e.target.value)}
-            style={{ ...brutal.select, flex: 1 }}
-          >
-            {['QM', 'ASIL_A', 'ASIL_B', 'ASIL_C', 'ASIL_D'].map((asil) => (
-              <option key={asil} value={asil}>
-                {asil}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div style={brutal.formRow}>
+            <div style={brutal.label}>KEY</div>
+            <input
+              placeholder="e.g. BRAKE_FAILURE"
+              value={newConceptKey}
+              onChange={(e) => setNewConceptKey(e.target.value)}
+              style={{ ...brutal.input, flex: 1 }}
+            />
+          </div>
 
-        <div style={brutal.formRow}>
-          <div style={brutal.label}>TYPE</div>
-          <select
-            value={newConceptType}
-            onChange={(e) => setNewConceptType(e.target.value)}
-            style={{ ...brutal.select, flex: 1 }}
-          >
-            {["ITEM",
-              "HAZARD",
-              "HARM",
-              "SAFETY_GOAL",
-              "FSR",
-              "TSR",
-              "SSR",
-              "HARDWARE_REQUIREMENT",
-              "SOFTWARE_REQUIREMENT",
-              "ASSUMPTION",
-              "CONSTRAINT",
-              "TEST_CASE",
-              "TEST_RESULT",
-              "VERIFICATION_REPORT",
-              "VALIDATION_REPORT",
-              "SAFETY_CASE",
-              "SAFETY_MANUAL",
-              "CHANGE_REQUEST",
-              "ANOMALY"].map((type) => (
-                <option key={type} value={type}>
-                  {type}
+          <div style={brutal.formRow}>
+            <div style={brutal.label}>TITLE</div>
+            <input
+              placeholder="optional"
+              value={newConceptTitle}
+              onChange={(e) => setNewConceptTitle(e.target.value)}
+              style={{ ...brutal.input, flex: 1 }}
+            />
+          </div>
+
+          <div style={brutal.formRow}>
+            <div style={brutal.label}>PHASE</div>
+            <select
+              value={newConceptPhase}
+              onChange={(e) => setNewConceptPhase(e.target.value)}
+              style={{ ...brutal.select, flex: 1 }}
+            >
+              {[
+                "ITEM_DEFINITION",
+                "HARA",
+                "FUNCTIONAL_SAFETY",
+                "TECHNICAL_SAFETY",
+                "SYSTEM_DESIGN",
+                "SOFTWARE_DESIGN",
+                "IMPLEMENTATION",
+                "VERIFICATION",
+                "VALIDATION",
+                "PRODUCTION",
+                "OPERATION",
+                "DECOMMISSIONING",
+              ].map((phase) => (
+                <option key={phase} value={phase}>
+                  {phase}
                 </option>
               ))}
-          </select>
+            </select>
+          </div>
 
-        </div>
-
-        <button onClick={createConcept} style={brutal.button}>
-          CREATE
-        </button>
-
-      </section>
-
-      <hr />
-
-      <section>
-
-        <div style={brutal.title}>Concepts</div>
-
-        {concepts.length === 0 ? (
-          <>
-            No concepts for this project.
-          </>
-        ) : (
-          concepts.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => {
-                setSelectedConcept(c.id)
-                loadRevisions(c.id)
-              }}
-              style={{
-                ...brutal.button,
-                ...(selectedConcept === c.id ? brutal.active : {}),
-                display: "block",
-                width: "100%",
-                marginBottom: 4,
-              } as React.CSSProperties}
+          <div style={brutal.formRow}>
+            <div style={brutal.label}>ASIL</div>
+            <select
+              value={newConceptAsil}
+              onChange={(e) => setNewConceptAsil(e.target.value)}
+              style={{ ...brutal.select, flex: 1 }}
             >
-              {c.key} ({c.type})
-            </button>
-          ))
-        )}
-      </section>
+              {['QM', 'ASIL_A', 'ASIL_B', 'ASIL_C', 'ASIL_D'].map((asil) => (
+                <option key={asil} value={asil}>
+                  {asil}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={brutal.formRow}>
+            <div style={brutal.label}>TYPE</div>
+            <select
+              value={newConceptType}
+              onChange={(e) => setNewConceptType(e.target.value)}
+              style={{ ...brutal.select, flex: 1 }}
+            >
+              {["ITEM",
+                "HAZARD",
+                "HARM",
+                "SAFETY_GOAL",
+                "FSR",
+                "TSR",
+                "SSR",
+                "HARDWARE_REQUIREMENT",
+                "SOFTWARE_REQUIREMENT",
+                "ASSUMPTION",
+                "CONSTRAINT",
+                "TEST_CASE",
+                "TEST_RESULT",
+                "VERIFICATION_REPORT",
+                "VALIDATION_REPORT",
+                "SAFETY_CASE",
+                "SAFETY_MANUAL",
+                "CHANGE_REQUEST",
+                "ANOMALY"].map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+            </select>
+
+          </div>
+
+          <button onClick={createConcept} style={brutal.button}>
+            CREATE
+          </button>
+
+        </section>
+      </div>
 
       <hr />
 
