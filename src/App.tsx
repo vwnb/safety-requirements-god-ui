@@ -8,13 +8,17 @@ import GraphView from "./components/GraphView"
 
 const API = import.meta.env.VITE_API_URL || ""
 
+type LifecyclePhase = "ITEM_DEFINITION" | "HARA" | "FUNCTIONAL_SAFETY" | "TECHNICAL_SAFETY" | "SYSTEM_DESIGN" | "SOFTWARE_DESIGN" | "IMPLEMENTATION" | "VERIFICATION" | "VALIDATION" | "PRODUCTION" | "OPERATION" | "DECOMMISSIONING"
+
+type ASIL = "QM" | "A" | "B" | "C" | "D"
+
 type Concept = {
   id: string
   key: string
   type: string
   title: string
-  phase?: string
-  asil?: string
+  phase?: LifecyclePhase
+  asil?: ASIL
 }
 
 type Revision = {
@@ -28,9 +32,13 @@ type WorkItem = {
   id: string
   key: string
   name: string
-  description: string
+  description?: string
   createdBy: string
   createdAt: string
+  phase?: LifecyclePhase
+  asil?: ASIL
+  applicationContext?: string
+  systemBoundary?: string
 }
 
 export const brutal = {
@@ -131,7 +139,7 @@ export const brutal = {
   },
 
   label: {
-    width: 100,
+    width: "150px",
     marginRight: 10,
   },
 }
@@ -189,6 +197,7 @@ function Editor({
 export default function App() {
   const [workItems, setWorkItems] = useState<WorkItem[]>([])
   const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
+  const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
 
   const [concepts, setConcepts] = useState<Concept[]>([])
   const [selectedConcept, setSelectedConcept] = useState<string>("")
@@ -215,6 +224,13 @@ export default function App() {
   const [newConceptTitle, setNewConceptTitle] = useState("")
   const [newConceptPhase, setNewConceptPhase] = useState("ITEM_DEFINITION")
   const [newConceptAsil, setNewConceptAsil] = useState("QM")
+
+  const [editWorkItemName, setEditWorkItemName] = useState("")
+  const [editWorkItemDescription, setEditWorkItemDescription] = useState("")
+  const [editWorkItemPhase, setEditWorkItemPhase] = useState<LifecyclePhase | "">("")
+  const [editWorkItemAsil, setEditWorkItemAsil] = useState<ASIL | "">("")
+  const [editWorkItemApplicationContext, setEditWorkItemApplicationContext] = useState("")
+  const [editWorkItemSystemBoundary, setEditWorkItemSystemBoundary] = useState("")
 
   const [graph, setGraph] = useState({
     concepts: [],
@@ -263,9 +279,29 @@ export default function App() {
   useEffect(() => {
     if (!selectedWorkItem) return
 
+    loadWorkItemDetails(selectedWorkItem)
     loadConcepts(selectedWorkItem)
     refreshGraph(selectedWorkItem)
   }, [selectedWorkItem])
+
+  async function loadWorkItemDetails(workItemId: string) {
+    return withLoading("Loading work item details...", async () => {
+      const res = await fetch(`${API}/work-items/${workItemId}`)
+      const data = await res.json()
+      setSelectedWorkItemData(data)
+    })
+  }
+
+  useEffect(() => {
+    if (selectedWorkItemData) {
+      setEditWorkItemName(selectedWorkItemData.name || "")
+      setEditWorkItemDescription(selectedWorkItemData.description || "")
+      setEditWorkItemPhase(selectedWorkItemData.phase || "")
+      setEditWorkItemAsil(selectedWorkItemData.asil || "")
+      setEditWorkItemApplicationContext(selectedWorkItemData.applicationContext || "")
+      setEditWorkItemSystemBoundary(selectedWorkItemData.systemBoundary || "")
+    }
+  }, [selectedWorkItemData])
 
   async function loadConcepts(workItemId?: string) {
     return withLoading("Loading concepts...", async () => {
@@ -417,6 +453,35 @@ export default function App() {
     await refreshGraph(selectedWorkItem)
   }
 
+  async function saveWorkItem() {
+    if (!selectedWorkItemData) return
+
+    await fetch(`${API}/work-items/${selectedWorkItemData.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: editWorkItemName,
+        description: editWorkItemDescription,
+        phase: editWorkItemPhase,
+        asil: editWorkItemAsil,
+        applicationContext: editWorkItemApplicationContext,
+        systemBoundary: editWorkItemSystemBoundary,
+      }),
+    })
+
+    // Reload the work item details
+    await loadWorkItemDetails(selectedWorkItemData.id)
+
+    // Update the work items list
+    setWorkItems((prev) =>
+      prev.map((wi) =>
+        wi.id === selectedWorkItemData.id
+          ? { ...wi, name: editWorkItemName, description: editWorkItemDescription }
+          : wi
+      )
+    )
+  }
+
   async function refreshGraph(workItemId: string) {
     const data = await fetch(`${API}/graph/${workItemId}`).then((r) => r.json())
     setGraph(data)
@@ -486,6 +551,78 @@ export default function App() {
                 </option>
               ))}
             </select>
+
+            {selectedWorkItemData && (
+              <div>
+                <div style={brutal.title}>Edit Work Item</div>
+                <div style={brutal.formRow}>
+                  <div style={brutal.label}>Name</div>
+                  <input
+                    value={editWorkItemName}
+                    onChange={(e) => setEditWorkItemName(e.target.value)}
+                    style={brutal.input}
+                  />
+                </div>
+                <div style={brutal.formRow}>
+                  <div style={brutal.label}>Description</div>
+                  <textarea
+                    value={editWorkItemDescription}
+                    onChange={(e) => setEditWorkItemDescription(e.target.value)}
+                    style={{ ...brutal.input, height: 60 }}
+                  />
+                </div>
+                <div style={brutal.formRow}>
+                  <div style={brutal.label}>Phase</div>
+                  <select
+                    value={editWorkItemPhase}
+                    onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
+                    style={brutal.select}
+                  >
+                    <option value="">-- Select Phase --</option>
+                    <option value="ITEM_DEFINITION">Item Definition</option>
+                    <option value="HARA">HARA</option>
+                    <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                    <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                    <option value="SYSTEM_DESIGN">System Design</option>
+                    <option value="SOFTWARE_DESIGN">Software Design</option>
+                    <option value="IMPLEMENTATION">Implementation</option>
+                    <option value="VERIFICATION">Verification</option>
+                  </select>
+                </div>
+                <div style={brutal.formRow}>
+                  <div style={brutal.label}>ASIL</div>
+                  <select
+                    value={editWorkItemAsil}
+                    onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
+                    style={brutal.select}
+                  >
+                    <option value="">-- Select ASIL --</option>
+                    <option value="QM">QM</option>
+                    <option value="ASIL_A">ASIL_A</option>
+                    <option value="ASIL_B">ASIL_B</option>
+                    <option value="ASIL_C">ASIL_C</option>
+                    <option value="ASIL_D">ASIL_D</option>
+                  </select>
+                </div>
+                <div style={brutal.formRow}>
+                  <div style={brutal.label}>Application Context</div>
+                  <input
+                    value={editWorkItemApplicationContext}
+                    onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
+                    style={brutal.input}
+                  />
+                </div>
+                <div style={brutal.formRow}>
+                  <div style={brutal.label}>System Boundary</div>
+                  <input
+                    value={editWorkItemSystemBoundary}
+                    onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
+                    style={brutal.input}
+                  />
+                </div>
+                <button style={brutal.button} onClick={saveWorkItem}>Save Changes</button>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -532,7 +669,7 @@ export default function App() {
                   marginBottom: 4,
                 } as React.CSSProperties}
               >
-                {c.key} ({c.type})
+                {c.key} ({c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())})
               </button>
             ))
           )}
@@ -570,24 +707,15 @@ export default function App() {
               onChange={(e) => setNewConceptPhase(e.target.value)}
               style={{ ...brutal.select, flex: 1 }}
             >
-              {[
-                "ITEM_DEFINITION",
-                "HARA",
-                "FUNCTIONAL_SAFETY",
-                "TECHNICAL_SAFETY",
-                "SYSTEM_DESIGN",
-                "SOFTWARE_DESIGN",
-                "IMPLEMENTATION",
-                "VERIFICATION",
-                "VALIDATION",
-                "PRODUCTION",
-                "OPERATION",
-                "DECOMMISSIONING",
-              ].map((phase) => (
-                <option key={phase} value={phase}>
-                  {phase}
-                </option>
-              ))}
+              <option value="">-- Select Phase --</option>
+              <option value="ITEM_DEFINITION">Item Definition</option>
+              <option value="HARA">HARA</option>
+              <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+              <option value="TECHNICAL_SAFETY">Technical Safety</option>
+              <option value="SYSTEM_DESIGN">System Design</option>
+              <option value="SOFTWARE_DESIGN">Software Design</option>
+              <option value="IMPLEMENTATION">Implementation</option>
+              <option value="VERIFICATION">Verification</option>
             </select>
           </div>
 
@@ -598,11 +726,12 @@ export default function App() {
               onChange={(e) => setNewConceptAsil(e.target.value)}
               style={{ ...brutal.select, flex: 1 }}
             >
-              {['QM', 'ASIL_A', 'ASIL_B', 'ASIL_C', 'ASIL_D'].map((asil) => (
-                <option key={asil} value={asil}>
-                  {asil}
-                </option>
-              ))}
+              <option value="">-- Select ASIL --</option>
+              <option value="QM">QM</option>
+              <option value="ASIL_A">ASIL_A</option>
+              <option value="ASIL_B">ASIL_B</option>
+              <option value="ASIL_C">ASIL_C</option>
+              <option value="ASIL_D">ASIL_D</option>
             </select>
           </div>
 
@@ -613,29 +742,26 @@ export default function App() {
               onChange={(e) => setNewConceptType(e.target.value)}
               style={{ ...brutal.select, flex: 1 }}
             >
-              {["ITEM",
-                "HAZARD",
-                "HARM",
-                "SAFETY_GOAL",
-                "FSR",
-                "TSR",
-                "SSR",
-                "HARDWARE_REQUIREMENT",
-                "SOFTWARE_REQUIREMENT",
-                "ASSUMPTION",
-                "CONSTRAINT",
-                "TEST_CASE",
-                "TEST_RESULT",
-                "VERIFICATION_REPORT",
-                "VALIDATION_REPORT",
-                "SAFETY_CASE",
-                "SAFETY_MANUAL",
-                "CHANGE_REQUEST",
-                "ANOMALY"].map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
+              <option value="">-- Select Type --</option>
+              <option value="ITEM">Item</option>
+              <option value="HAZARD">Hazard</option>
+              <option value="HARM">Harm</option>
+              <option value="SAFETY_GOAL">Safety goal</option>
+              <option value="FSR">Functional safety requirement</option>
+              <option value="TSR">Technical safety requirement</option>
+              <option value="SSR">Software safety requirement</option>
+              <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
+              <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
+              <option value="ASSUMPTION">Assumption</option>
+              <option value="CONSTRAINT">Constraint</option>
+              <option value="TEST_CASE">Test case</option>
+              <option value="TEST_RESULT">Test result</option>
+              <option value="VERIFICATION_REPORT">Verification report</option>
+              <option value="VALIDATION_REPORT">Validation report</option>
+              <option value="SAFETY_CASE">Safety case</option>
+              <option value="SAFETY_MANUAL">Safety manual</option>
+              <option value="CHANGE_REQUEST">Change request</option>
+              <option value="ANOMALY">Anomaly</option>
             </select>
 
           </div>
@@ -653,7 +779,7 @@ export default function App() {
         <div style={brutal.title}>Editor</div>
 
         {activeRevisionId && (
-          <div style={{ fontFamily: "monospace", marginBottom: 8}}>
+          <div style={{ fontFamily: "monospace", marginBottom: 8 }}>
             revision: {activeRevisionId.slice(0, 6)}
           </div>
         )}
