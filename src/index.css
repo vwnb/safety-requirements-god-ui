@@ -99,7 +99,7 @@ p {
 }
 
 hr {
-  border:1px solid var(--border);
+  border: 1px solid var(--border);
 }
 
 code,
@@ -157,5 +157,11 @@ code {
 
   .concepts-layout .horizontal-divider {
     display: none;
+  }
+}
+
+@media (max-width: 540px) {
+  .top-header {
+    display: block
   }
 }

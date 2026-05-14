@@ -531,6 +531,14 @@ export default function App() {
             style={brutal.input}
           />
         </section>
+
+        <section style={{ flex: 1 }}>
+          <div style={brutal.title}>Project</div>
+          <input
+            value={"Mock project"}
+            style={brutal.input}
+          />
+        </section>
       </div>
 
       <hr />
