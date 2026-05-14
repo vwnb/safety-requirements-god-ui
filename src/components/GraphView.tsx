@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import ReactFlow, {
   Background,
   Controls,
@@ -121,6 +121,25 @@ export default function GraphView({
     from: string
     to: string
   } | null>(null)
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
+  const [graphLoading, setGraphLoading] = useState(false)
+
+  const deleteRelation = useCallback(
+    async (relationId: string) => {
+      if (graphLoading) return
+      setGraphLoading(true)
+
+      try {
+        await fetch(`${API}/relations/${relationId}`, {
+          method: "DELETE",
+        })
+        onRelationCreated()
+      } finally {
+        setGraphLoading(false)
+      }
+    },
+    [API, graphLoading, onRelationCreated]
+  )
 
   const conceptMap = useMemo(() => {
     const m = new Map<string, Concept>()
@@ -148,9 +167,10 @@ export default function GraphView({
   const edges: Edge[] = useMemo(() => {
     return relations.map((r) => ({
       id: r.id,
-      source: r.fromId, // 🔥 revision.id
-      target: r.toId,   // 🔥 revision.id
-      label: r.type,
+      source: r.fromId,
+      target: r.toId,
+      label: hoveredEdgeId === r.id ? "×" : r.type,
+      labelBgPadding: [8, 4],
       animated: r.type === "VIOLATES",
       style: {
         stroke:
@@ -161,7 +181,7 @@ export default function GraphView({
               : "#555",
       },
     }))
-  }, [relations])
+  }, [relations, hoveredEdgeId])
 
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
     return layoutGraph(nodes, edges)
@@ -169,13 +189,38 @@ export default function GraphView({
 
   return (
     <>
-      <div style={{ height: 600, border: "2px solid black" }}>
+      <div style={{ position: "relative", height: 600, border: "2px solid black" }}>
+        {graphLoading && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(255,255,255,0.88)",
+              zIndex: 10,
+              display: "grid",
+              placeItems: "center",
+              fontFamily: "monospace",
+              fontWeight: "bold",
+              pointerEvents: "none",
+            }}
+          >
+            Loading graph...
+          </div>
+        )}
+
         <ReactFlow
           nodes={layoutedNodes}
           edges={layoutedEdges}
           nodeTypes={nodeTypes}
           fitView
           nodeExtent={[[0, 0], [3000, 3000]]}
+          onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
+          onEdgeMouseLeave={() => setHoveredEdgeId(null)}
+          onEdgeClick={(_, edge) => {
+            if (!graphLoading) {
+              deleteRelation(edge.id)
+            }
+          }}
           onConnect={(params) => {
             if (!params.source || !params.target) return
 
@@ -194,18 +239,25 @@ export default function GraphView({
       {pendingConnection && (
         <RelationTypePicker
           onSelect={async (type) => {
-            await fetch(`${API}/relations`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                fromId: pendingConnection.from,
-                toId: pendingConnection.to,
-                type,
-              }),
-            })
+            if (graphLoading) return
+            setGraphLoading(true)
 
-            setPendingConnection(null)
-            onRelationCreated()
+            try {
+              await fetch(`${API}/relations`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  fromId: pendingConnection.from,
+                  toId: pendingConnection.to,
+                  type,
+                }),
+              })
+
+              setPendingConnection(null)
+              onRelationCreated()
+            } finally {
+              setGraphLoading(false)
+            }
           }}
           onClose={() => setPendingConnection(null)}
         />
