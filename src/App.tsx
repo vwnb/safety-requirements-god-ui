@@ -455,18 +455,18 @@ export default function App() {
         </div>
       )}
 
-      <img src={logo} alt="Logo" style={{ maxWidth: "100%", width: "300px", height: "auto" }} />
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start", marginBottom: 20 }}>
+        <img src={logo} alt="Logo" style={{ width: "300px", height: "auto", flexShrink: 0 }} />
 
-      <hr />
-
-      <section>
-        <div style={brutal.title}>User</div>
-        <input
-          value={user}
-          onChange={(e) => setUser(e.target.value)}
-          style={brutal.input}
-        />
-      </section>
+        <section style={{ flex: 1 }}>
+          <div style={brutal.title}>User</div>
+          <input
+            value={user}
+            onChange={(e) => setUser(e.target.value)}
+            style={brutal.input}
+          />
+        </section>
+      </div>
 
       <hr />
 
