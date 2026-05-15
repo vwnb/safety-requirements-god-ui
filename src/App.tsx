@@ -76,17 +76,14 @@ export const brutal = {
     background: "white",
     borderWidth: "2px",
     borderStyle: "solid",
-    borderLeft: "2px solid",
     padding: "4px 8px",
-    paddingLeft: "8px",
     cursor: "pointer",
     fontFamily: "monospace",
     boxSizing: "border-box" as const,
   },
   active: {
     background: "white",
-    borderLeft: "40px solid black",
-    paddingLeft: "8px"
+    borderColor: "white"
   },
   input: {
     all: "unset" as any,
@@ -274,6 +271,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [concepts, setConcepts] = useState<Concept[]>([])
   const [selectedConcept, setSelectedConcept] = useState<string>("")
+  const [activeConcept, setActiveConcept] = useState<Concept | null>(null)
 
   const [revisionsByConcept, setRevisionsByConcept] =
     useState<Record<string, Revision[]>>({})
@@ -334,12 +332,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   useEffect(() => {
-    async function initWorkItems() {
-
+    async function init() {
       await withLoading("Loading work items...", async () => {
         try {
           const res = await apiFetch(`${API}/work-items`)
           const data = res.ok ? await res.json() : []
+
           setWorkItems(data)
 
           if (data.length > 0) {
@@ -351,29 +349,28 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           await loadConcepts()
         }
       })
+
+      refreshBaselines()
     }
 
-    if (!user) return
-
-    initWorkItems()
-    refreshBaselines()
+    if (user) {
+      init()
+    }
   }, [user])
 
   useEffect(() => {
     if (!selectedWorkItem) return
 
-    loadWorkItemDetails(selectedWorkItem)
-    loadConcepts(selectedWorkItem)
-    refreshGraph(selectedWorkItem)
-  }, [selectedWorkItem])
+    async function load() {
+      await Promise.all([
+        loadWorkItemDetails(selectedWorkItem),
+        loadConcepts(selectedWorkItem),
+        refreshGraph(selectedWorkItem),
+      ])
+    }
 
-  async function loadWorkItemDetails(workItemId: string) {
-    return withLoading("Loading work item details...", async () => {
-      const res = await apiFetch(`${API}/work-items/${workItemId}`)
-      const data = await res.json()
-      setSelectedWorkItemData(data)
-    })
-  }
+    load()
+  }, [selectedWorkItem])
 
   useEffect(() => {
     if (selectedWorkItemData) {
@@ -385,6 +382,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       setEditWorkItemSystemBoundary(selectedWorkItemData.systemBoundary || "")
     }
   }, [selectedWorkItemData])
+
+  useEffect(() => {
+    if (selectedConcept) {
+      const concept = concepts.find(c => c.id === selectedConcept)
+      setActiveConcept(concept || null)
+    }
+  }, [selectedConcept])
 
   async function loadConcepts(workItemId?: string) {
     return withLoading("Loading concepts...", async () => {
@@ -399,7 +403,15 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
       if (data.length > 0) {
         setSelectedConcept(data[0].id)
-        await loadRevisions(data[0].id)
+
+        const revisions = await loadRevisions(data[0].id)
+
+        const latest = revisions.at(-1)
+
+        if (latest) {
+          setActiveRevisionId(latest.id)
+          setEditorValue(latest.markdown)
+        }
       } else {
         setSelectedConcept("")
         setEditorValue("")
@@ -417,7 +429,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         [conceptId]: data,
       }))
 
-      setEditorValue(data[data.length - 1]?.markdown || "")
       setActiveRevisionId(data[data.length - 1]?.id || null)
 
       return data
@@ -445,22 +456,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setDiff({ hunks: diff?.hunks || [] })
   }, [baseId, targetId, revisionsByConcept])
 
-  useEffect(() => {
-    if (!selectedConcept) {
-      setEditorValue("")
-      return
-    }
-
-    const load = async () => {
-      const revisions = await loadRevisions(selectedConcept)
-      if (revisions.length === 0) {
-        const concept = concepts.find(c => c.id === selectedConcept)
-        setEditorValue(concept?.title ? `# ${concept.title}` : "")
-      }
-    }
-    load()
-  }, [selectedConcept, concepts])
-
   async function revise() {
     await apiFetch(`${API}/workflow/submit-change`, {
       method: "POST",
@@ -475,7 +470,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     const revisions = await loadRevisions(selectedConcept)
 
     const latest = revisions.at(-1)
-    setActiveRevisionId(latest?.id || null)
+
+    if (latest) {
+      setActiveRevisionId(latest.id)
+      setEditorValue(latest.markdown)
+    }
 
     await refreshGraph(selectedWorkItem)
   }
@@ -534,6 +533,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
     await loadRevisions(created.id)
     await refreshGraph(selectedWorkItem)
+  }
+
+  async function loadWorkItemDetails(workItemId: string) {
+    const res = await apiFetch(
+      `${API}/work-items/${workItemId}`
+    )
+
+    const data = await res.json()
+
+    setSelectedWorkItemData(data)
   }
 
   async function saveWorkItem() {
@@ -742,9 +751,20 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   concepts.map((c) => (
                     <button
                       key={c.id}
-                      onClick={() => {
+                      onClick={async () => {
                         setSelectedConcept(c.id)
-                        loadRevisions(c.id)
+
+                        const revisions = await loadRevisions(c.id)
+
+                        const latest = revisions.at(-1)
+
+                        if (latest) {
+                          setActiveRevisionId(latest.id)
+                          setEditorValue(latest.markdown)
+                        } else {
+                          setActiveRevisionId(null)
+                          setEditorValue(c.title ? `# ${c.title}` : "")
+                        }
                       }}
                       style={{
                         ...brutal.button,
@@ -866,7 +886,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               {activeRevisionId && (
                 <div style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                  Concept: {concepts.find(c => c.id === selectedConcept)?.key + " " + concepts.find(c => c.id === selectedConcept)?.title || selectedConcept} <br />
+                  Concept: {activeConcept && activeConcept.key + " " + activeConcept.title}
+
+                  <br />
+
                   Revision: {activeRevisionId.slice(0, 6)}
                 </div>
               )}
@@ -910,8 +933,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                         <div style={brutal.actions}>
                           <button
                             onClick={() => {
-                              setEditorValue(r.markdown)
                               setActiveRevisionId(r.id)
+                              setSelectedConcept(r.conceptId)
+                              setEditorValue(r.markdown)
                             }}
                             style={brutal.button}
                           >
@@ -954,8 +978,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </div>
               )}
               {baseId && targetId && hunks.length > 0 && (
-                <>
-                  <p style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
+                <div style={{background: "white", border: "2px solid black", marginTop: "1em"}}>
+                  <p style={{ margin: "1em", fontStyle: "italic" }}>
                     <code>{baseId.slice(0, 6)}</code>{" → "}
                     <code>{targetId.slice(0, 6)}</code>
                   </p>
@@ -969,7 +993,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       ))
                     }
                   </Diff>
-                </>
+                </div>
               )}
             </section>
 
@@ -1022,13 +1046,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                           <div style={brutal.cellText}>
                             {r.markdown.slice(0, 80)}
                           </div>
-
-                          <button
-                            style={brutal.button}
-                            onClick={() => setEditorValue(r.markdown)}
-                          >
-                            LOAD
-                          </button>
                         </div>
                       )
                     })}
