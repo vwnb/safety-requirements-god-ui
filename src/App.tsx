@@ -1050,7 +1050,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               cursor: "pointer",
                             }}
                           >
-                            {r.id.slice(0, 6)} — {r.markdown.slice(0, 40)}
+                            {r.id.slice(0, 6)} — {r.markdown.slice(0, 80)}{r.markdown.length > 80 ? "..." : ""}
                           </div>
                         )
                       })}
