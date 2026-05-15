@@ -599,6 +599,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <section style={{ flex: 1 }}>
             <div style={brutal.title}>Project</div>
             <input
+              disabled
               value={"Mock project"}
               style={brutal.input}
             />
