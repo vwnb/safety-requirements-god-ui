@@ -191,7 +191,7 @@ export default function GraphView({
 
   return (
     <>
-      <div style={{ position: "relative", height: 600, border: "2px solid black" }}>
+      <div style={{ boxSizing: "border-box", position: "sticky", top: "20px", width: "100%", height: "calc(100vh - 40px)", border: "2px solid black" }}>
         {graphLoading && (
           <div
             style={{
