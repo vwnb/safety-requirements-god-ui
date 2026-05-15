@@ -7,7 +7,6 @@ import { diffLines, formatLines } from "unidiff"
 import { marked } from "marked"
 import GraphView from "./components/GraphView"
 import { useApiFetch } from "./lib/apiFetchContext"
-import { Background } from "reactflow"
 
 const API = import.meta.env.VITE_API_URL || ""
 
