@@ -633,7 +633,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 {selectedWorkItemData && (
                   <div>
-                    <div style={brutal.title}>Edit Work Item</div>
+                    <div style={brutal.title}>Edit work item</div>
                     <div style={brutal.formRow}>
                       <div style={brutal.label}>Name</div>
                       <input
@@ -760,7 +760,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               <div style={brutal.title}>New concept</div>
 
               <div style={brutal.formRow}>
-                <div style={brutal.label}>KEY</div>
+                <div style={brutal.label}>Key</div>
                 <input
                   placeholder="e.g. BRAKE_FAILURE"
                   value={newConceptKey}
@@ -770,7 +770,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </div>
 
               <div style={brutal.formRow}>
-                <div style={brutal.label}>TITLE</div>
+                <div style={brutal.label}>Title</div>
                 <input
                   placeholder="optional"
                   value={newConceptTitle}
@@ -780,7 +780,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </div>
 
               <div style={brutal.formRow}>
-                <div style={brutal.label}>PHASE</div>
+                <div style={brutal.label}>Phase</div>
                 <select
                   value={newConceptPhase}
                   onChange={(e) => setNewConceptPhase(e.target.value)}
@@ -815,7 +815,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </div>
 
               <div style={brutal.formRow}>
-                <div style={brutal.label}>TYPE</div>
+                <div style={brutal.label}>Type</div>
                 <select
                   value={newConceptType}
                   onChange={(e) => setNewConceptType(e.target.value)}
