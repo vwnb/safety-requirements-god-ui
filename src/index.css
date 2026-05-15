@@ -57,6 +57,7 @@
 
 body {
   margin: 0;
+  background: rgb(233, 237, 233);
 }
 
 main {
@@ -74,7 +75,7 @@ h2 {
 }
 
 h1 {
-  font-size: 56px;
+  font-size: 42px;
   letter-spacing: -1.68px;
   margin: 32px 0;
 

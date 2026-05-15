@@ -7,6 +7,7 @@ import { diffLines, formatLines } from "unidiff"
 import { marked } from "marked"
 import GraphView from "./components/GraphView"
 import { useApiFetch } from "./lib/apiFetchContext"
+import { Background } from "reactflow"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -21,6 +22,18 @@ type Concept = {
   title: string
   phase?: LifecyclePhase
   asil?: ASIL
+}
+
+export const typeColor: Record<string, string> = {
+  ITEM: "#c9dbf0",
+  HAZARD: "#eecccc",
+  SAFETY_GOAL: "#f3e1c3",
+  FSR: "#b2ebc7",
+  TSR: "#a9e0ea",
+  SOFTWARE_REQUIREMENT: "#d4caf0",
+  ASSUMPTION: "#eccee4",
+  CONSTRAINT: "#ace8e1",
+  TEST_CASE: "#eee8ad",
 }
 
 type Revision = {
@@ -60,20 +73,25 @@ export const brutal = {
   },
   button: {
     all: "unset" as any,
+    color: "black",
+    background: "white",
     borderWidth: "2px",
     borderStyle: "solid",
+    borderLeft: "2px solid",
     padding: "4px 8px",
+    paddingLeft: "8px",
     cursor: "pointer",
     fontFamily: "monospace",
     boxSizing: "border-box" as const,
   },
   active: {
     background: "white",
-    color: "black",
-    borderColor: "white"
+    borderLeft: "40px solid black",
+    paddingLeft: "8px"
   },
   input: {
     all: "unset" as any,
+    background: "white",
     border: "2px solid black",
     padding: "6px",
     fontFamily: "monospace",
@@ -83,6 +101,7 @@ export const brutal = {
 
   select: {
     all: "unset" as any,
+    background: "white",
     border: "2px solid black",
     padding: "6px",
     fontFamily: "monospace",
@@ -93,6 +112,7 @@ export const brutal = {
 
   list: {
     border: "2px solid black",
+    background: "white",
     maxHeight: 240,
     overflow: "auto",
   },
@@ -143,6 +163,7 @@ export const brutal = {
   label: {
     width: "150px",
     marginRight: 10,
+    color: "black",
   },
 }
 
@@ -209,6 +230,7 @@ function Editor({
     <div
       style={{
         display: "grid",
+        background: "white",
         gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
         height: 300,
         border: "2px solid black",
@@ -335,6 +357,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     if (!user) return
 
     initWorkItems()
+    refreshBaselines()
   }, [user])
 
   useEffect(() => {
@@ -578,7 +601,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           </div>
         </div>
       )}
-      <div style={{ width: "720px", padding: 20, fontFamily: "monospace", background: "white" }}>
+      <div style={{ width: "720px", padding: 20, fontFamily: "monospace" }}>
         <div className="top-header">
           <img src={logo} alt="Logo" className="logo" />
 
@@ -730,6 +753,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                         display: "block",
                         width: "100%",
                         marginBottom: 4,
+                        background: typeColor[c.type] || "#ccc",
                       } as React.CSSProperties}
                     >
                       {c.key} ({c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())})
@@ -843,7 +867,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               {activeRevisionId && (
                 <div style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                  revision: {activeRevisionId.slice(0, 6)}
+                  Concept: {concepts.find(c => c.id === selectedConcept)?.key + " " + concepts.find(c => c.id === selectedConcept)?.title || selectedConcept} <br />
+                  Revision: {activeRevisionId.slice(0, 6)}
                 </div>
               )}
 

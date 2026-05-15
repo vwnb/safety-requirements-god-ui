@@ -11,6 +11,7 @@ import "reactflow/dist/style.css"
 import dagre from "dagre"
 import RelationTypePicker from "./RelationTypePicker"
 import { useApiFetch } from "../lib/apiFetchContext"
+import { typeColor } from "../App"
 
 type Revision = {
   id: string
@@ -30,18 +31,6 @@ type Relation = {
   fromId: string
   toId: string
   type: string
-}
-
-const typeColor: Record<string, string> = {
-  ITEM: "#93c5fd",
-  HAZARD: "#ef4444",
-  SAFETY_GOAL: "#f59e0b",
-  FSR: "#22c55e",
-  TSR: "#06b6d4",
-  SOFTWARE_REQUIREMENT: "#a78bfa",
-  ASSUMPTION: "#64748b",
-  CONSTRAINT: "#14b8a6",
-  TEST_CASE: "#eab308",
 }
 
 const nodeWidth = 220
@@ -191,7 +180,7 @@ export default function GraphView({
 
   return (
     <>
-      <div style={{ boxSizing: "border-box", position: "sticky", top: "20px", width: "100%", height: "calc(100vh - 40px)", border: "2px solid black" }}>
+      <div style={{ boxSizing: "border-box", position: "sticky", top: "20px", width: "100%", height: "calc(100vh - 40px)", border: "2px solid black", background: "white" }}>
         {graphLoading && (
           <div
             style={{
