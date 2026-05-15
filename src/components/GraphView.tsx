@@ -10,6 +10,7 @@ import type { Node, Edge } from "reactflow"
 import "reactflow/dist/style.css"
 import dagre from "dagre"
 import RelationTypePicker from "./RelationTypePicker"
+import { useApiFetch } from "../lib/apiFetchContext"
 
 type Revision = {
   id: string
@@ -117,6 +118,7 @@ export default function GraphView({
   onRelationCreated: () => void
   API: string
 }) {
+  const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
     from: string
     to: string
@@ -130,7 +132,7 @@ export default function GraphView({
       setGraphLoading(true)
 
       try {
-        await fetch(`${API}/relations/${relationId}`, {
+        await apiFetch(`${API}/relations/${relationId}`, {
           method: "DELETE",
         })
         onRelationCreated()
@@ -138,7 +140,7 @@ export default function GraphView({
         setGraphLoading(false)
       }
     },
-    [API, graphLoading, onRelationCreated]
+    [API, apiFetch, graphLoading, onRelationCreated]
   )
 
   const conceptMap = useMemo(() => {
@@ -243,7 +245,7 @@ export default function GraphView({
             setGraphLoading(true)
 
             try {
-              await fetch(`${API}/relations`, {
+              await apiFetch(`${API}/relations`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

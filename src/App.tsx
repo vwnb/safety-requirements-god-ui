@@ -1,10 +1,12 @@
 import logo from "./assets/logo.png"
-import { useEffect, useMemo, useState } from "react"
+import { useAuth0 } from "@auth0/auth0-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Diff, Hunk, parseDiff, type HunkData } from "react-diff-view"
 import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
 import { marked } from "marked"
 import GraphView from "./components/GraphView"
+import { useApiFetch } from "./lib/apiFetchContext"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -144,6 +146,56 @@ export const brutal = {
   },
 }
 
+function Auth0UserBar({
+  onActorResolved,
+}: {
+  onActorResolved: (sub: string) => void
+}) {
+  const { isAuthenticated, user, loginWithRedirect, logout, isLoading } = useAuth0()
+
+  useEffect(() => {
+    if (isAuthenticated && user?.sub) onActorResolved(user.sub)
+    else onActorResolved("")
+  }, [isAuthenticated, user, onActorResolved])
+
+  return (
+    <div>
+      {isLoading ? (
+        <div style={{ ...brutal.input, opacity: 0.7 }}>Auth…</div>
+      ) : isAuthenticated ? (
+        <>
+          <div
+            style={{
+              ...brutal.input,
+              marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              minHeight: 36,
+            }}
+          >
+            {user?.email || user?.name || user?.sub || "Signed in"}
+          </div>
+          <button
+            type="button"
+            style={brutal.button}
+            onClick={() =>
+              logout({
+                logoutParams: { returnTo: window.location.origin },
+              })
+            }
+          >
+            Log out
+          </button>
+        </>
+      ) : (
+        <button type="button" style={brutal.button} onClick={() => loginWithRedirect()}>
+          Log in
+        </button>
+      )}
+    </div>
+  )
+}
+
 function Editor({
   value,
   onChange,
@@ -194,7 +246,7 @@ function Editor({
   )
 }
 
-export default function App() {
+export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [workItems, setWorkItems] = useState<WorkItem[]>([])
   const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
   const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
@@ -207,7 +259,13 @@ export default function App() {
 
   const [activeRevisionId, setActiveRevisionId] = useState<string | null>(null)
   const [editorValue, setEditorValue] = useState("")
-  const [user, setUser] = useState("alice")
+  const apiFetch = useApiFetch()
+  const [authSub, setAuthSub] = useState("")
+  const onActorResolved = useCallback((sub: string) => {
+    setAuthSub(sub)
+  }, [])
+  const actorForApi = auth0Enabled ? authSub : "Alice"
+  const { user } = useAuth0()
 
   const [baselineName, setBaselineName] = useState("")
   const [selectedRevisions, setSelectedRevisions] = useState<string[]>([])
@@ -256,9 +314,10 @@ export default function App() {
 
   useEffect(() => {
     async function initWorkItems() {
+
       await withLoading("Loading work items...", async () => {
         try {
-          const res = await fetch(`${API}/work-items`)
+          const res = await apiFetch(`${API}/work-items`)
           const data = res.ok ? await res.json() : []
           setWorkItems(data)
 
@@ -273,8 +332,10 @@ export default function App() {
       })
     }
 
+    if (!user) return
+
     initWorkItems()
-  }, [])
+  }, [user])
 
   useEffect(() => {
     if (!selectedWorkItem) return
@@ -286,7 +347,7 @@ export default function App() {
 
   async function loadWorkItemDetails(workItemId: string) {
     return withLoading("Loading work item details...", async () => {
-      const res = await fetch(`${API}/work-items/${workItemId}`)
+      const res = await apiFetch(`${API}/work-items/${workItemId}`)
       const data = await res.json()
       setSelectedWorkItemData(data)
     })
@@ -309,7 +370,7 @@ export default function App() {
         ? `${API}/work-items/${workItemId}/concepts`
         : `${API}/concepts`
 
-      const res = await fetch(url)
+      const res = await apiFetch(url)
       const data = await res.json()
 
       setConcepts(data)
@@ -326,7 +387,7 @@ export default function App() {
 
   async function loadRevisions(conceptId: string) {
     return withLoading("Loading revisions...", async () => {
-      const res = await fetch(`${API}/concepts/${conceptId}/revisions`)
+      const res = await apiFetch(`${API}/concepts/${conceptId}/revisions`)
       const data = await res.json()
 
       setRevisionsByConcept((prev) => ({
@@ -379,13 +440,13 @@ export default function App() {
   }, [selectedConcept, concepts])
 
   async function revise() {
-    await fetch(`${API}/workflow/submit-change`, {
+    await apiFetch(`${API}/workflow/submit-change`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         conceptId: selectedConcept,
         markdown: editorValue,
-        user,
+        user: actorForApi,
       }),
     })
 
@@ -406,13 +467,13 @@ export default function App() {
   }
 
   async function createBaseline() {
-    await fetch(`${API}/baselines`, {
+    await apiFetch(`${API}/baselines`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: baselineName,
         revisions: selectedRevisions,
-        user,
+        user: actorForApi,
       }),
     })
 
@@ -428,7 +489,7 @@ export default function App() {
       ? `${API}/work-items/${selectedWorkItem}/concepts`
       : `${API}/concepts`
 
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -456,7 +517,7 @@ export default function App() {
   async function saveWorkItem() {
     if (!selectedWorkItemData) return
 
-    await fetch(`${API}/work-items/${selectedWorkItemData.id}`, {
+    await apiFetch(`${API}/work-items/${selectedWorkItemData.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -469,10 +530,8 @@ export default function App() {
       }),
     })
 
-    // Reload the work item details
     await loadWorkItemDetails(selectedWorkItemData.id)
 
-    // Update the work items list
     setWorkItems((prev) =>
       prev.map((wi) =>
         wi.id === selectedWorkItemData.id
@@ -483,12 +542,12 @@ export default function App() {
   }
 
   async function refreshGraph(workItemId: string) {
-    const data = await fetch(`${API}/graph/${workItemId}`).then((r) => r.json())
+    const data = await apiFetch(`${API}/graph/${workItemId}`).then((r) => r.json())
     setGraph(data)
   }
 
   async function refreshBaselines() {
-    const data = await fetch(`${API}/baselines`).then((r) => r.json())
+    const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
     setBaselines(data)
   }
 
@@ -525,493 +584,506 @@ export default function App() {
 
         <section style={{ flex: 1 }}>
           <div style={brutal.title}>User</div>
-          <input
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
-            style={brutal.input}
-          />
-        </section>
-
-        <section style={{ flex: 1 }}>
-          <div style={brutal.title}>Project</div>
-          <input
-            value={"Mock project"}
-            style={brutal.input}
-          />
-        </section>
-      </div>
-
-      <hr />
-
-      <section>
-        <div style={brutal.title}>Work items</div>
-
-        {workItems.length > 0 && (
-          <div style={{ marginBottom: 10 }}>
-            <select
-              value={selectedWorkItem}
-              onChange={(e) => setSelectedWorkItem(e.target.value)}
-              style={{ ...brutal.select, marginBottom: 6 }}
-            >
-              {workItems.map((workItem) => (
-                <option key={workItem.id} value={workItem.id}>
-                  {workItem.key} — {workItem.name}
-                </option>
-              ))}
-            </select>
-
-            {selectedWorkItemData && (
-              <div>
-                <div style={brutal.title}>Edit Work Item</div>
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Name</div>
-                  <input
-                    value={editWorkItemName}
-                    onChange={(e) => setEditWorkItemName(e.target.value)}
-                    style={brutal.input}
-                  />
-                </div>
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Description</div>
-                  <textarea
-                    value={editWorkItemDescription}
-                    onChange={(e) => setEditWorkItemDescription(e.target.value)}
-                    style={{ ...brutal.input, height: 60 }}
-                  />
-                </div>
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Phase</div>
-                  <select
-                    value={editWorkItemPhase}
-                    onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
-                    style={brutal.select}
-                  >
-                    <option value="">-- Select Phase --</option>
-                    <option value="ITEM_DEFINITION">Item Definition</option>
-                    <option value="HARA">HARA</option>
-                    <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                    <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                    <option value="SYSTEM_DESIGN">System Design</option>
-                    <option value="SOFTWARE_DESIGN">Software Design</option>
-                    <option value="IMPLEMENTATION">Implementation</option>
-                    <option value="VERIFICATION">Verification</option>
-                  </select>
-                </div>
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>ASIL</div>
-                  <select
-                    value={editWorkItemAsil}
-                    onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
-                    style={brutal.select}
-                  >
-                    <option value="">-- Select ASIL --</option>
-                    <option value="QM">QM</option>
-                    <option value="ASIL_A">ASIL_A</option>
-                    <option value="ASIL_B">ASIL_B</option>
-                    <option value="ASIL_C">ASIL_C</option>
-                    <option value="ASIL_D">ASIL_D</option>
-                  </select>
-                </div>
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Application Context</div>
-                  <input
-                    value={editWorkItemApplicationContext}
-                    onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
-                    style={brutal.input}
-                  />
-                </div>
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>System Boundary</div>
-                  <input
-                    value={editWorkItemSystemBoundary}
-                    onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
-                    style={brutal.input}
-                  />
-                </div>
-                <button style={brutal.button} onClick={saveWorkItem}>Save Changes</button>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
-      <hr />
-
-      <section>
-        <div style={brutal.title}>Graph</div>
-
-        <div style={brutal.box}>
-          <GraphView
-            revisions={graph.revisions}
-            concepts={graph.concepts}
-            relations={graph.relations}
-            onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
-            API={API}
-          />
-        </div>
-      </section>
-
-      <hr />
-
-      <div className="concepts-layout">
-        <section>
-          <div style={brutal.title}>Concepts</div>
-
-          {concepts.length === 0 ? (
-            <>
-              No concepts for this work item.
-            </>
+          {auth0Enabled ? (
+            <Auth0UserBar onActorResolved={onActorResolved} />
           ) : (
-            concepts.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => {
-                  setSelectedConcept(c.id)
-                  loadRevisions(c.id)
-                }}
-                style={{
-                  ...brutal.button,
-                  ...(selectedConcept === c.id ? brutal.active : {}),
-                  display: "block",
-                  width: "100%",
-                  marginBottom: 4,
-                } as React.CSSProperties}
-              >
-                {c.key} ({c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())})
-              </button>
-            ))
+            <input
+              value={"Alice"}
+              style={brutal.input}
+            />
           )}
         </section>
 
-        <div className="horizontal-divider" />
+        {!!user && (
 
-        <section>
-          <div style={brutal.title}>New concept</div>
-
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>KEY</div>
+          <section style={{ flex: 1 }}>
+            <div style={brutal.title}>Project</div>
             <input
-              placeholder="e.g. BRAKE_FAILURE"
-              value={newConceptKey}
-              onChange={(e) => setNewConceptKey(e.target.value)}
-              style={{ ...brutal.input, flex: 1 }}
+              value={"Mock project"}
+              style={brutal.input}
             />
-          </div>
+          </section>
 
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>TITLE</div>
-            <input
-              placeholder="optional"
-              value={newConceptTitle}
-              onChange={(e) => setNewConceptTitle(e.target.value)}
-              style={{ ...brutal.input, flex: 1 }}
-            />
-          </div>
-
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>PHASE</div>
-            <select
-              value={newConceptPhase}
-              onChange={(e) => setNewConceptPhase(e.target.value)}
-              style={{ ...brutal.select, flex: 1 }}
-            >
-              <option value="">-- Select Phase --</option>
-              <option value="ITEM_DEFINITION">Item Definition</option>
-              <option value="HARA">HARA</option>
-              <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-              <option value="TECHNICAL_SAFETY">Technical Safety</option>
-              <option value="SYSTEM_DESIGN">System Design</option>
-              <option value="SOFTWARE_DESIGN">Software Design</option>
-              <option value="IMPLEMENTATION">Implementation</option>
-              <option value="VERIFICATION">Verification</option>
-            </select>
-          </div>
-
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>ASIL</div>
-            <select
-              value={newConceptAsil}
-              onChange={(e) => setNewConceptAsil(e.target.value)}
-              style={{ ...brutal.select, flex: 1 }}
-            >
-              <option value="">-- Select ASIL --</option>
-              <option value="QM">QM</option>
-              <option value="ASIL_A">ASIL_A</option>
-              <option value="ASIL_B">ASIL_B</option>
-              <option value="ASIL_C">ASIL_C</option>
-              <option value="ASIL_D">ASIL_D</option>
-            </select>
-          </div>
-
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>TYPE</div>
-            <select
-              value={newConceptType}
-              onChange={(e) => setNewConceptType(e.target.value)}
-              style={{ ...brutal.select, flex: 1 }}
-            >
-              <option value="">-- Select Type --</option>
-              <option value="ITEM">Item</option>
-              <option value="HAZARD">Hazard</option>
-              <option value="HARM">Harm</option>
-              <option value="SAFETY_GOAL">Safety goal</option>
-              <option value="FSR">Functional safety requirement</option>
-              <option value="TSR">Technical safety requirement</option>
-              <option value="SSR">Software safety requirement</option>
-              <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
-              <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
-              <option value="ASSUMPTION">Assumption</option>
-              <option value="CONSTRAINT">Constraint</option>
-              <option value="TEST_CASE">Test case</option>
-              <option value="TEST_RESULT">Test result</option>
-              <option value="VERIFICATION_REPORT">Verification report</option>
-              <option value="VALIDATION_REPORT">Validation report</option>
-              <option value="SAFETY_CASE">Safety case</option>
-              <option value="SAFETY_MANUAL">Safety manual</option>
-              <option value="CHANGE_REQUEST">Change request</option>
-              <option value="ANOMALY">Anomaly</option>
-            </select>
-
-          </div>
-
-          <button onClick={createConcept} style={brutal.button}>
-            CREATE
-          </button>
-
-        </section>
+        )}
       </div>
 
-      <hr />
+      {!!user && (
 
-      <section>
-        <div style={brutal.title}>Editor</div>
-
-        {activeRevisionId && (
-          <div style={{ fontFamily: "monospace", marginBottom: 8 }}>
-            revision: {activeRevisionId.slice(0, 6)}
-          </div>
-        )}
-
-        <Editor value={editorValue} onChange={setEditorValue} />
-
-        <button onClick={revise} style={{ ...brutal.button, marginTop: 8 }}>
-          SAVE REVISION
-        </button>
-      </section>
-
-      <hr />
-
-      <section>
-        <div style={brutal.title}>Revisions</div>
-
-        {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
-          <>
-            <hr />
-            No revisions for this concept.
-          </>
-        ) : (
-          <div style={brutal.list}>
-            {(revisionsByConcept[selectedConcept] || []).map((r) => {
-              const isBase = r.id === baseId
-              const isTarget = r.id === targetId
-
-              return (
-                <div
-                  key={r.id}
-                  style={{
-                    ...brutal.row,
-                    ...(isBase ? brutal.rowBase : {}),
-                    ...(isTarget ? brutal.rowTarget : {}),
-                  }}
-                >
-                  <div style={brutal.cellId}>{r.id.slice(0, 6)}</div>
-
-                  <div style={brutal.cellText}>{r.markdown}</div>
-
-                  <div style={brutal.actions}>
-                    <button
-                      onClick={() => {
-                        setEditorValue(r.markdown)
-                        setActiveRevisionId(r.id)
-                      }}
-                      style={brutal.button}
-                    >
-                      LOAD
-                    </button>
-
-                    <div style={{
-                      borderLeft: "2px solid black", margin: "0 1rem",
-                      ...(isBase || isTarget ? { borderColor: "white" } : {})
-                    }} />
-
-                    <button
-                      onClick={() => setBaseId(r.id)}
-                      style={{
-                        ...brutal.button,
-                        ...(isBase ? brutal.active : {}),
-                      }}
-                    >
-                      BASE
-                    </button>
-
-                    <button
-                      onClick={() => setTargetId(r.id)}
-                      style={{
-                        ...brutal.button,
-                        ...(isTarget ? brutal.active : {}),
-                      }}
-                    >
-                      HEAD
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        {baseId && targetId && hunks.length === 0 && (
-          <div style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
-            No differences between these revisions.
-          </div>
-        )}
-        {baseId && targetId && hunks.length > 0 && (
-          <>
-            <p style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
-              <code>{baseId.slice(0, 6)}</code>{" → "}
-              <code>{targetId.slice(0, 6)}</code>
-            </p>
-            <Diff viewType="split" diffType="modify" hunks={hunks}>
-              {(hunks) =>
-                hunks.map((hunk) => (
-                  <Hunk
-                    key={`${hunk.oldStart}-${hunk.newStart}`}
-                    hunk={hunk}
-                  />
-                ))
-              }
-            </Diff>
-          </>
-        )}
-      </section>
-
-      <hr />
-
-      <section>
-        <div style={brutal.title}>Baselines</div>
-
-        <hr />
-
-        {baselines.length === 0 ? (
-          <div style={{ fontStyle: "italic", color: "#666", marginBottom: 10 }}>
-            No baselines yet.
-          </div>
-        ) : (
-          baselines.map((b) => (
-            <button
-              key={b.id}
-              onClick={async () => {
-                const full = await fetch(`${API}/baselines/${b.id}`).then((r) => r.json())
-                setSelectedBaseline(full)
-              }}
-              style={{ ...brutal.button, display: "block", marginBottom: 4 }}
-            >
-              {b.name}
-            </button>
-          ))
-        )}
-
-      </section>
-
-      {selectedBaseline && (
         <>
-          < hr />
+
+          <hr />
+
           <section>
-            <div style={brutal.title}>
-              Baseline: {selectedBaseline.name}
-            </div>
+            <div style={brutal.title}>Work items</div>
 
-            <div style={brutal.list}>
-              {selectedBaseline.items.map((item: any) => {
-                const r = item.revision
+            {workItems.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <select
+                  value={selectedWorkItem}
+                  onChange={(e) => setSelectedWorkItem(e.target.value)}
+                  style={{ ...brutal.select, marginBottom: 6 }}
+                >
+                  {workItems.map((workItem) => (
+                    <option key={workItem.id} value={workItem.id}>
+                      {workItem.key} — {workItem.name}
+                    </option>
+                  ))}
+                </select>
 
-                return (
-                  <div key={r.id} style={brutal.row}>
-                    <div style={{ width: 120 }}>
-                      {r.concept.key} ({r.concept.type})
+                {selectedWorkItemData && (
+                  <div>
+                    <div style={brutal.title}>Edit Work Item</div>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>Name</div>
+                      <input
+                        value={editWorkItemName}
+                        onChange={(e) => setEditWorkItemName(e.target.value)}
+                        style={brutal.input}
+                      />
                     </div>
-
-                    <div style={brutal.cellText}>
-                      {r.markdown.slice(0, 80)}
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>Description</div>
+                      <textarea
+                        value={editWorkItemDescription}
+                        onChange={(e) => setEditWorkItemDescription(e.target.value)}
+                        style={{ ...brutal.input, height: 60 }}
+                      />
                     </div>
-
-                    <button
-                      style={brutal.button}
-                      onClick={() => setEditorValue(r.markdown)}
-                    >
-                      LOAD
-                    </button>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>Phase</div>
+                      <select
+                        value={editWorkItemPhase}
+                        onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
+                        style={brutal.select}
+                      >
+                        <option value="">-- Select Phase --</option>
+                        <option value="ITEM_DEFINITION">Item Definition</option>
+                        <option value="HARA">HARA</option>
+                        <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                        <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                        <option value="SYSTEM_DESIGN">System Design</option>
+                        <option value="SOFTWARE_DESIGN">Software Design</option>
+                        <option value="IMPLEMENTATION">Implementation</option>
+                        <option value="VERIFICATION">Verification</option>
+                      </select>
+                    </div>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>ASIL</div>
+                      <select
+                        value={editWorkItemAsil}
+                        onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
+                        style={brutal.select}
+                      >
+                        <option value="">-- Select ASIL --</option>
+                        <option value="QM">QM</option>
+                        <option value="ASIL_A">ASIL_A</option>
+                        <option value="ASIL_B">ASIL_B</option>
+                        <option value="ASIL_C">ASIL_C</option>
+                        <option value="ASIL_D">ASIL_D</option>
+                      </select>
+                    </div>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>Application Context</div>
+                      <input
+                        value={editWorkItemApplicationContext}
+                        onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
+                        style={brutal.input}
+                      />
+                    </div>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>System Boundary</div>
+                      <input
+                        value={editWorkItemSystemBoundary}
+                        onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
+                        style={brutal.input}
+                      />
+                    </div>
+                    <button style={brutal.button} onClick={saveWorkItem}>Save Changes</button>
                   </div>
-                )
-              })}
+                )}
+              </div>
+            )}
+          </section>
+
+          <hr />
+
+          <section>
+            <div style={brutal.title}>Graph</div>
+
+            <div style={brutal.box}>
+              <GraphView
+                revisions={graph.revisions}
+                concepts={graph.concepts}
+                relations={graph.relations}
+                onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
+                API={API}
+              />
             </div>
           </section>
-        </>
-      )}
-      <hr />
 
-      <section>
-        <div style={brutal.title}>New baseline</div>
+          <hr />
 
-        <input
-          placeholder="BASELINE NAME"
-          value={baselineName}
-          onChange={(e) => setBaselineName(e.target.value)}
-          style={{ ...brutal.input, marginBottom: 8 }}
-        />
+          <div className="concepts-layout">
+            <section>
+              <div style={brutal.title}>Concepts</div>
 
-        <hr />
+              {concepts.length === 0 ? (
+                <>
+                  No concepts for this work item.
+                </>
+              ) : (
+                concepts.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setSelectedConcept(c.id)
+                      loadRevisions(c.id)
+                    }}
+                    style={{
+                      ...brutal.button,
+                      ...(selectedConcept === c.id ? brutal.active : {}),
+                      display: "block",
+                      width: "100%",
+                      marginBottom: 4,
+                    } as React.CSSProperties}
+                  >
+                    {c.key} ({c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())})
+                  </button>
+                ))
+              )}
+            </section>
 
-        {Object.keys(revisionsByConcept).length === 0 ? (
-          <>
-            No revisions for this concept.
-          </>
-        ) : (
-          <>
-            <div style={brutal.list}>
-              {Object.values(revisionsByConcept)
-                .flat()
-                .map((r) => {
-                  const checked = selectedRevisions.includes(r.id)
+            <div className="horizontal-divider" />
+
+            <section>
+              <div style={brutal.title}>New concept</div>
+
+              <div style={brutal.formRow}>
+                <div style={brutal.label}>KEY</div>
+                <input
+                  placeholder="e.g. BRAKE_FAILURE"
+                  value={newConceptKey}
+                  onChange={(e) => setNewConceptKey(e.target.value)}
+                  style={{ ...brutal.input, flex: 1 }}
+                />
+              </div>
+
+              <div style={brutal.formRow}>
+                <div style={brutal.label}>TITLE</div>
+                <input
+                  placeholder="optional"
+                  value={newConceptTitle}
+                  onChange={(e) => setNewConceptTitle(e.target.value)}
+                  style={{ ...brutal.input, flex: 1 }}
+                />
+              </div>
+
+              <div style={brutal.formRow}>
+                <div style={brutal.label}>PHASE</div>
+                <select
+                  value={newConceptPhase}
+                  onChange={(e) => setNewConceptPhase(e.target.value)}
+                  style={{ ...brutal.select, flex: 1 }}
+                >
+                  <option value="">-- Select Phase --</option>
+                  <option value="ITEM_DEFINITION">Item Definition</option>
+                  <option value="HARA">HARA</option>
+                  <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                  <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                  <option value="SYSTEM_DESIGN">System Design</option>
+                  <option value="SOFTWARE_DESIGN">Software Design</option>
+                  <option value="IMPLEMENTATION">Implementation</option>
+                  <option value="VERIFICATION">Verification</option>
+                </select>
+              </div>
+
+              <div style={brutal.formRow}>
+                <div style={brutal.label}>ASIL</div>
+                <select
+                  value={newConceptAsil}
+                  onChange={(e) => setNewConceptAsil(e.target.value)}
+                  style={{ ...brutal.select, flex: 1 }}
+                >
+                  <option value="">-- Select ASIL --</option>
+                  <option value="QM">QM</option>
+                  <option value="ASIL_A">ASIL_A</option>
+                  <option value="ASIL_B">ASIL_B</option>
+                  <option value="ASIL_C">ASIL_C</option>
+                  <option value="ASIL_D">ASIL_D</option>
+                </select>
+              </div>
+
+              <div style={brutal.formRow}>
+                <div style={brutal.label}>TYPE</div>
+                <select
+                  value={newConceptType}
+                  onChange={(e) => setNewConceptType(e.target.value)}
+                  style={{ ...brutal.select, flex: 1 }}
+                >
+                  <option value="">-- Select Type --</option>
+                  <option value="ITEM">Item</option>
+                  <option value="HAZARD">Hazard</option>
+                  <option value="HARM">Harm</option>
+                  <option value="SAFETY_GOAL">Safety goal</option>
+                  <option value="FSR">Functional safety requirement</option>
+                  <option value="TSR">Technical safety requirement</option>
+                  <option value="SSR">Software safety requirement</option>
+                  <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
+                  <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
+                  <option value="ASSUMPTION">Assumption</option>
+                  <option value="CONSTRAINT">Constraint</option>
+                  <option value="TEST_CASE">Test case</option>
+                  <option value="TEST_RESULT">Test result</option>
+                  <option value="VERIFICATION_REPORT">Verification report</option>
+                  <option value="VALIDATION_REPORT">Validation report</option>
+                  <option value="SAFETY_CASE">Safety case</option>
+                  <option value="SAFETY_MANUAL">Safety manual</option>
+                  <option value="CHANGE_REQUEST">Change request</option>
+                  <option value="ANOMALY">Anomaly</option>
+                </select>
+
+              </div>
+
+              <button onClick={createConcept} style={brutal.button}>
+                CREATE
+              </button>
+
+            </section>
+          </div>
+
+          <hr />
+
+          <section>
+            <div style={brutal.title}>Editor</div>
+
+            {activeRevisionId && (
+              <div style={{ fontFamily: "monospace", marginBottom: 8 }}>
+                revision: {activeRevisionId.slice(0, 6)}
+              </div>
+            )}
+
+            <Editor value={editorValue} onChange={setEditorValue} />
+
+            <button onClick={revise} style={{ ...brutal.button, marginTop: 8 }}>
+              SAVE REVISION
+            </button>
+          </section>
+
+          <hr />
+
+          <section>
+            <div style={brutal.title}>Revisions</div>
+
+            {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
+              <>
+                <hr />
+                No revisions for this concept.
+              </>
+            ) : (
+              <div style={brutal.list}>
+                {(revisionsByConcept[selectedConcept] || []).map((r) => {
+                  const isBase = r.id === baseId
+                  const isTarget = r.id === targetId
 
                   return (
                     <div
                       key={r.id}
-                      onClick={() => toggleRevision(r.id)}
                       style={{
-                        padding: 6,
-                        borderBottom: "1px solid black",
-                        background: checked ? "black" : "white",
-                        color: checked ? "white" : "black",
-                        cursor: "pointer",
+                        ...brutal.row,
+                        ...(isBase ? brutal.rowBase : {}),
+                        ...(isTarget ? brutal.rowTarget : {}),
                       }}
                     >
-                      {r.id.slice(0, 6)} — {r.markdown.slice(0, 40)}
+                      <div style={brutal.cellId}>{r.id.slice(0, 6)}</div>
+
+                      <div style={brutal.cellText}>{r.markdown}</div>
+
+                      <div style={brutal.actions}>
+                        <button
+                          onClick={() => {
+                            setEditorValue(r.markdown)
+                            setActiveRevisionId(r.id)
+                          }}
+                          style={brutal.button}
+                        >
+                          LOAD
+                        </button>
+
+                        <div style={{
+                          borderLeft: "2px solid black", margin: "0 1rem",
+                          ...(isBase || isTarget ? { borderColor: "white" } : {})
+                        }} />
+
+                        <button
+                          onClick={() => setBaseId(r.id)}
+                          style={{
+                            ...brutal.button,
+                            ...(isBase ? brutal.active : {}),
+                          }}
+                        >
+                          BASE
+                        </button>
+
+                        <button
+                          onClick={() => setTargetId(r.id)}
+                          style={{
+                            ...brutal.button,
+                            ...(isTarget ? brutal.active : {}),
+                          }}
+                        >
+                          HEAD
+                        </button>
+                      </div>
                     </div>
                   )
                 })}
-            </div>
+              </div>
+            )}
+            {baseId && targetId && hunks.length === 0 && (
+              <div style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
+                No differences between these revisions.
+              </div>
+            )}
+            {baseId && targetId && hunks.length > 0 && (
+              <>
+                <p style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
+                  <code>{baseId.slice(0, 6)}</code>{" → "}
+                  <code>{targetId.slice(0, 6)}</code>
+                </p>
+                <Diff viewType="split" diffType="modify" hunks={hunks}>
+                  {(hunks) =>
+                    hunks.map((hunk) => (
+                      <Hunk
+                        key={`${hunk.oldStart}-${hunk.newStart}`}
+                        hunk={hunk}
+                      />
+                    ))
+                  }
+                </Diff>
+              </>
+            )}
+          </section>
 
-            <button
-              onClick={createBaseline}
-              style={{ ...brutal.button, marginTop: 8 }}
-            >
-              CREATE BASELINE
-            </button>
-          </>
-        )}
-      </section>
+          <hr />
 
-      <hr />
+          <section>
+            <div style={brutal.title}>Baselines</div>
+
+            <hr />
+
+            {baselines.length === 0 ? (
+              <div style={{ fontStyle: "italic", color: "#666", marginBottom: 10 }}>
+                No baselines yet.
+              </div>
+            ) : (
+              baselines.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={async () => {
+                    const full = await apiFetch(`${API}/baselines/${b.id}`).then((r) => r.json())
+                    setSelectedBaseline(full)
+                  }}
+                  style={{ ...brutal.button, display: "block", marginBottom: 4 }}
+                >
+                  {b.name}
+                </button>
+              ))
+            )}
+
+          </section>
+
+          {selectedBaseline && (
+            <>
+              < hr />
+              <section>
+                <div style={brutal.title}>
+                  Baseline: {selectedBaseline.name}
+                </div>
+
+                <div style={brutal.list}>
+                  {selectedBaseline.items.map((item: any) => {
+                    const r = item.revision
+
+                    return (
+                      <div key={r.id} style={brutal.row}>
+                        <div style={{ width: 120 }}>
+                          {r.concept.key} ({r.concept.type})
+                        </div>
+
+                        <div style={brutal.cellText}>
+                          {r.markdown.slice(0, 80)}
+                        </div>
+
+                        <button
+                          style={brutal.button}
+                          onClick={() => setEditorValue(r.markdown)}
+                        >
+                          LOAD
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            </>
+          )}
+          <hr />
+
+          <section>
+            <div style={brutal.title}>New baseline</div>
+
+            <input
+              placeholder="BASELINE NAME"
+              value={baselineName}
+              onChange={(e) => setBaselineName(e.target.value)}
+              style={{ ...brutal.input, marginBottom: 8 }}
+            />
+
+            <hr />
+
+            {Object.keys(revisionsByConcept).length === 0 ? (
+              <>
+                No revisions for this concept.
+              </>
+            ) : (
+              <>
+                <div style={brutal.list}>
+                  {Object.values(revisionsByConcept)
+                    .flat()
+                    .map((r) => {
+                      const checked = selectedRevisions.includes(r.id)
+
+                      return (
+                        <div
+                          key={r.id}
+                          onClick={() => toggleRevision(r.id)}
+                          style={{
+                            padding: 6,
+                            borderBottom: "1px solid black",
+                            background: checked ? "black" : "white",
+                            color: checked ? "white" : "black",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {r.id.slice(0, 6)} — {r.markdown.slice(0, 40)}
+                        </div>
+                      )
+                    })}
+                </div>
+
+                <button
+                  onClick={createBaseline}
+                  style={{ ...brutal.button, marginTop: 8 }}
+                >
+                  CREATE BASELINE
+                </button>
+              </>
+            )}
+          </section>
+
+          <hr />
+        </>
+      )}
 
     </div>
   )
