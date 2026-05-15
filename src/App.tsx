@@ -1071,15 +1071,18 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         )}
 
       </div>
-      <main>
-        <GraphView
-          revisions={graph.revisions}
-          concepts={graph.concepts}
-          relations={graph.relations}
-          onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
-          API={API}
-        />
-      </main>
+
+      {!!user && (
+        <main>
+          <GraphView
+            revisions={graph.revisions}
+            concepts={graph.concepts}
+            relations={graph.relations}
+            onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
+            API={API}
+          />
+        </main>
+      )}
     </>
   )
 }
