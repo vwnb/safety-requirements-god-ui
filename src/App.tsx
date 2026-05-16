@@ -1,10 +1,9 @@
 import logo from "./assets/logo.png"
 import { useAuth0 } from "@auth0/auth0-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Diff, Hunk, parseDiff, type HunkData } from "react-diff-view"
 import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
-import { marked } from "marked"
 import GraphView from "./components/GraphView"
 import { useApiFetch } from "./lib/apiFetchContext"
 import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
@@ -885,7 +884,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               <div style={brutal.list}>
                 {templates.map((wi) => (
-                  // show template description as tooltip if available
                   <div style={{ ...brutal.row, ...{ cursor: "pointer" } }} key={wi.id} onClick={async () => {
                     importConceptsFromTemplate(wi.id)
                   }}>
