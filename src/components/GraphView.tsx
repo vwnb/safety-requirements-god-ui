@@ -220,6 +220,16 @@ export default function GraphView({
               to: params.target,
             })
           }}
+          onLoad={() => {
+            setTimeout(() => {
+              const container = document.querySelector(".react-flow") as HTMLElement
+              console.log("Fitting view", { container })
+              if (container) {
+                const event = new CustomEvent("fitview", { detail: { padding: 0.1 } })
+                container.dispatchEvent(event)
+              }
+            }, 100)
+          }}
         >
           <MiniMap />
           <Controls />

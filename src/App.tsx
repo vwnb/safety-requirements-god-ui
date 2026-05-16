@@ -270,6 +270,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
   const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
 
+  const [templates, setTemplates] = useState<WorkItem[]>([])
+
   const [concepts, setConcepts] = useState<Concept[]>([])
   const [selectedConcept, setSelectedConcept] = useState<string>("")
   const [activeConcept, setActiveConcept] = useState<Concept | null>(null)
@@ -340,6 +342,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           const data = res.ok ? await res.json() : []
 
           setWorkItems(data)
+
+          const res2 = await apiFetch(`${API}/templates`)
+          const templates = res2.ok ? await res2.json() : []
+
+          setTemplates(templates)
 
           if (data.length > 0) {
             setSelectedWorkItem(data[0].id)
@@ -578,9 +585,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setGraph(data)
   }
 
-  async function importConceptsFromWorkItem(workItemId: string) {
+  async function importConceptsFromTemplate(workItemId: string) {
     setLoading(true)
-    setLoadingMessage("Importing concepts from work item...")
+    setLoadingMessage("Importing concepts from template...")
 
     const res = await apiFetch(`${API}/graph/${workItemId}`)
     const { concepts, relations } = await res.json()
@@ -904,9 +911,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               <div style={brutal.title}>Import concepts</div>
 
               <div style={brutal.list}>
-                {workItems.map((wi) => (
+                {templates.map((wi) => (
                   <div style={{...brutal.row, ...{cursor: "pointer"}}} key={wi.id} onClick={async () => {
-                    importConceptsFromWorkItem(wi.id)
+                    importConceptsFromTemplate(wi.id)
                   }}>
                     {wi.key} - {wi.name}
                   </div>
