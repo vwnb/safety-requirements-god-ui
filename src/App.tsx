@@ -7,6 +7,7 @@ import { diffLines, formatLines } from "unidiff"
 import { marked } from "marked"
 import GraphView from "./components/GraphView"
 import { useApiFetch } from "./lib/apiFetchContext"
+import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -220,57 +221,6 @@ function Auth0UserBar({
           Log in
         </button>
       )}
-    </div>
-  )
-}
-
-function Editor({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (v: string) => void
-}) {
-  const html = useMemo(() => marked.parse(value || ""), [value])
-
-  return (
-    <div
-      style={{
-        display: "grid",
-        background: "white",
-        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-        height: 300,
-        border: "2px solid black",
-        minHeight: 0,
-      }}
-    >
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          all: "unset",
-          padding: 12,
-          fontFamily: "monospace",
-          borderRight: "2px solid black",
-          width: "100%",
-          height: "100%",
-          boxSizing: "border-box",
-          overflow: "auto",
-          resize: "none",
-          minWidth: 0,
-        }}
-      />
-
-      <div
-        style={{
-          padding: 12,
-          fontFamily: "monospace",
-          overflow: "auto",
-          minWidth: 0,
-          minHeight: 0,
-        }}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
     </div>
   )
 }
@@ -956,7 +906,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </div>
               )}
 
-              <Editor value={editorValue} onChange={setEditorValue} />
+              <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
 
               <button onClick={revise} style={{ ...brutal.button, marginTop: 8 }}>
                 SAVE REVISION
