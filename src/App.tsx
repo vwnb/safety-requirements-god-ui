@@ -769,42 +769,48 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               <section>
                 <div style={brutal.title}>Concepts</div>
 
-                {concepts.length === 0 ? (
+                {typeof concepts === "undefined" ? (
                   <>
-                    No concepts for this work item.
+                    Loading concepts...
                   </>
-                ) : (
-                  concepts.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={async () => {
-                        setSelectedConcept(c.id)
+                ) :
+                  concepts.length === 0 ? (
+                    <>
+                      No concepts yet.
+                    </>
+                  ) :
+                    (
+                      concepts.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={async () => {
+                            setSelectedConcept(c.id)
 
-                        const revisions = await loadRevisions(c.id)
+                            const revisions = await loadRevisions(c.id)
 
-                        const latest = revisions.at(-1)
+                            const latest = revisions.at(-1)
 
-                        if (latest) {
-                          setActiveRevisionId(latest.id)
-                          setEditorValue(latest.markdown)
-                        } else {
-                          setActiveRevisionId(null)
-                          setEditorValue(c.title ? `# ${c.title}` : "")
-                        }
-                      }}
-                      style={{
-                        ...brutal.button,
-                        ...(selectedConcept === c.id ? brutal.active : {}),
-                        display: "block",
-                        width: "100%",
-                        marginBottom: 4,
-                        background: typeColor[c.type] || "#ccc",
-                      } as React.CSSProperties}
-                    >
-                      {c.key} ({c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())})
-                    </button>
-                  ))
-                )}
+                            if (latest) {
+                              setActiveRevisionId(latest.id)
+                              setEditorValue(latest.markdown)
+                            } else {
+                              setActiveRevisionId(null)
+                              setEditorValue(c.title ? `# ${c.title}` : "")
+                            }
+                          }}
+                          style={{
+                            ...brutal.button,
+                            ...(selectedConcept === c.id ? brutal.active : {}),
+                            display: "block",
+                            width: "100%",
+                            marginBottom: 4,
+                            background: typeColor[c.type] || "#ccc",
+                          } as React.CSSProperties}
+                        >
+                          {c.key} ({c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())})
+                        </button>
+                      ))
+                    )}
               </section>
 
               <div className="horizontal-divider" />
@@ -912,7 +918,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               <div style={brutal.list}>
                 {templates.map((wi) => (
-                  <div style={{...brutal.row, ...{cursor: "pointer"}}} key={wi.id} onClick={async () => {
+                  <div style={{ ...brutal.row, ...{ cursor: "pointer" } }} key={wi.id} onClick={async () => {
                     importConceptsFromTemplate(wi.id)
                   }}>
                     {wi.key} - {wi.name}
