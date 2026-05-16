@@ -40,6 +40,7 @@ type Revision = {
   conceptId: string
   markdown: string
   createdBy: string
+  createdAt: string
 }
 
 type WorkItem = {
@@ -53,6 +54,15 @@ type WorkItem = {
   asil?: ASIL
   applicationContext?: string
   systemBoundary?: string
+}
+
+type Relation = {
+  id: string
+  fromId: string
+  toId: string
+  type: string
+  createdBy: string
+  createdAt: string
 }
 
 export const brutal = {
@@ -316,6 +326,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     concepts: [],
     revisions: [],
     relations: [],
+  } as {
+    concepts: Concept[]
+    revisions: Revision[]
+    relations: Relation[]
   })
 
   const [baselines, setBaselines] = useState<any[]>([])
@@ -1164,7 +1178,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       {!!user && (
         <main>
           <GraphView
-            revisions={graph.revisions}
+            revisions={graph.revisions.filter((r) => {
+              const revisionsForConcept = graph.revisions.filter((rev) => rev.conceptId === r.conceptId)
+              const latestRevision = revisionsForConcept.reduce((latest, current) =>
+                new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+              , revisionsForConcept[0])
+
+              return r.id === latestRevision.id
+            })}
             concepts={graph.concepts}
             relations={graph.relations}
             onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
