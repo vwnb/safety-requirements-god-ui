@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { brutal } from "../App"
 
 const RELATION_TYPES = [
   "DERIVES_FROM",
@@ -52,15 +53,12 @@ export default function RelationTypePicker({
       }}
     >
       <div
-        style={{
-          padding: 8,
-          borderBottom: "2px solid black",
-          fontWeight: "bold",
-        }}
+        style={brutal.title}
       >
-        SELECT RELATION
+        Select relation type
       </div>
 
+      <div style={brutal.list}>
       {RELATION_TYPES.map((t) => (
         <div
           key={t}
@@ -68,38 +66,30 @@ export default function RelationTypePicker({
             onSelect(t)
             setOpen(false)
           }}
-          style={{
-            padding: 8,
-            borderBottom: "1px solid black",
-            cursor: "pointer",
-          }}
+          style={brutal.row}
           onMouseEnter={(e) => {
-            ;(e.currentTarget.style.background = "black")
-            ;(e.currentTarget.style.color = "white")
+            ; (e.currentTarget.style.background = "black")
+              ; (e.currentTarget.style.color = "white")
           }}
           onMouseLeave={(e) => {
-            ;(e.currentTarget.style.background = "white")
-            ;(e.currentTarget.style.color = "black")
+            ; (e.currentTarget.style.background = "white")
+              ; (e.currentTarget.style.color = "black")
           }}
         >
           {t}
         </div>
       ))}
+      </div>
 
-      <div
+      <button
         onClick={() => {
           setOpen(false)
           onClose()
         }}
-        style={{
-          padding: 8,
-          borderTop: "2px solid black",
-          cursor: "pointer",
-          textAlign: "center",
-        }}
+        style={brutal.button}
       >
-        CANCEL
-      </div>
+        Cancel
+      </button>
     </div>
   )
 }
