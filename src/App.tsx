@@ -578,6 +578,20 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setGraph(data)
   }
 
+  async function importConceptsFromWorkItem(workItemId: string) {
+    const res = await apiFetch(`${API}/graph/${workItemId}`)
+    const { concepts, relations } = await res.json()
+
+    await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ concepts, relations }),
+    })
+
+    refreshGraph(selectedWorkItem)
+    loadConcepts(selectedWorkItem)
+  }
+
   async function refreshBaselines() {
     const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
     setBaselines(data)
@@ -883,6 +897,22 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <hr />
 
             <section>
+              <div style={brutal.title}>Import concepts</div>
+
+              <div style={brutal.list}>
+                {workItems.map((wi) => (
+                  <div style={brutal.row} key={wi.id} onClick={async () => {
+                    importConceptsFromWorkItem(wi.id)
+                  }}>
+                    {wi.key} - {wi.name}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <hr />
+
+            <section>
               <div style={brutal.title}>Editor</div>
 
               {activeRevisionId && (
@@ -979,7 +1009,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </div>
               )}
               {baseId && targetId && hunks.length > 0 && (
-                <div style={{background: "white", border: "2px solid black", marginTop: "1em"}}>
+                <div style={{ background: "white", border: "2px solid black", marginTop: "1em" }}>
                   <p style={{ margin: "1em", fontStyle: "italic" }}>
                     <code>{baseId.slice(0, 6)}</code>{" → "}
                     <code>{targetId.slice(0, 6)}</code>
