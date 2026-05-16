@@ -890,7 +890,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     importConceptsFromTemplate(wi.id)
                   }}>
                     {wi.key} - {wi.name}
-                    <div style={{ width: "300px", marginLeft: "auto", fontSize: 11, opacity: 0.7 }}>
+                    <div style={{ width: "50%", marginLeft: "auto", fontSize: 11, opacity: 0.7 }}>
                       {wi.description ? `${wi.description}` : "No description :("}
                     </div>
                   </div>
