@@ -579,6 +579,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   async function importConceptsFromWorkItem(workItemId: string) {
+    setLoading(true)
+    setLoadingMessage("Importing concepts from work item...")
+
     const res = await apiFetch(`${API}/graph/${workItemId}`)
     const { concepts, relations } = await res.json()
 
@@ -588,6 +591,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       body: JSON.stringify({ concepts, relations }),
     })
 
+    setLoading(false)
     refreshGraph(selectedWorkItem)
     loadConcepts(selectedWorkItem)
   }
