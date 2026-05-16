@@ -87,7 +87,10 @@ export const brutal = {
     background: "white",
     borderWidth: "2px",
     borderStyle: "solid",
-    padding: "4px 8px",
+    borderLeftWidth: "6px",
+    borderRadius: 4,
+    padding: "8px 16px",
+    margin: "8px 0",
     cursor: "pointer",
     fontFamily: "monospace",
     boxSizing: "border-box" as const,
@@ -882,10 +885,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               <div style={brutal.list}>
                 {templates.map((wi) => (
+                  // show template description as tooltip if available
                   <div style={{ ...brutal.row, ...{ cursor: "pointer" } }} key={wi.id} onClick={async () => {
                     importConceptsFromTemplate(wi.id)
                   }}>
                     {wi.key} - {wi.name}
+                    <div style={{ width: "300px", marginLeft: "auto", fontSize: 11, opacity: 0.7 }}>
+                      {wi.description ? `${wi.description}` : "No description :("}
+                    </div>
                   </div>
                 ))}
               </div>
