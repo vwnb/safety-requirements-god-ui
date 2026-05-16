@@ -901,7 +901,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               <div style={brutal.list}>
                 {workItems.map((wi) => (
-                  <div style={brutal.row} key={wi.id} onClick={async () => {
+                  <div style={{...brutal.row, ...{cursor: "pointer"}}} key={wi.id} onClick={async () => {
                     importConceptsFromWorkItem(wi.id)
                   }}>
                     {wi.key} - {wi.name}
