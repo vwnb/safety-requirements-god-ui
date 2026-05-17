@@ -121,6 +121,7 @@ export const brutal = {
 
   list: {
     border: "2px solid black",
+    borderRadius: 4,
     background: "white",
     maxHeight: 240,
     overflow: "auto",
@@ -773,7 +774,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                             background: typeColor[c.type] || "#ccc",
                           } as React.CSSProperties}
                         >
-                          {c.key} ({c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())})
+                          {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}: <br />{c.key} {c.title && `- ${c.title}`}
                         </button>
                       ))
                     )}
