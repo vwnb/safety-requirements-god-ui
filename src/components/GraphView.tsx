@@ -12,6 +12,7 @@ import dagre from "dagre"
 import RelationTypePicker from "./RelationTypePicker"
 import { useApiFetch } from "../lib/apiFetchContext"
 import { typeColor } from "../App"
+import background from "../assets/background.jpg";
 
 type Revision = {
   id: string
@@ -82,7 +83,7 @@ function ConceptNode({ data }: any) {
       }}
     >
       <div style={{ fontWeight: "bold" }}>{data.label}</div>
-      <div style={{ opacity: 0.7 }}>{data.type}</div>
+      <div style={{ opacity: 0.7 }}>{data.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: any) => l.toUpperCase())}</div>
 
       <Handle type="source" position={Position.Right} />
       <Handle type="target" position={Position.Left} />
@@ -180,13 +181,13 @@ export default function GraphView({
 
   return (
     <>
-      <div style={{ boxSizing: "border-box", position: "sticky", top: "20px", width: "100%", height: "calc(100vh - 40px)", border: "2px solid black", background: "white" }}>
+      <div style={{ boxSizing: "border-box", position: "sticky", top: "20px", width: "100%", height: "calc(100vh - 40px)", border: "2px solid black", background: "ghostwhite" }}>
         {graphLoading && (
           <div
             style={{
               position: "absolute",
               inset: 0,
-              background: "rgba(255,255,255,0.88)",
+              backgroundImage: `url('${background}')`,
               zIndex: 10,
               display: "grid",
               placeItems: "center",
