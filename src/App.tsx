@@ -7,6 +7,7 @@ import { diffLines, formatLines } from "unidiff"
 import GraphView from "./components/GraphView"
 import { useApiFetch } from "./lib/apiFetchContext"
 import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
+import background from "./assets/background.jpg"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -22,6 +23,8 @@ type Concept = {
   phase?: LifecyclePhase
   asil?: ASIL
 }
+
+export const backgroundImage = background;
 
 export const typeColor: Record<string, string> = {
   ITEM: "#c9dbf0",

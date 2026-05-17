@@ -187,7 +187,7 @@ export default function GraphView({
             style={{
               position: "absolute",
               inset: 0,
-              backgroundImage: `url('${background}')`,
+              background: "white",
               zIndex: 10,
               display: "grid",
               placeItems: "center",
@@ -201,6 +201,7 @@ export default function GraphView({
         )}
 
         <ReactFlow
+          style={{ width: "100%", height: "100%", background: `url(${background})`, backgroundSize: "cover" }}
           nodes={layoutedNodes}
           edges={layoutedEdges}
           nodeTypes={nodeTypes}
@@ -234,7 +235,7 @@ export default function GraphView({
         >
           <MiniMap />
           <Controls />
-          <Background />
+          <Background size={0.7} />
         </ReactFlow>
       </div>
 
