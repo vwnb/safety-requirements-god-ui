@@ -70,9 +70,10 @@ function layoutGraph(nodes: Node[], edges: Edge[]) {
   return { nodes: layoutedNodes, edges }
 }
 
-function ConceptNode({ data }: any) {
+function ConceptNode({ data, id }: any) {
   return (
     <div
+      data-agent={`graph-node-${id}`}
       style={{
         padding: 10,
         borderRadius: 8,
@@ -84,8 +85,8 @@ function ConceptNode({ data }: any) {
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
       }}
     >
-      <div style={{ fontWeight: "bold" }}>{data.label}</div>
-      <div style={{ opacity: 0.7 }}>{data.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: any) => l.toUpperCase())}</div>
+      <div data-agent="graph-node-label" style={{ fontWeight: "bold" }}>{data.label}</div>
+      <div data-agent="graph-node-type" style={{ opacity: 0.7 }}>{data.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: any) => l.toUpperCase())}</div>
 
       <Handle type="source" position={Position.Right} />
       <Handle type="target" position={Position.Left} />
@@ -213,7 +214,7 @@ export default function GraphView({
 
   return (
     <>
-      <div style={{
+      <div data-agent="graph-view-container" style={{
         boxSizing: "border-box",
         position: "sticky",
         top: "20px",
@@ -227,6 +228,7 @@ export default function GraphView({
       }}>
         {graphLoading && (
           <div
+            data-agent="graph-loading"
             style={{
               position: "absolute",
               inset: 0,
@@ -244,6 +246,7 @@ export default function GraphView({
         )}
 
         <ReactFlow
+          data-agent="react-flow"
           nodes={layoutedNodes}
           edges={layoutedEdges}
           nodeTypes={nodeTypes}

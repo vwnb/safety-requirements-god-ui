@@ -38,6 +38,7 @@ export default function RelationTypePicker({
 
   return (
     <div
+      data-agent="relation-type-picker"
       ref={ref}
       style={{
         background: "rgb(233, 237, 233)",
@@ -55,6 +56,7 @@ export default function RelationTypePicker({
       }}
     >
       <div
+        data-agent="relation-type-picker-title"
         style={brutal.title}
       >
         Select relation type
@@ -63,6 +65,7 @@ export default function RelationTypePicker({
       <div style={brutal.list}>
       {RELATION_TYPES.map((t) => (
         <div
+          data-agent={`relation-type-${t}`}
           key={t}
           onClick={() => {
             onSelect(t)
@@ -84,6 +87,7 @@ export default function RelationTypePicker({
       </div>
 
       <button
+        data-agent="btn-cancel-relation"
         onClick={() => {
           setOpen(false)
           onClose()

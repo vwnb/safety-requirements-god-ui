@@ -194,12 +194,13 @@ function Auth0UserBar({
   }, [isAuthenticated, user, onActorResolved])
 
   return (
-    <div>
+    <div data-agent="auth-section">
       {isLoading ? (
-        <div style={{ ...brutal.input, opacity: 0.7 }}>Auth…</div>
+        <div data-agent="auth-loading" style={{ ...brutal.input, opacity: 0.7 }}>Auth…</div>
       ) : isAuthenticated ? (
         <>
           <div
+            data-agent="auth-user-info"
             style={{
               ...brutal.input,
               marginBottom: 8,
@@ -211,6 +212,7 @@ function Auth0UserBar({
             {user?.email || user?.name || user?.sub || "Signed in"}
           </div>
           <button
+            data-agent="btn-logout"
             type="button"
             style={brutal.button}
             onClick={() =>
@@ -223,7 +225,7 @@ function Auth0UserBar({
           </button>
         </>
       ) : (
-        <button type="button" style={brutal.button} onClick={() => loginWithRedirect()}>
+        <button data-agent="btn-login" type="button" style={brutal.button} onClick={() => loginWithRedirect()}>
           Log in
         </button>
       )}
@@ -581,7 +583,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   return (
     <>
       {loading && (
-        <div
+        <div data-agent="loading-overlay"
           style={{
             position: "fixed",
             inset: 0,
@@ -592,7 +594,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             padding: 20,
           }}
         >
-          <div
+          <div data-agent="loading-message"
             style={{
               border: "2px solid black",
               background: "white",
@@ -606,15 +608,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         </div>
       )}
       <div style={{ width: "720px", padding: 20, fontFamily: "monospace" }}>
-        <div className="top-header">
-          <img src={logo} alt="Logo" className="logo" />
+        <div data-agent="top-header" className="top-header">
+          <img src={logo} alt="Logo" className="logo" data-agent="logo" />
 
-          <section style={{ flex: 1 }}>
+          <section style={{ flex: 1 }} data-agent="user-section">
             <div style={brutal.title}>User</div>
             {auth0Enabled ? (
               <Auth0UserBar onActorResolved={onActorResolved} />
             ) : (
               <input
+                data-agent="input-user"
                 value={"Alice"}
                 style={brutal.input}
               />
@@ -623,9 +626,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
           {!!user && (
 
-            <section style={{ flex: 1 }}>
+            <section style={{ flex: 1 }} data-agent="project-section">
               <div style={brutal.title}>Project</div>
               <input
+                data-agent="input-project"
                 disabled
                 value={"Mock project"}
                 style={brutal.input}
@@ -641,12 +645,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
 
-            <section>
+            <section data-agent="work-items-section">
               <div style={brutal.title}>Work items</div>
 
               {workItems.length > 0 && (
                 <div style={{ marginBottom: 10 }}>
                   <select
+                    data-agent="select-work-item"
                     value={selectedWorkItem}
                     onChange={(e) => setSelectedWorkItem(e.target.value)}
                     style={{ ...brutal.select, marginBottom: 6 }}
@@ -659,11 +664,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </select>
 
                   {selectedWorkItemData && (
-                    <div>
+                    <div data-agent="edit-work-item-form">
                       <div style={brutal.title}>Edit work item</div>
                       <div style={brutal.formRow}>
                         <div style={brutal.label}>Name</div>
                         <input
+                          data-agent="input-work-item-name"
                           value={editWorkItemName}
                           onChange={(e) => setEditWorkItemName(e.target.value)}
                           style={brutal.input}
@@ -672,6 +678,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       <div style={brutal.formRow}>
                         <div style={brutal.label}>Description</div>
                         <textarea
+                          data-agent="input-work-item-description"
                           value={editWorkItemDescription}
                           onChange={(e) => setEditWorkItemDescription(e.target.value)}
                           style={{ ...brutal.input, height: 60 }}
@@ -680,6 +687,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       <div style={brutal.formRow}>
                         <div style={brutal.label}>Phase</div>
                         <select
+                          data-agent="select-work-item-phase"
                           value={editWorkItemPhase}
                           onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
                           style={brutal.select}
@@ -698,6 +706,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       <div style={brutal.formRow}>
                         <div style={brutal.label}>ASIL</div>
                         <select
+                          data-agent="select-work-item-asil"
                           value={editWorkItemAsil}
                           onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
                           style={brutal.select}
@@ -713,6 +722,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       <div style={brutal.formRow}>
                         <div style={brutal.label}>Application Context</div>
                         <input
+                          data-agent="input-work-item-application-context"
                           value={editWorkItemApplicationContext}
                           onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
                           style={brutal.input}
@@ -721,12 +731,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       <div style={brutal.formRow}>
                         <div style={brutal.label}>System Boundary</div>
                         <input
+                          data-agent="input-work-item-system-boundary"
                           value={editWorkItemSystemBoundary}
                           onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
                           style={brutal.input}
                         />
                       </div>
-                      <button style={brutal.button} onClick={saveWorkItem}>SAVE CHANGES</button>
+                      <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>SAVE CHANGES</button>
                     </div>
                   )}
                 </div>
@@ -736,7 +747,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <hr />
 
             <div className="concepts-layout">
-              <section>
+              <section data-agent="concepts-section">
                 <div style={brutal.title}>Concepts</div>
 
                 {typeof concepts === "undefined" ? (
@@ -752,6 +763,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     (
                       concepts.map((c) => (
                         <button
+                          data-agent={`concept-${c.id}`}
                           key={c.id}
                           onClick={async () => {
                             setSelectedConcept(c.id)
@@ -785,12 +797,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               <div className="horizontal-divider" />
 
-              <section>
+              <section data-agent="new-concept-section">
                 <div style={brutal.title}>New concept</div>
 
                 <div style={brutal.formRow}>
                   <div style={brutal.label}>Key</div>
                   <input
+                    data-agent="input-new-concept-key"
                     placeholder="e.g. BRAKE_FAILURE"
                     value={newConceptKey}
                     onChange={(e) => setNewConceptKey(e.target.value)}
@@ -801,6 +814,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <div style={brutal.formRow}>
                   <div style={brutal.label}>Title</div>
                   <input
+                    data-agent="input-new-concept-title"
                     placeholder="optional"
                     value={newConceptTitle}
                     onChange={(e) => setNewConceptTitle(e.target.value)}
@@ -811,6 +825,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <div style={brutal.formRow}>
                   <div style={brutal.label}>Phase</div>
                   <select
+                    data-agent="select-new-concept-phase"
                     value={newConceptPhase}
                     onChange={(e) => setNewConceptPhase(e.target.value)}
                     style={{ ...brutal.select, flex: 1 }}
@@ -830,6 +845,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <div style={brutal.formRow}>
                   <div style={brutal.label}>ASIL</div>
                   <select
+                    data-agent="select-new-concept-asil"
                     value={newConceptAsil}
                     onChange={(e) => setNewConceptAsil(e.target.value)}
                     style={{ ...brutal.select, flex: 1 }}
@@ -846,6 +862,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <div style={brutal.formRow}>
                   <div style={brutal.label}>Type</div>
                   <select
+                    data-agent="select-new-concept-type"
                     value={newConceptType}
                     onChange={(e) => setNewConceptType(e.target.value)}
                     style={{ ...brutal.select, flex: 1 }}
@@ -874,7 +891,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 </div>
 
-                <button onClick={createConcept} style={brutal.button}>
+                <button data-agent="btn-create-concept" onClick={createConcept} style={brutal.button}>
                   CREATE
                 </button>
 
@@ -883,12 +900,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
 
-            <section>
+            <section data-agent="import-concepts-section">
               <div style={brutal.title}>Import concepts</div>
 
               <div style={brutal.list}>
                 {templates.map((wi) => (
-                  <div style={{ ...brutal.row, ...{ cursor: "pointer" } }} key={wi.id} onClick={async () => {
+                  <div data-agent={`template-${wi.id}`} style={{ ...brutal.row, ...{ cursor: "pointer" } }} key={wi.id} onClick={async () => {
                     importConceptsFromTemplate(wi.id)
                   }}>
                     {wi.key} - {wi.name}
@@ -902,11 +919,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
 
-            <section>
+            <section data-agent="editor-section">
               <div style={brutal.title}>Editor</div>
 
               {activeRevisionId && (
-                <div style={{ fontFamily: "monospace", marginBottom: 8 }}>
+                <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
                   Concept: {activeConcept && activeConcept.key + " " + activeConcept.title}
 
                   <br />
@@ -917,14 +934,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
 
-              <button onClick={revise} style={{ ...brutal.button, marginTop: 8 }}>
+              <button data-agent="btn-save-revision" onClick={revise} style={{ ...brutal.button, marginTop: 8 }}>
                 SAVE REVISION
               </button>
             </section>
 
             <hr />
 
-            <section>
+            <section data-agent="revisions-section">
               <div style={brutal.title}>Revisions</div>
 
               {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
@@ -940,6 +957,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                     return (
                       <div
+                        data-agent={`revision-${r.id}`}
                         key={r.id}
                         style={{
                           ...brutal.row,
@@ -947,12 +965,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                           ...(isTarget ? brutal.rowTarget : {}),
                         }}
                       >
-                        <div style={brutal.cellId}>{r.id.slice(0, 6)}</div>
+                        <div data-agent="revision-id" style={brutal.cellId}>{r.id.slice(0, 6)}</div>
 
-                        <div style={brutal.cellText}>{r.markdown}</div>
+                        <div data-agent="revision-markdown" style={brutal.cellText}>{r.markdown}</div>
 
                         <div style={brutal.actions}>
                           <button
+                            data-agent="btn-load-revision"
                             onClick={() => {
                               setActiveRevisionId(r.id)
                               setSelectedConcept(r.conceptId)
@@ -969,6 +988,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                           }} />
 
                           <button
+                            data-agent="btn-set-base"
                             onClick={() => setBaseId(r.id)}
                             style={{
                               ...brutal.button,
@@ -979,6 +999,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                           </button>
 
                           <button
+                            data-agent="btn-set-head"
                             onClick={() => setTargetId(r.id)}
                             style={{
                               ...brutal.button,
@@ -994,12 +1015,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </div>
               )}
               {baseId && targetId && hunks.length === 0 && (
-                <div style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
+                <div data-agent="diff-no-differences" style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
                   No differences between these revisions.
                 </div>
               )}
               {baseId && targetId && hunks.length > 0 && (
-                <div style={{ background: "white", border: "2px solid black", marginTop: "1em" }}>
+                <div data-agent="diff-view" style={{ background: "white", border: "2px solid black", marginTop: "1em" }}>
                   <p style={{ margin: "1em", fontStyle: "italic" }}>
                     <code>{baseId.slice(0, 6)}</code>{" → "}
                     <code>{targetId.slice(0, 6)}</code>
@@ -1020,7 +1041,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
 
-            <section>
+            <section data-agent="baselines-section">
               <div style={brutal.title}>Baselines</div>
 
               <hr />
@@ -1032,6 +1053,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               ) : (
                 baselines.map((b) => (
                   <button
+                    data-agent={`baseline-${b.id}`}
                     key={b.id}
                     onClick={async () => {
                       const full = await apiFetch(`${API}/baselines/${b.id}`).then((r) => r.json())
@@ -1049,7 +1071,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             {selectedBaseline && (
               <>
                 < hr />
-                <section>
+                <section data-agent="selected-baseline-section">
                   <div style={brutal.title}>
                     Baseline: {selectedBaseline.name}
                   </div>
@@ -1076,10 +1098,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             )}
             <hr />
 
-            <section>
+            <section data-agent="new-baseline-section">
               <div style={brutal.title}>New baseline</div>
 
               <input
+                data-agent="input-baseline-name"
                 placeholder="Baseline name"
                 value={baselineName}
                 onChange={(e) => setBaselineName(e.target.value)}
@@ -1102,6 +1125,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                         return (
                           <div
+                            data-agent={`baseline-revision-${r.id}`}
                             key={r.id}
                             onClick={() => toggleRevision(r.id)}
                             style={{
@@ -1119,6 +1143,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </div>
 
                   <button
+                    data-agent="btn-create-baseline"
                     onClick={createBaseline}
                     style={{ ...brutal.button, marginTop: 8 }}
                   >

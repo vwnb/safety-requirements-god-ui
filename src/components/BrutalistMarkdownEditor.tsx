@@ -12,6 +12,7 @@ export function BrutalistMarkdownEditor({
 
   return (
     <div
+      data-agent="markdown-editor"
       style={{
         display: "grid",
         background: "white",
@@ -22,6 +23,7 @@ export function BrutalistMarkdownEditor({
       }}
     >
       <textarea
+        data-agent="markdown-editor-textarea"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{
@@ -39,6 +41,7 @@ export function BrutalistMarkdownEditor({
       />
 
       <div
+        data-agent="markdown-editor-preview"
         style={{
           padding: 12,
           fontFamily: "monospace",
