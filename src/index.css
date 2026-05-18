@@ -134,14 +134,14 @@ code {
   max-width: 100%;
 }
 
-.concepts-layout {
+.concepts-layout, .work-items-layout {
   display: grid;
   grid-template-columns: 1fr 0 1fr;
   gap: 20px;
   align-items: start;
 }
 
-.concepts-layout .horizontal-divider {
+.concepts-layout .horizontal-divider, .work-items-layout .horizontal-divider {
   display: block;
   width: 2px;
   height: 100%;
@@ -151,6 +151,14 @@ code {
 @media (max-width: 720px) {
   .top-header .logo {
     width: 220px;
+  }
+
+  .work-items-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .work-items-layout .horizontal-divider {
+    display: none;
   }
 
   .concepts-layout {

@@ -273,6 +273,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [newConceptPhase, setNewConceptPhase] = useState("ITEM_DEFINITION")
   const [newConceptAsil, setNewConceptAsil] = useState("QM")
 
+  const [newWorkItemKey, setNewWorkItemKey] = useState("")
+  const [newWorkItemTitle, setNewWorkItemTitle] = useState("")
+
   const [editWorkItemName, setEditWorkItemName] = useState("")
   const [editWorkItemDescription, setEditWorkItemDescription] = useState("")
   const [editWorkItemPhase, setEditWorkItemPhase] = useState<LifecyclePhase | "">("")
@@ -575,6 +578,28 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     loadConcepts(selectedWorkItem)
   }
 
+  async function createWorkItem() {
+    if (!newWorkItemKey.trim()) return
+
+    const res = await apiFetch(`${API}/work-items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key: newWorkItemKey,
+        name: newWorkItemTitle,
+      }),
+    })
+
+    if (!res.ok) return
+
+    const created = await res.json()
+
+    setWorkItems((prev) => [...prev, created])
+    setSelectedWorkItem(created.id)
+    setNewWorkItemKey("")
+    setNewWorkItemTitle("")
+  }
+
   async function refreshBaselines() {
     const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
     setBaselines(data)
@@ -645,103 +670,151 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
 
-            <section data-agent="work-items-section">
-              <div style={brutal.title}>Work items</div>
+            <div className="work-items-layout">
+              <section data-agent="work-items-section">
+                <div style={brutal.title}>Work items</div>
 
-              {workItems.length > 0 && (
-                <div style={{ marginBottom: 10 }}>
-                  <select
-                    data-agent="select-work-item"
-                    value={selectedWorkItem}
-                    onChange={(e) => setSelectedWorkItem(e.target.value)}
-                    style={{ ...brutal.select, marginBottom: 6 }}
-                  >
-                    {workItems.map((workItem) => (
-                      <option key={workItem.id} value={workItem.id}>
-                        {workItem.key} — {workItem.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  {selectedWorkItemData && (
-                    <div data-agent="edit-work-item-form">
-                      <div style={brutal.title}>Edit work item</div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Name</div>
-                        <input
-                          data-agent="input-work-item-name"
-                          value={editWorkItemName}
-                          onChange={(e) => setEditWorkItemName(e.target.value)}
-                          style={brutal.input}
-                        />
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Description</div>
-                        <textarea
-                          data-agent="input-work-item-description"
-                          value={editWorkItemDescription}
-                          onChange={(e) => setEditWorkItemDescription(e.target.value)}
-                          style={{ ...brutal.input, height: 60 }}
-                        />
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Phase</div>
-                        <select
-                          data-agent="select-work-item-phase"
-                          value={editWorkItemPhase}
-                          onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
-                          style={brutal.select}
+                {workItems.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div data-agent="work-items-list" style={brutal.list}>
+                      {workItems.map((workItem) => (
+                        <div
+                          data-agent={`work-item-${workItem.id}`}
+                          key={workItem.id}
+                          onClick={() => setSelectedWorkItem(workItem.id)}
+                          style={{
+                            ...brutal.row,
+                            ...(selectedWorkItem === workItem.id ? { background: "#000", color: "#fff" } : {}),
+                            cursor: "pointer",
+                          }}
                         >
-                          <option value="">-- Select Phase --</option>
-                          <option value="ITEM_DEFINITION">Item Definition</option>
-                          <option value="HARA">HARA</option>
-                          <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                          <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                          <option value="SYSTEM_DESIGN">System Design</option>
-                          <option value="SOFTWARE_DESIGN">Software Design</option>
-                          <option value="IMPLEMENTATION">Implementation</option>
-                          <option value="VERIFICATION">Verification</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>ASIL</div>
-                        <select
-                          data-agent="select-work-item-asil"
-                          value={editWorkItemAsil}
-                          onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select ASIL --</option>
-                          <option value="QM">QM</option>
-                          <option value="ASIL_A">ASIL_A</option>
-                          <option value="ASIL_B">ASIL_B</option>
-                          <option value="ASIL_C">ASIL_C</option>
-                          <option value="ASIL_D">ASIL_D</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Application Context</div>
-                        <input
-                          data-agent="input-work-item-application-context"
-                          value={editWorkItemApplicationContext}
-                          onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
-                          style={brutal.input}
-                        />
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>System Boundary</div>
-                        <input
-                          data-agent="input-work-item-system-boundary"
-                          value={editWorkItemSystemBoundary}
-                          onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
-                          style={brutal.input}
-                        />
-                      </div>
-                      <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>SAVE CHANGES</button>
+                          {workItem.key} — {workItem.name}
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
+              </section>
+
+              <div className="horizontal-divider" />
+
+              <section data-agent="new-work-item-section">
+                <div style={brutal.title}>New work item</div>
+
+                <div style={brutal.formRow}>
+                  <div style={brutal.label}>Key</div>
+                  <input
+                    data-agent="input-new-work-item-key"
+                    placeholder="e.g. MYPROJ-001"
+                    value={newWorkItemKey}
+                    onChange={(e) => setNewWorkItemKey(e.target.value)}
+                    style={{ ...brutal.input, flex: 1 }}
+                  />
                 </div>
-              )}
+
+                <div style={brutal.formRow}>
+                  <div style={brutal.label}>Title</div>
+                  <input
+                    data-agent="input-new-work-item-title"
+                    placeholder="e.g. Brake-by-wire system"
+                    value={newWorkItemTitle}
+                    onChange={(e) => setNewWorkItemTitle(e.target.value)}
+                    style={{ ...brutal.input, flex: 1 }}
+                  />
+                </div>
+
+                <button data-agent="btn-create-work-item" onClick={createWorkItem} style={brutal.button}>
+                  CREATE
+                </button>
+              </section>
+            </div>
+
+            <hr />
+
+            <section>
+
+              {!!selectedWorkItemData ? (
+                <div data-agent="edit-work-item-form">
+                  <div style={brutal.title}>Edit work item</div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Name</div>
+                    <input
+                      data-agent="input-work-item-name"
+                      value={editWorkItemName}
+                      onChange={(e) => setEditWorkItemName(e.target.value)}
+                      style={brutal.input}
+                    />
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Description</div>
+                    <textarea
+                      data-agent="input-work-item-description"
+                      value={editWorkItemDescription}
+                      onChange={(e) => setEditWorkItemDescription(e.target.value)}
+                      style={{ ...brutal.input, height: 60 }}
+                    />
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Phase</div>
+                    <select
+                      data-agent="select-work-item-phase"
+                      value={editWorkItemPhase}
+                      onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select Phase --</option>
+                      <option value="ITEM_DEFINITION">Item Definition</option>
+                      <option value="HARA">HARA</option>
+                      <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                      <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                      <option value="SYSTEM_DESIGN">System Design</option>
+                      <option value="SOFTWARE_DESIGN">Software Design</option>
+                      <option value="IMPLEMENTATION">Implementation</option>
+                      <option value="VERIFICATION">Verification</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>ASIL</div>
+                    <select
+                      data-agent="select-work-item-asil"
+                      value={editWorkItemAsil}
+                      onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select ASIL --</option>
+                      <option value="QM">QM</option>
+                      <option value="ASIL_A">ASIL_A</option>
+                      <option value="ASIL_B">ASIL_B</option>
+                      <option value="ASIL_C">ASIL_C</option>
+                      <option value="ASIL_D">ASIL_D</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Application Context</div>
+                    <input
+                      data-agent="input-work-item-application-context"
+                      value={editWorkItemApplicationContext}
+                      onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
+                      style={brutal.input}
+                    />
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>System Boundary</div>
+                    <input
+                      data-agent="input-work-item-system-boundary"
+                      value={editWorkItemSystemBoundary}
+                      onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
+                      style={brutal.input}
+                    />
+                  </div>
+                  <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>SAVE CHANGES</button>
+                </div>
+              )
+                : (
+                  <div data-agent="no-work-item">
+                    No work item selected.
+                  </div>
+                )}
             </section>
 
             <hr />
@@ -900,27 +973,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
 
-            <section data-agent="import-concepts-section">
-              <div style={brutal.title}>Import concepts</div>
-
-              <div style={brutal.list}>
-                {templates.map((wi) => (
-                  <div data-agent={`template-${wi.id}`} style={{ ...brutal.row, ...{ cursor: "pointer" } }} key={wi.id} onClick={async () => {
-                    importConceptsFromTemplate(wi.id)
-                  }}>
-                    {wi.key} - {wi.name}
-                    <div style={{ width: "50%", marginLeft: "auto", fontSize: 11, opacity: 0.7 }}>
-                      {wi.description ? `${wi.description}` : "No description :("}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <hr />
-
             <section data-agent="editor-section">
-              <div style={brutal.title}>Editor</div>
+              <div style={brutal.title}>Edit concept</div>
 
               {activeRevisionId && (
                 <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
@@ -1037,6 +1091,24 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </Diff>
                 </div>
               )}
+            </section>
+
+            <hr />
+            <section data-agent="import-concepts-section">
+              <div style={brutal.title}>Import concepts</div>
+
+              <div style={brutal.list}>
+                {templates.map((wi) => (
+                  <div data-agent={`template-${wi.id}`} style={{ ...brutal.row, ...{ cursor: "pointer" } }} key={wi.id} onClick={async () => {
+                    importConceptsFromTemplate(wi.id)
+                  }}>
+                    {wi.key} - {wi.name}
+                    <div style={{ width: "50%", marginLeft: "auto", fontSize: 11, opacity: 0.7 }}>
+                      {wi.description ? `${wi.description}` : "No description :("}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </section>
 
             <hr />
@@ -1157,7 +1229,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           </>
         )}
 
-      </div>
+      </div >
 
       {!!user && (
         <main>
@@ -1166,7 +1238,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               const revisionsForConcept = graph.revisions.filter((rev) => rev.conceptId === r.conceptId)
               const latestRevision = revisionsForConcept.reduce((latest, current) =>
                 new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-              , revisionsForConcept[0])
+                , revisionsForConcept[0])
 
               return r.id === latestRevision.id
             })}
@@ -1176,7 +1248,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             API={API}
           />
         </main>
-      )}
+      )
+      }
     </>
   )
 }
