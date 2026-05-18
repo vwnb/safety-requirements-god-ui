@@ -5,6 +5,7 @@ import ReactFlow, {
   MiniMap,
   Handle,
   Position,
+  BackgroundVariant,
 } from "reactflow"
 import type { Node, Edge } from "reactflow"
 import "reactflow/dist/style.css"
@@ -80,6 +81,7 @@ function ConceptNode({ data }: any) {
         fontFamily: "monospace",
         fontSize: 12,
         width: nodeWidth,
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
       }}
     >
       <div style={{ fontWeight: "bold" }}>{data.label}</div>
@@ -171,7 +173,37 @@ export default function GraphView({
             : r.type === "MITIGATES"
               ? "#22c55e"
               : "#555",
+        strokeWidth: hoveredEdgeId === r.id ? 3 : 1,
       },
+      labelStyle: {
+        fontFamily: "monospace",
+        fontSize: 10,
+        fontWeight: "bold",
+        fill:
+          r.type === "VIOLATES"
+            ? "#ef4444"
+            : r.type === "MITIGATES"
+              ? "#22c55e"
+              : "#555",
+        opacity: hoveredEdgeId === r.id ? 1 : 0.7,
+      },
+      ...(hoveredEdgeId === r.id && {
+        labelStyle: {
+          fontFamily: "monospace",
+          fontSize: 10,
+          fontWeight: "bold",
+          fill:
+            r.type === "VIOLATES"
+              ? "#ef4444"
+              : r.type === "MITIGATES"
+                ? "#22c55e"
+                : "#555",
+          opacity: 1,
+        },
+        fontSize: 12,
+        fontWeight: "bold",
+        opacity: hoveredEdgeId === r.id ? 1 : 0.7,
+      }),
     }))
   }, [relations, hoveredEdgeId])
 
@@ -181,13 +213,24 @@ export default function GraphView({
 
   return (
     <>
-      <div style={{ boxSizing: "border-box", position: "sticky", top: "20px", width: "100%", height: "calc(100vh - 40px)", border: "2px solid black", background: "ghostwhite" }}>
+      <div style={{
+        boxSizing: "border-box",
+        position: "sticky",
+        top: "20px",
+        width: "100%",
+        height: "calc(100vh - 40px)",
+        border: "2px solid black",
+        background: `linear-gradient(rgba(244, 143, 237, 0.2), rgba(184, 241, 241, 0.2)), url(${background})`,
+        backgroundSize: "cover, cover",
+        backgroundPosition: "center",
+        backgroundBlendMode: "color-dodge"
+      }}>
         {graphLoading && (
           <div
             style={{
               position: "absolute",
               inset: 0,
-              background: "white",
+              background: "rgba(233, 237, 233, 0.5)",
               zIndex: 10,
               display: "grid",
               placeItems: "center",
@@ -201,7 +244,6 @@ export default function GraphView({
         )}
 
         <ReactFlow
-          style={{ width: "100%", height: "100%", background: `url(${background})`, backgroundSize: "cover" }}
           nodes={layoutedNodes}
           edges={layoutedEdges}
           nodeTypes={nodeTypes}
@@ -235,7 +277,7 @@ export default function GraphView({
         >
           <MiniMap />
           <Controls />
-          <Background size={0.7} />
+          <Background variant={BackgroundVariant.Cross} />
         </ReactFlow>
       </div>
 
