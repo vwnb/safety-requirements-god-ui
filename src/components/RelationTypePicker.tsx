@@ -41,7 +41,7 @@ export default function RelationTypePicker({
       ref={ref}
       style={{
         background: "rgb(233, 237, 233)",
-        position: "absolute",
+        position: "fixed",
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
@@ -50,6 +50,8 @@ export default function RelationTypePicker({
         padding: "2rem",
         zIndex: 9999,
         width: 260,
+        borderRadius: 8,
+        borderLeftWidth: 6,
       }}
     >
       <div
