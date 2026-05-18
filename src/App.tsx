@@ -273,6 +273,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [newConceptPhase, setNewConceptPhase] = useState("ITEM_DEFINITION")
   const [newConceptAsil, setNewConceptAsil] = useState("QM")
 
+  const [editConceptType, setEditConceptType] = useState("ITEM")
+  const [editConceptPhase, setEditConceptPhase] = useState("ITEM_DEFINITION")
+  const [editConceptAsil, setEditConceptAsil] = useState("QM")
+  const [editConceptTitle, setEditConceptTitle] = useState("")
+  const [editConceptKey, setEditConceptKey] = useState("")
+
   const [newWorkItemKey, setNewWorkItemKey] = useState("")
   const [newWorkItemTitle, setNewWorkItemTitle] = useState("")
 
@@ -370,6 +376,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     if (selectedConcept) {
       const concept = concepts.find(c => c.id === selectedConcept)
       setActiveConcept(concept || null)
+      if (concept) {
+        setEditConceptKey(concept.key)
+        setEditConceptTitle(concept.title)
+        setEditConceptType(concept.type)
+        setEditConceptPhase(concept.phase || "")
+        setEditConceptAsil(concept.asil || "")
+      }
     }
   }, [selectedConcept])
 
@@ -484,6 +497,24 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     refreshBaselines()
     setSelectedRevisions([])
     setBaselineName("")
+  }
+
+  async function saveConcept() {
+    if (!selectedConcept) return
+
+    await apiFetch(`${API}/concepts/${selectedConcept}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key: editConceptKey,
+        type: editConceptType,
+        title: editConceptTitle,
+        phase: editConceptPhase,
+        asil: editConceptAsil,
+      }),
+    })
+
+    await loadConcepts(selectedWorkItem)
   }
 
   async function createConcept() {
@@ -981,12 +1012,102 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <section data-agent="editor-section">
               <div style={brutal.title}>Edit concept</div>
 
+              {activeConcept && (
+                <>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Key</div>
+                    <input
+                      data-agent="input-edit-concept-key"
+                      value={editConceptKey}
+                      onChange={(e) => setEditConceptKey(e.target.value)}
+                      style={brutal.input}
+                    />
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Title</div>
+                    <input
+                      data-agent="input-edit-concept-title"
+                      value={editConceptTitle}
+                      onChange={(e) => setEditConceptTitle(e.target.value)}
+                      style={brutal.input}
+                    />
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Type</div>
+                    <select
+                      data-agent="select-edit-concept-type"
+                      value={editConceptType}
+                      onChange={(e) => setEditConceptType(e.target.value)}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select Type --</option>
+                      <option value="ITEM">Item</option>
+                      <option value="HAZARD">Hazard</option>
+                      <option value="HARM">Harm</option>
+                      <option value="SAFETY_GOAL">Safety goal</option>
+                      <option value="FSR">Functional safety requirement</option>
+                      <option value="TSR">Technical safety requirement</option>
+                      <option value="SSR">Software safety requirement</option>
+                      <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
+                      <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
+                      <option value="ASSUMPTION">Assumption</option>
+                      <option value="CONSTRAINT">Constraint</option>
+                      <option value="TEST_CASE">Test case</option>
+                      <option value="TEST_RESULT">Test result</option>
+                      <option value="VERIFICATION_REPORT">Verification report</option>
+                      <option value="VALIDATION_REPORT">Validation report</option>
+                      <option value="SAFETY_CASE">Safety case</option>
+                      <option value="SAFETY_MANUAL">Safety manual</option>
+                      <option value="CHANGE_REQUEST">Change request</option>
+                      <option value="ANOMALY">Anomaly</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Phase</div>
+                    <select
+                      data-agent="select-edit-concept-phase"
+                      value={editConceptPhase}
+                      onChange={(e) => setEditConceptPhase(e.target.value)}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select Phase --</option>
+                      <option value="ITEM_DEFINITION">Item Definition</option>
+                      <option value="HARA">HARA</option>
+                      <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                      <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                      <option value="SYSTEM_DESIGN">System Design</option>
+                      <option value="SOFTWARE_DESIGN">Software Design</option>
+                      <option value="IMPLEMENTATION">Implementation</option>
+                      <option value="VERIFICATION">Verification</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>ASIL</div>
+                    <select
+                      data-agent="select-edit-concept-asil"
+                      value={editConceptAsil}
+                      onChange={(e) => setEditConceptAsil(e.target.value)}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select ASIL --</option>
+                      <option value="QM">QM</option>
+                      <option value="ASIL_A">ASIL_A</option>
+                      <option value="ASIL_B">ASIL_B</option>
+                      <option value="ASIL_C">ASIL_C</option>
+                      <option value="ASIL_D">ASIL_D</option>
+                    </select>
+                  </div>
+                  <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>SAVE CONCEPT</button>
+                  <hr />
+                </>
+              )}
+
+            </section>
+            <section data-agent="markdown-editor-section">
+              <div style={brutal.title}>Revise concept</div>
+
               {activeRevisionId && (
                 <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                  Concept: {activeConcept && activeConcept.key + " " + activeConcept.title}
-
-                  <br />
-
                   Revision: {activeRevisionId.slice(0, 6)}
                 </div>
               )}
@@ -1001,7 +1122,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <hr />
 
             <section data-agent="revisions-section">
-              <div style={brutal.title}>Revisions</div>
+              <div style={brutal.title}>Concept revisions</div>
 
               {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
                 <>
