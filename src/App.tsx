@@ -564,18 +564,23 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setLoading(true)
     setLoadingMessage("Importing concepts from template...")
 
-    const res = await apiFetch(`${API}/graph/${workItemId}`)
-    const { concepts, relations } = await res.json()
+    try {
+      const res = await apiFetch(`${API}/graph/${workItemId}`)
+      const { concepts, relations } = await res.json()
 
-    await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ concepts, relations }),
-    })
+      await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ concepts, relations }),
+      })
 
-    setLoading(false)
-    refreshGraph(selectedWorkItem)
-    loadConcepts(selectedWorkItem)
+      await Promise.all([
+        refreshGraph(selectedWorkItem),
+        loadConcepts(selectedWorkItem),
+      ])
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function createWorkItem() {
