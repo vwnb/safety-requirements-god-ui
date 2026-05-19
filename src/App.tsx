@@ -11,6 +11,8 @@ import background from "./assets/background.jpg"
 
 const API = import.meta.env.VITE_API_URL || ""
 
+type Project = { id: string, key: string }
+
 type LifecyclePhase = "ITEM_DEFINITION" | "HARA" | "FUNCTIONAL_SAFETY" | "TECHNICAL_SAFETY" | "SYSTEM_DESIGN" | "SOFTWARE_DESIGN" | "IMPLEMENTATION" | "VERIFICATION" | "VALIDATION" | "PRODUCTION" | "OPERATION" | "DECOMMISSIONING"
 
 type ASIL = "QM" | "A" | "B" | "C" | "D"
@@ -164,10 +166,8 @@ function Auth0UserBar({
             data-agent="auth-user-info"
             style={{
               ...brutal.input,
-              marginBottom: 8,
               display: "flex",
               alignItems: "center",
-              minHeight: 36,
             }}
           >
             {user?.email || user?.name || user?.sub || "Signed in"}
@@ -205,7 +205,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const { user } = useAuth0()
 
   const [projects, setProjects] = useState<any[]>([])
-  const [selectedProject, setSelectedProject] = useState<{ id: string, key: string } | null>(null)
+  const [selectedProject, setSelectedProject] = useState<Project>()
 
   const [projectKey, setProjectKey] = useState("")
 
@@ -888,30 +888,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             />
           )}
         </section>
-
-        {!!user && (
-
-          <section style={{ flex: 1 }} data-agent="join-project-section">
-            <div className="title">Join Project</div>
-
-            <input
-              value={projectKey}
-              onChange={(e) => setProjectKey(e.target.value)}
-              placeholder="COMMON-MEGA-PROJECT"
-              style={{
-                ...brutal.input,
-              }}
-            />
-
-            <button
-              onClick={joinProject}
-              style={brutal.button}
-            >
-              Join
-            </button>
-          </section>
-
-        )}
       </header>
 
       {!!user && (
@@ -919,6 +895,60 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <hr />
 
           <aside>
+            <div className="cms-layout">
+              <section style={{ flex: 1 }} data-agent="project-section">
+                <div className="title">Project</div>
+
+                <select
+                  value={selectedProject?.id ?? ""}
+                  onChange={(e) => {
+                    const project = projects.find(
+                      (p) => p.id === e.target.value
+                    )
+
+                    if (project) {
+                      setSelectedProject(project)
+                    }
+                  }}
+                  style={brutal.select}
+                  data-agent="select-project"
+                >
+                  <option value="">
+                    Select project
+                  </option>
+
+                  {projects.map((project: Project) => (
+                    <option
+                      key={project.id}
+                      value={project.id}
+                    >
+                      {project.key}
+                    </option>
+                  ))}
+                </select>
+              </section>
+              <section style={{ flex: 1 }} data-agent="join-project-section">
+                <div className="title">Join Project</div>
+
+                <input
+                  value={projectKey}
+                  onChange={(e) => setProjectKey(e.target.value)}
+                  placeholder="COMMON-MEGA-PROJECT"
+                  style={{
+                    ...brutal.input,
+                  }}
+                />
+
+                <button
+                  onClick={joinProject}
+                  style={brutal.button}
+                >
+                  Join
+                </button>
+              </section>
+            </div>
+
+            <hr />
             <div className="cms-layout">
               <section data-agent="work-items-section">
                 <div className="title">Work items</div>
