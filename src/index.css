@@ -151,11 +151,22 @@ header>* {
 
 .list-input {
   border: 2px solid black;
-  border-radius: 4;
+  border-radius: 4px;
   background: white;
   max-height: 240px;
   overflow: auto;
   width: 100%;
+}
+
+.list-tooltip {
+  font-size: 12;
+  opacity: 0.8;
+  overflow: hidden;
+  white-space: wrap;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 2;
+  flex-grow: 1;
+  padding: 0 5px;
 }
 
 button:hover,
@@ -164,12 +175,15 @@ button:hover,
   color: #000 !important;
 }
 
-.option, .option2 {
+.option,
+.option2 {
   border-bottom: 1px solid black;
   padding: 6px;
   font-family: monospace;
   align-items: center;
   display: flex;
+  cursor: pointer;
+  gap: 6px;
 }
 
 footer {
@@ -211,9 +225,14 @@ footer {
 
 @media (max-width: 720px) {
 
-  .work-items-layout,
-  .concepts-layout {
+  .cms-layout {
     grid-template-columns: 1fr;
+    grid-template-areas: "list" "new";
+  }
+
+  .option,
+  .option2 {
+    display: block;
   }
 
   .horizontal-divider {
@@ -224,6 +243,10 @@ footer {
 @media (max-width: 540px) {
   header {
     display: block
+  }
+
+  .list-tooltip {
+    display: none;
   }
 }
 

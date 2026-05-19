@@ -128,17 +128,6 @@ export const brutal = {
     fontSize: 11,
   },
 
-  cellText: {
-    fontSize: 12,
-    opacity: 0.8,
-    overflow: "hidden",
-    whiteSpace: "wrap" as const,
-    textOverflow: "ellipsis",
-    WebkitLineClamp: 2,
-    flexGrow: 1,
-    padding: "0 6px",
-  },
-
   actions: {
     display: "flex",
     gap: "4px",
@@ -1275,7 +1264,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       >
                         <div data-agent="revision-id" style={brutal.cellId}>{r.id.slice(0, 6)}</div>
 
-                        <div data-agent="revision-markdown" style={brutal.cellText}>{r.markdown.slice(0, 120)}...</div>
+                        <div data-agent="revision-markdown" className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
 
                         <div style={brutal.actions}>
                           <button
@@ -1356,8 +1345,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   <div className="option" data-agent={`template-${wi.id}`} key={wi.id} onClick={async () => {
                     importConceptsFromTemplate(wi.id)
                   }}>
-                    {wi.key} - {wi.name}
-                    <div style={{ width: "50%", marginLeft: "auto", fontSize: 11, opacity: 0.7 }}>
+                    <div style={brutal.cellId}>{wi.key} - {wi.name}</div>
+                    <div className="list-tooltip">
                       {wi.description ? `${wi.description}` : "No description :("}
                     </div>
                   </div>
@@ -1409,7 +1398,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                             {r.concept.key} ({r.concept.type})
                           </div>
 
-                          <div style={brutal.cellText}>
+                          <div className="list-tooltip">
                             {r.markdown.slice(0, 80)}...
                           </div>
                         </div>
@@ -1454,7 +1443,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               color: checked ? "white" : "black",
                             }}
                           >
-                            <div style={brutal.cellId}>{r.id.slice(0, 6)}</div><div style={brutal.cellText}>{r.markdown.slice(0, 80)}...</div>
+                            <div style={brutal.cellId}>{r.id.slice(0, 6)}</div><div className="list-tooltip">{r.markdown.slice(0, 80)}...</div>
                           </div>
                         )
                       })}
