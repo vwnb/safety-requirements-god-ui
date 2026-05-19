@@ -949,148 +949,157 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </div>
 
             <hr />
-            <div className="cms-layout">
-              <section data-agent="work-items-section">
-                <div className="title">Work items</div>
 
-                {workItems.length > 0 && (
-                  <div style={{ marginBottom: 10 }}>
-                    <div data-agent="work-items-list" className="list-input">
-                      {workItems.map((workItem) => (
-                        <div
-                          className="option"
-                          data-agent={`work-item-${workItem.id}`}
-                          key={workItem.id}
-                          onClick={() => setSelectedWorkItem(workItem.id)}
-                          style={{
-                            ...(selectedWorkItem === workItem.id ? { background: "#000", color: "#fff" } : {}),
-                            cursor: "pointer",
-                          }}
-                        >
-                          {workItem.key} — {workItem.name}
+            {typeof workItems === "undefined" ? (
+              <>
+                Loading work items...
+              </>
+            ) :
+              workItems.length === 0 ? (
+                <p>
+                  No work items yet.
+                </p>
+              ) :
+                (
+                  <>
+                    <div className="cms-layout">
+                      <section data-agent="work-items-section">
+                        <div className="title">Work items</div>
+
+                        {workItems.length > 0 && (
+                          <div style={{ marginBottom: 10 }}>
+                            <div data-agent="work-items-list" className="list-input">
+                              {workItems.map((workItem) => (
+                                <div
+                                  className="option"
+                                  data-agent={`work-item-${workItem.id}`}
+                                  key={workItem.id}
+                                  onClick={() => setSelectedWorkItem(workItem.id)}
+                                  style={{
+                                    ...(selectedWorkItem === workItem.id ? { background: "#000", color: "#fff" } : {}),
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {workItem.key} — {workItem.name}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </section>
+
+                      <section data-agent="new-work-item-section">
+                        <div className="title">New work item</div>
+
+                        <div style={brutal.formRow}>
+                          <div style={brutal.label}>Key</div>
+                          <input
+                            data-agent="input-new-work-item-key"
+                            placeholder="e.g. MYPROJ-001"
+                            value={newWorkItemKey}
+                            onChange={(e) => setNewWorkItemKey(e.target.value)}
+                            style={{ ...brutal.input, flex: 1 }}
+                          />
                         </div>
-                      ))}
+
+                        <div style={brutal.formRow}>
+                          <div style={brutal.label}>Title</div>
+                          <input
+                            data-agent="input-new-work-item-title"
+                            placeholder="e.g. Brake-by-wire system"
+                            value={newWorkItemTitle}
+                            onChange={(e) => setNewWorkItemTitle(e.target.value)}
+                            style={{ ...brutal.input, flex: 1 }}
+                          />
+                        </div>
+
+                        <button data-agent="btn-create-work-item" onClick={createWorkItem} style={brutal.button}>
+                          Create
+                        </button>
+                      </section>
                     </div>
-                  </div>
+
+                    <section>
+
+                      <div data-agent="edit-work-item-form">
+                        <div className="title">Edit work item</div>
+                        <div style={brutal.formRow}>
+                          <div style={brutal.label}>Name</div>
+                          <input
+                            data-agent="input-work-item-name"
+                            value={editWorkItemName}
+                            onChange={(e) => setEditWorkItemName(e.target.value)}
+                            style={brutal.input}
+                          />
+                        </div>
+                        <div style={brutal.formRow}>
+                          <div style={brutal.label}>Description</div>
+                          <textarea
+                            data-agent="input-work-item-description"
+                            value={editWorkItemDescription}
+                            onChange={(e) => setEditWorkItemDescription(e.target.value)}
+                            style={{ ...brutal.input, height: 60 }}
+                          />
+                        </div>
+                        <div style={brutal.formRow}>
+                          <div style={brutal.label}>Phase</div>
+                          <select
+                            data-agent="select-work-item-phase"
+                            value={editWorkItemPhase}
+                            onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
+                            style={brutal.select}
+                          >
+                            <option value="">-- Select Phase --</option>
+                            <option value="ITEM_DEFINITION">Item Definition</option>
+                            <option value="HARA">HARA</option>
+                            <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                            <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                            <option value="SYSTEM_DESIGN">System Design</option>
+                            <option value="SOFTWARE_DESIGN">Software Design</option>
+                            <option value="IMPLEMENTATION">Implementation</option>
+                            <option value="VERIFICATION">Verification</option>
+                          </select>
+                        </div>
+                        <div style={brutal.formRow}>
+                          <div style={brutal.label}>ASIL</div>
+                          <select
+                            data-agent="select-work-item-asil"
+                            value={editWorkItemAsil}
+                            onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
+                            style={brutal.select}
+                          >
+                            <option value="">-- Select ASIL --</option>
+                            <option value="QM">QM</option>
+                            <option value="ASIL_A">ASIL_A</option>
+                            <option value="ASIL_B">ASIL_B</option>
+                            <option value="ASIL_C">ASIL_C</option>
+                            <option value="ASIL_D">ASIL_D</option>
+                          </select>
+                        </div>
+                        <div style={brutal.formRow}>
+                          <div style={brutal.label}>Application Context</div>
+                          <input
+                            data-agent="input-work-item-application-context"
+                            value={editWorkItemApplicationContext}
+                            onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
+                            style={brutal.input}
+                          />
+                        </div>
+                        <div style={brutal.formRow}>
+                          <div style={brutal.label}>System Boundary</div>
+                          <input
+                            data-agent="input-work-item-system-boundary"
+                            value={editWorkItemSystemBoundary}
+                            onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
+                            style={brutal.input}
+                          />
+                        </div>
+                        <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>Save changes</button>
+                      </div>
+
+                    </section>
+                  </>
                 )}
-              </section>
-
-              <section data-agent="new-work-item-section">
-                <div className="title">New work item</div>
-
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Key</div>
-                  <input
-                    data-agent="input-new-work-item-key"
-                    placeholder="e.g. MYPROJ-001"
-                    value={newWorkItemKey}
-                    onChange={(e) => setNewWorkItemKey(e.target.value)}
-                    style={{ ...brutal.input, flex: 1 }}
-                  />
-                </div>
-
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Title</div>
-                  <input
-                    data-agent="input-new-work-item-title"
-                    placeholder="e.g. Brake-by-wire system"
-                    value={newWorkItemTitle}
-                    onChange={(e) => setNewWorkItemTitle(e.target.value)}
-                    style={{ ...brutal.input, flex: 1 }}
-                  />
-                </div>
-
-                <button data-agent="btn-create-work-item" onClick={createWorkItem} style={brutal.button}>
-                  Create
-                </button>
-              </section>
-            </div>
-
-            <section>
-
-              {!!selectedWorkItemData ? (
-                <div data-agent="edit-work-item-form">
-                  <div className="title">Edit work item</div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>Name</div>
-                    <input
-                      data-agent="input-work-item-name"
-                      value={editWorkItemName}
-                      onChange={(e) => setEditWorkItemName(e.target.value)}
-                      style={brutal.input}
-                    />
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>Description</div>
-                    <textarea
-                      data-agent="input-work-item-description"
-                      value={editWorkItemDescription}
-                      onChange={(e) => setEditWorkItemDescription(e.target.value)}
-                      style={{ ...brutal.input, height: 60 }}
-                    />
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>Phase</div>
-                    <select
-                      data-agent="select-work-item-phase"
-                      value={editWorkItemPhase}
-                      onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
-                      style={brutal.select}
-                    >
-                      <option value="">-- Select Phase --</option>
-                      <option value="ITEM_DEFINITION">Item Definition</option>
-                      <option value="HARA">HARA</option>
-                      <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                      <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                      <option value="SYSTEM_DESIGN">System Design</option>
-                      <option value="SOFTWARE_DESIGN">Software Design</option>
-                      <option value="IMPLEMENTATION">Implementation</option>
-                      <option value="VERIFICATION">Verification</option>
-                    </select>
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>ASIL</div>
-                    <select
-                      data-agent="select-work-item-asil"
-                      value={editWorkItemAsil}
-                      onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
-                      style={brutal.select}
-                    >
-                      <option value="">-- Select ASIL --</option>
-                      <option value="QM">QM</option>
-                      <option value="ASIL_A">ASIL_A</option>
-                      <option value="ASIL_B">ASIL_B</option>
-                      <option value="ASIL_C">ASIL_C</option>
-                      <option value="ASIL_D">ASIL_D</option>
-                    </select>
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>Application Context</div>
-                    <input
-                      data-agent="input-work-item-application-context"
-                      value={editWorkItemApplicationContext}
-                      onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
-                      style={brutal.input}
-                    />
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>System Boundary</div>
-                    <input
-                      data-agent="input-work-item-system-boundary"
-                      value={editWorkItemSystemBoundary}
-                      onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
-                      style={brutal.input}
-                    />
-                  </div>
-                  <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>Save changes</button>
-                </div>
-              )
-                : (
-                  <div data-agent="no-work-item">
-                    No work item selected.
-                  </div>
-                )}
-            </section>
 
             <hr />
 
@@ -1453,19 +1462,29 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <hr />
             <section data-agent="import-concepts-section">
               <div className="title">Import concepts</div>
-
-              <div className="list-input">
-                {templates.map((wi) => (
-                  <div className="option" data-agent={`template-${wi.id}`} key={wi.id} onClick={async () => {
-                    importConceptsFromTemplate(wi.id)
-                  }}>
-                    <div className="list-id">{wi.key} - {wi.name}</div>
-                    <div className="list-tooltip">
-                      {wi.description ? `${wi.description}` : "No description :("}
-                    </div>
+              {typeof templates === "undefined" ? (
+                <>
+                  Loading templates...
+                </>
+              ) :
+                templates.length === 0 ? (
+                  <p>
+                    No templates yet.
+                  </p>
+                ) : (
+                  <div className="list-input">
+                    {templates.map((wi) => (
+                      <div className="option" data-agent={`template-${wi.id}`} key={wi.id} onClick={async () => {
+                        importConceptsFromTemplate(wi.id)
+                      }}>
+                        <div className="list-id">{wi.key} - {wi.name}</div>
+                        <div className="list-tooltip">
+                          {wi.description ? `${wi.description}` : "No description :("}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
             </section>
 
             <hr />
@@ -1473,28 +1492,34 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <section data-agent="baselines-section">
               <div className="title">Baselines</div>
 
-              {baselines.length === 0 ? (
-                <div style={{ fontStyle: "italic", color: "#666", marginBottom: 10 }}>
-                  No baselines yet.
-                </div>
-              ) : (
-                baselines.map((b) => (
-                  <button
-                    data-agent={`baseline-${b.id}`}
-                    key={b.id}
-                    onClick={async () => {
-                      const full = await apiFetch(`${API}/baselines/${b.id}`).then((r) => r.json())
-                      setSelectedBaseline(full)
-                    }}
-                    style={{ ...brutal.button, display: "block", marginBottom: 4 }}
-                  >
-                    {b.name}
-                  </button>
-                ))
-              )}
-
+              {typeof baselines === "undefined" ? (
+                <>
+                  Loading baselines...
+                </>
+              ) :
+                baselines.length === 0 ? (
+                  <p>
+                    No baselines yet.
+                  </p>
+                ) :
+                  (
+                    <>
+                      {baselines.map((b) => (
+                        <button
+                          data-agent={`baseline-${b.id}`}
+                          key={b.id}
+                          onClick={async () => {
+                            const full = await apiFetch(`${API}/baselines/${b.id}`).then((r) => r.json())
+                            setSelectedBaseline(full)
+                          }}
+                          style={{ ...brutal.button, display: "block", marginBottom: 4 }}
+                        >
+                          {b.name}
+                        </button>
+                      ))}
+                    </>
+                  )}
             </section>
-
             {selectedBaseline && (
               <>
                 <section data-agent="selected-baseline-section">
