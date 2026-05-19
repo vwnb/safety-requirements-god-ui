@@ -124,10 +124,6 @@ export const brutal = {
     color: "#fff",
   },
 
-  cellId: {
-    fontSize: 11,
-  },
-
   actions: {
     display: "flex",
     gap: "4px",
@@ -1228,7 +1224,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               {activeRevisionId && (
                 <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                  Revision: {activeRevisionId.slice(0, 6)}
+                  Revision: {activeRevisionId}
                 </div>
               )}
 
@@ -1262,9 +1258,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                           ...(isTarget ? brutal.rowTarget : {}),
                         }}
                       >
-                        <div data-agent="revision-id" style={brutal.cellId}>{r.id.slice(0, 6)}</div>
+                        <div data-agent="revision-id" className="list-id">{r.id.slice(0, 16)}</div>
 
-                        <div data-agent="revision-markdown" className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
+                        <div data-agent="revision-markdown" className="list-tooltip">{r.markdown.slice(0, 160)}...</div>
 
                         <div style={brutal.actions}>
                           <button
@@ -1319,8 +1315,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               {baseId && targetId && hunks.length > 0 && (
                 <div data-agent="diff-view" style={{ background: "white", border: "2px solid black", marginTop: "1em" }}>
                   <p style={{ margin: "1em", fontStyle: "italic" }}>
-                    <code>{baseId.slice(0, 6)}</code>{" → "}
-                    <code>{targetId.slice(0, 6)}</code>
+                    <code>{baseId.slice(0, 16)}</code>{" → "}
+                    <code>{targetId.slice(0, 16)}</code>
                   </p>
                   <Diff viewType="split" diffType="modify" hunks={hunks}>
                     {(hunks) =>
@@ -1345,7 +1341,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   <div className="option" data-agent={`template-${wi.id}`} key={wi.id} onClick={async () => {
                     importConceptsFromTemplate(wi.id)
                   }}>
-                    <div style={brutal.cellId}>{wi.key} - {wi.name}</div>
+                    <div className="list-id">{wi.key} - {wi.name}</div>
                     <div className="list-tooltip">
                       {wi.description ? `${wi.description}` : "No description :("}
                     </div>
@@ -1434,7 +1430,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                         return (
                           <div
-                            className="option"
+                            className="option2"
                             data-agent={`baseline-revision-${r.id}`}
                             key={r.id}
                             onClick={() => toggleRevision(r.id)}
@@ -1443,7 +1439,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               color: checked ? "white" : "black",
                             }}
                           >
-                            <div style={brutal.cellId}>{r.id.slice(0, 6)}</div><div className="list-tooltip">{r.markdown.slice(0, 80)}...</div>
+                            <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 160)}...</div>
                           </div>
                         )
                       })}

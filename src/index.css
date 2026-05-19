@@ -158,14 +158,19 @@ header>* {
   width: 100%;
 }
 
+.list-id {
+  flex-shrink: 0;
+  font-style: italic;
+  width: 300px;
+}
+
+.option2>.list-id {
+  width: 120px;
+}
+
 .list-tooltip {
-  font-size: 12;
-  opacity: 0.8;
-  overflow: hidden;
+  font-size: 11px;
   white-space: wrap;
-  text-overflow: ellipsis;
-  -webkit-line-clamp: 2;
-  flex-grow: 1;
   padding: 0 5px;
 }
 
@@ -224,7 +229,6 @@ footer {
 }
 
 @media (max-width: 720px) {
-
   .cms-layout {
     grid-template-columns: 1fr;
     grid-template-areas: "list" "new";
@@ -233,6 +237,10 @@ footer {
   .option,
   .option2 {
     display: block;
+  }
+
+  .list-id {
+    width: 100%;
   }
 
   .horizontal-divider {
