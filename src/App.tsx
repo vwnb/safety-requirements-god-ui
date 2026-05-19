@@ -194,6 +194,15 @@ function Auth0UserBar({
   )
 }
 
+function scrollToEditor() {
+  setTimeout(() => {
+    const el = document.querySelector('[data-agent="editor-section"]')
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, 0)
+}
+
 export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const apiFetch = useApiFetch()
@@ -853,7 +862,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(255,255,255,0.92)",
+            background: "rgba(233, 237, 233, 0.5)",
             zIndex: 9999,
             display: "grid",
             placeItems: "center",
@@ -1102,362 +1111,369 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 )}
 
             <hr />
+            {!!concepts.length && (
+              <>
+                <div className="cms-layout">
+                  <section data-agent="concepts-section">
+                    <div className="title">Concepts</div>
 
-            <div className="cms-layout">
-              <section data-agent="concepts-section">
-                <div className="title">Concepts</div>
+                    {typeof concepts === "undefined" ? (
+                      <>
+                        Loading concepts...
+                      </>
+                    ) :
+                      concepts.length === 0 ? (
+                        <p>
+                          No concepts yet.
+                        </p>
+                      ) :
+                        (
+                          concepts.map((c) => (
+                            <button
+                              data-agent={`concept-${c.id}`}
+                              key={c.id}
+                              onClick={async () => {
+                                setSelectedConcept(c.id)
 
-                {typeof concepts === "undefined" ? (
-                  <>
-                    Loading concepts...
-                  </>
-                ) :
-                  concepts.length === 0 ? (
-                    <p>
-                      No concepts yet.
-                    </p>
-                  ) :
-                    (
-                      concepts.map((c) => (
-                        <button
-                          data-agent={`concept-${c.id}`}
-                          key={c.id}
-                          onClick={async () => {
-                            setSelectedConcept(c.id)
+                                const revisions = await loadRevisions(c.id)
 
-                            const revisions = await loadRevisions(c.id)
+                                const latest = revisions.at(-1)
 
-                            const latest = revisions.at(-1)
+                                if (latest) {
+                                  setActiveRevisionId(latest.id)
+                                  setEditorValue(latest.markdown)
+                                } else {
+                                  setActiveRevisionId(null)
+                                  setEditorValue(c.title ? `# ${c.title}` : "")
+                                }
 
-                            if (latest) {
-                              setActiveRevisionId(latest.id)
-                              setEditorValue(latest.markdown)
-                            } else {
-                              setActiveRevisionId(null)
-                              setEditorValue(c.title ? `# ${c.title}` : "")
-                            }
-                          }}
-                          style={{
-                            ...brutal.button,
-                            ...(selectedConcept === c.id ? brutal.active : {}),
-                            display: "block",
-                            width: "100%",
-                            marginBottom: 4,
-                            background: typeColor[c.type] || "#ccc",
-                          } as React.CSSProperties}
-                        >
-                          {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}: <br />{c.key} {c.title && `- ${c.title}`}
-                        </button>
-                      ))
-                    )}
-              </section>
+                                scrollToEditor()
+                              }}
+                              style={{
+                                ...brutal.button,
+                                ...(selectedConcept === c.id ? brutal.active : {}),
+                                display: "block",
+                                width: "100%",
+                                marginBottom: 4,
+                                background: typeColor[c.type] || "#ccc",
+                              } as React.CSSProperties}
+                            >
+                              {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}: <br />{c.key} {c.title && `- ${c.title}`}
+                            </button>
+                          ))
+                        )}
+                  </section>
 
-              <section data-agent="new-concept-section">
-                <div className="title">New concept</div>
+                  <section data-agent="new-concept-section">
+                    <div className="title">New concept</div>
 
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Key</div>
-                  <input
-                    data-agent="input-new-concept-key"
-                    placeholder="e.g. BRAKE_FAILURE"
-                    value={newConceptKey}
-                    onChange={(e) => setNewConceptKey(e.target.value)}
-                    style={{ ...brutal.input, flex: 1 }}
-                  />
-                </div>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>Key</div>
+                      <input
+                        data-agent="input-new-concept-key"
+                        placeholder="e.g. BRAKE_FAILURE"
+                        value={newConceptKey}
+                        onChange={(e) => setNewConceptKey(e.target.value)}
+                        style={{ ...brutal.input, flex: 1 }}
+                      />
+                    </div>
 
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Title</div>
-                  <input
-                    data-agent="input-new-concept-title"
-                    placeholder="optional"
-                    value={newConceptTitle}
-                    onChange={(e) => setNewConceptTitle(e.target.value)}
-                    style={{ ...brutal.input, flex: 1 }}
-                  />
-                </div>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>Title</div>
+                      <input
+                        data-agent="input-new-concept-title"
+                        placeholder="optional"
+                        value={newConceptTitle}
+                        onChange={(e) => setNewConceptTitle(e.target.value)}
+                        style={{ ...brutal.input, flex: 1 }}
+                      />
+                    </div>
 
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Phase</div>
-                  <select
-                    data-agent="select-new-concept-phase"
-                    value={newConceptPhase}
-                    onChange={(e) => setNewConceptPhase(e.target.value)}
-                    style={{ ...brutal.select, flex: 1 }}
-                  >
-                    <option value="">-- Select Phase --</option>
-                    <option value="ITEM_DEFINITION">Item Definition</option>
-                    <option value="HARA">HARA</option>
-                    <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                    <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                    <option value="SYSTEM_DESIGN">System Design</option>
-                    <option value="SOFTWARE_DESIGN">Software Design</option>
-                    <option value="IMPLEMENTATION">Implementation</option>
-                    <option value="VERIFICATION">Verification</option>
-                  </select>
-                </div>
-
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>ASIL</div>
-                  <select
-                    data-agent="select-new-concept-asil"
-                    value={newConceptAsil}
-                    onChange={(e) => setNewConceptAsil(e.target.value)}
-                    style={{ ...brutal.select, flex: 1 }}
-                  >
-                    <option value="">-- Select ASIL --</option>
-                    <option value="QM">QM</option>
-                    <option value="ASIL_A">ASIL_A</option>
-                    <option value="ASIL_B">ASIL_B</option>
-                    <option value="ASIL_C">ASIL_C</option>
-                    <option value="ASIL_D">ASIL_D</option>
-                  </select>
-                </div>
-
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Type</div>
-                  <select
-                    data-agent="select-new-concept-type"
-                    value={newConceptType}
-                    onChange={(e) => setNewConceptType(e.target.value)}
-                    style={{ ...brutal.select, flex: 1 }}
-                  >
-                    <option value="">-- Select Type --</option>
-                    <option value="ITEM">Item</option>
-                    <option value="HAZARD">Hazard</option>
-                    <option value="HARM">Harm</option>
-                    <option value="SAFETY_GOAL">Safety goal</option>
-                    <option value="FSR">Functional safety requirement</option>
-                    <option value="TSR">Technical safety requirement</option>
-                    <option value="SSR">Software safety requirement</option>
-                    <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
-                    <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
-                    <option value="ASSUMPTION">Assumption</option>
-                    <option value="CONSTRAINT">Constraint</option>
-                    <option value="TEST_CASE">Test case</option>
-                    <option value="TEST_RESULT">Test result</option>
-                    <option value="VERIFICATION_REPORT">Verification report</option>
-                    <option value="VALIDATION_REPORT">Validation report</option>
-                    <option value="SAFETY_CASE">Safety case</option>
-                    <option value="SAFETY_MANUAL">Safety manual</option>
-                    <option value="CHANGE_REQUEST">Change request</option>
-                    <option value="ANOMALY">Anomaly</option>
-                  </select>
-
-                </div>
-
-                <button data-agent="btn-create-concept" onClick={() => { createConcept() }} style={brutal.button}>
-                  Create
-                </button>
-
-              </section>
-            </div>
-
-            <section data-agent="editor-section">
-              <div className="title">Edit concept</div>
-
-              {activeConcept && (
-                <>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>Key</div>
-                    <input
-                      data-agent="input-edit-concept-key"
-                      value={editConceptKey}
-                      onChange={(e) => setEditConceptKey(e.target.value)}
-                      style={brutal.input}
-                    />
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>Title</div>
-                    <input
-                      data-agent="input-edit-concept-title"
-                      value={editConceptTitle}
-                      onChange={(e) => setEditConceptTitle(e.target.value)}
-                      style={brutal.input}
-                    />
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>Type</div>
-                    <select
-                      data-agent="select-edit-concept-type"
-                      value={editConceptType}
-                      onChange={(e) => setEditConceptType(e.target.value)}
-                      style={brutal.select}
-                    >
-                      <option value="">-- Select Type --</option>
-                      <option value="ITEM">Item</option>
-                      <option value="HAZARD">Hazard</option>
-                      <option value="HARM">Harm</option>
-                      <option value="SAFETY_GOAL">Safety goal</option>
-                      <option value="FSR">Functional safety requirement</option>
-                      <option value="TSR">Technical safety requirement</option>
-                      <option value="SSR">Software safety requirement</option>
-                      <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
-                      <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
-                      <option value="ASSUMPTION">Assumption</option>
-                      <option value="CONSTRAINT">Constraint</option>
-                      <option value="TEST_CASE">Test case</option>
-                      <option value="TEST_RESULT">Test result</option>
-                      <option value="VERIFICATION_REPORT">Verification report</option>
-                      <option value="VALIDATION_REPORT">Validation report</option>
-                      <option value="SAFETY_CASE">Safety case</option>
-                      <option value="SAFETY_MANUAL">Safety manual</option>
-                      <option value="CHANGE_REQUEST">Change request</option>
-                      <option value="ANOMALY">Anomaly</option>
-                    </select>
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>Phase</div>
-                    <select
-                      data-agent="select-edit-concept-phase"
-                      value={editConceptPhase}
-                      onChange={(e) => setEditConceptPhase(e.target.value)}
-                      style={brutal.select}
-                    >
-                      <option value="">-- Select Phase --</option>
-                      <option value="ITEM_DEFINITION">Item Definition</option>
-                      <option value="HARA">HARA</option>
-                      <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                      <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                      <option value="SYSTEM_DESIGN">System Design</option>
-                      <option value="SOFTWARE_DESIGN">Software Design</option>
-                      <option value="IMPLEMENTATION">Implementation</option>
-                      <option value="VERIFICATION">Verification</option>
-                    </select>
-                  </div>
-                  <div style={brutal.formRow}>
-                    <div style={brutal.label}>ASIL</div>
-                    <select
-                      data-agent="select-edit-concept-asil"
-                      value={editConceptAsil}
-                      onChange={(e) => setEditConceptAsil(e.target.value)}
-                      style={brutal.select}
-                    >
-                      <option value="">-- Select ASIL --</option>
-                      <option value="QM">QM</option>
-                      <option value="ASIL_A">ASIL_A</option>
-                      <option value="ASIL_B">ASIL_B</option>
-                      <option value="ASIL_C">ASIL_C</option>
-                      <option value="ASIL_D">ASIL_D</option>
-                    </select>
-                  </div>
-                  <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>Save concept</button>
-                </>
-              )}
-            </section>
-
-            <section data-agent="markdown-editor-section">
-              <div className="title">Revise concept</div>
-
-              {activeRevisionId && (
-                <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                  Revision: {activeRevisionId}
-                </div>
-              )}
-
-              <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
-
-              <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8 }}>
-                Save revision
-              </button>
-            </section>
-
-            <section data-agent="revisions-section">
-              <div className="title">Concept revisions</div>
-
-              {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
-                <p>
-                  No revisions for this concept.
-                </p>
-              ) : (
-                <div className="list-input">
-                  {(revisionsByConcept[selectedConcept] || []).map((r) => {
-                    const isBase = r.id === baseId
-                    const isTarget = r.id === targetId
-
-                    return (
-                      <div
-                        className="option2"
-                        data-agent={`revision-${r.id}`}
-                        key={r.id}
-                        style={{
-                          ...(isBase ? brutal.rowBase : {}),
-                          ...(isTarget ? brutal.rowTarget : {}),
-                        }}
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>Phase</div>
+                      <select
+                        data-agent="select-new-concept-phase"
+                        value={newConceptPhase}
+                        onChange={(e) => setNewConceptPhase(e.target.value)}
+                        style={{ ...brutal.select, flex: 1 }}
                       >
-                        <div data-agent="revision-id" className="list-id">{r.id.slice(0, 16)}</div>
+                        <option value="">-- Select Phase --</option>
+                        <option value="ITEM_DEFINITION">Item Definition</option>
+                        <option value="HARA">HARA</option>
+                        <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                        <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                        <option value="SYSTEM_DESIGN">System Design</option>
+                        <option value="SOFTWARE_DESIGN">Software Design</option>
+                        <option value="IMPLEMENTATION">Implementation</option>
+                        <option value="VERIFICATION">Verification</option>
+                      </select>
+                    </div>
 
-                        <div data-agent="revision-markdown" className="list-tooltip">{r.markdown.slice(0, 100)}...</div>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>ASIL</div>
+                      <select
+                        data-agent="select-new-concept-asil"
+                        value={newConceptAsil}
+                        onChange={(e) => setNewConceptAsil(e.target.value)}
+                        style={{ ...brutal.select, flex: 1 }}
+                      >
+                        <option value="">-- Select ASIL --</option>
+                        <option value="QM">QM</option>
+                        <option value="ASIL_A">ASIL_A</option>
+                        <option value="ASIL_B">ASIL_B</option>
+                        <option value="ASIL_C">ASIL_C</option>
+                        <option value="ASIL_D">ASIL_D</option>
+                      </select>
+                    </div>
 
-                        <div style={brutal.actions}>
-                          <button
-                            data-agent="btn-load-revision"
-                            onClick={() => {
-                              setActiveRevisionId(r.id)
-                              setSelectedConcept(r.conceptId)
-                              setEditorValue(r.markdown)
-                            }}
-                            style={brutal.button}
-                          >
-                            Load
-                          </button>
+                    <div style={brutal.formRow}>
+                      <div style={brutal.label}>Type</div>
+                      <select
+                        data-agent="select-new-concept-type"
+                        value={newConceptType}
+                        onChange={(e) => setNewConceptType(e.target.value)}
+                        style={{ ...brutal.select, flex: 1 }}
+                      >
+                        <option value="">-- Select Type --</option>
+                        <option value="ITEM">Item</option>
+                        <option value="HAZARD">Hazard</option>
+                        <option value="HARM">Harm</option>
+                        <option value="SAFETY_GOAL">Safety goal</option>
+                        <option value="FSR">Functional safety requirement</option>
+                        <option value="TSR">Technical safety requirement</option>
+                        <option value="SSR">Software safety requirement</option>
+                        <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
+                        <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
+                        <option value="ASSUMPTION">Assumption</option>
+                        <option value="CONSTRAINT">Constraint</option>
+                        <option value="TEST_CASE">Test case</option>
+                        <option value="TEST_RESULT">Test result</option>
+                        <option value="VERIFICATION_REPORT">Verification report</option>
+                        <option value="VALIDATION_REPORT">Validation report</option>
+                        <option value="SAFETY_CASE">Safety case</option>
+                        <option value="SAFETY_MANUAL">Safety manual</option>
+                        <option value="CHANGE_REQUEST">Change request</option>
+                        <option value="ANOMALY">Anomaly</option>
+                      </select>
 
-                          <div style={{
-                            border: "1px solid black", margin: "0 1rem",
-                            ...(isBase || isTarget ? { borderColor: "white" } : {})
-                          }} />
+                    </div>
 
-                          <button
-                            data-agent="btn-set-base"
-                            onClick={() => setBaseId(r.id)}
-                            style={{
-                              ...brutal.button,
-                              ...(isBase ? brutal.active : {}),
-                            }}
-                          >
-                            Base
-                          </button>
+                    <button data-agent="btn-create-concept" onClick={() => { createConcept() }} style={brutal.button}>
+                      Create
+                    </button>
 
-                          <button
-                            data-agent="btn-set-head"
-                            onClick={() => setTargetId(r.id)}
-                            style={{
-                              ...brutal.button,
-                              ...(isTarget ? brutal.active : {}),
-                            }}
-                          >
-                            Head
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
+                  </section>
+
                 </div>
-              )}
-              {baseId && targetId && hunks.length === 0 && (
-                <div data-agent="diff-no-differences" style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
-                  No differences between these revisions.
-                </div>
-              )}
-              {baseId && targetId && hunks.length > 0 && (
-                <div data-agent="diff-view" style={{ background: "white", border: "2px solid black", marginTop: "1em" }}>
-                  <p style={{ margin: "1em", fontStyle: "italic" }}>
-                    <code>{baseId.slice(0, 16)}</code>{" → "}
-                    <code>{targetId.slice(0, 16)}</code>
-                  </p>
-                  <Diff viewType="split" diffType="modify" hunks={hunks}>
-                    {(hunks) =>
-                      hunks.map((hunk) => (
-                        <Hunk
-                          key={`${hunk.oldStart}-${hunk.newStart}`}
-                          hunk={hunk}
+
+                <section data-agent="editor-section">
+                  <div className="title">Edit concept</div>
+
+                  {activeConcept && (
+                    <>
+                      <div style={brutal.formRow}>
+                        <div style={brutal.label}>Key</div>
+                        <input
+                          data-agent="input-edit-concept-key"
+                          value={editConceptKey}
+                          onChange={(e) => setEditConceptKey(e.target.value)}
+                          style={brutal.input}
                         />
-                      ))
-                    }
-                  </Diff>
-                </div>
-              )}
-            </section>
+                      </div>
+                      <div style={brutal.formRow}>
+                        <div style={brutal.label}>Title</div>
+                        <input
+                          data-agent="input-edit-concept-title"
+                          value={editConceptTitle}
+                          onChange={(e) => setEditConceptTitle(e.target.value)}
+                          style={brutal.input}
+                        />
+                      </div>
+                      <div style={brutal.formRow}>
+                        <div style={brutal.label}>Type</div>
+                        <select
+                          data-agent="select-edit-concept-type"
+                          value={editConceptType}
+                          onChange={(e) => setEditConceptType(e.target.value)}
+                          style={brutal.select}
+                        >
+                          <option value="">-- Select Type --</option>
+                          <option value="ITEM">Item</option>
+                          <option value="HAZARD">Hazard</option>
+                          <option value="HARM">Harm</option>
+                          <option value="SAFETY_GOAL">Safety goal</option>
+                          <option value="FSR">Functional safety requirement</option>
+                          <option value="TSR">Technical safety requirement</option>
+                          <option value="SSR">Software safety requirement</option>
+                          <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
+                          <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
+                          <option value="ASSUMPTION">Assumption</option>
+                          <option value="CONSTRAINT">Constraint</option>
+                          <option value="TEST_CASE">Test case</option>
+                          <option value="TEST_RESULT">Test result</option>
+                          <option value="VERIFICATION_REPORT">Verification report</option>
+                          <option value="VALIDATION_REPORT">Validation report</option>
+                          <option value="SAFETY_CASE">Safety case</option>
+                          <option value="SAFETY_MANUAL">Safety manual</option>
+                          <option value="CHANGE_REQUEST">Change request</option>
+                          <option value="ANOMALY">Anomaly</option>
+                        </select>
+                      </div>
+                      <div style={brutal.formRow}>
+                        <div style={brutal.label}>Phase</div>
+                        <select
+                          data-agent="select-edit-concept-phase"
+                          value={editConceptPhase}
+                          onChange={(e) => setEditConceptPhase(e.target.value)}
+                          style={brutal.select}
+                        >
+                          <option value="">-- Select Phase --</option>
+                          <option value="ITEM_DEFINITION">Item Definition</option>
+                          <option value="HARA">HARA</option>
+                          <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                          <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                          <option value="SYSTEM_DESIGN">System Design</option>
+                          <option value="SOFTWARE_DESIGN">Software Design</option>
+                          <option value="IMPLEMENTATION">Implementation</option>
+                          <option value="VERIFICATION">Verification</option>
+                        </select>
+                      </div>
+                      <div style={brutal.formRow}>
+                        <div style={brutal.label}>ASIL</div>
+                        <select
+                          data-agent="select-edit-concept-asil"
+                          value={editConceptAsil}
+                          onChange={(e) => setEditConceptAsil(e.target.value)}
+                          style={brutal.select}
+                        >
+                          <option value="">-- Select ASIL --</option>
+                          <option value="QM">QM</option>
+                          <option value="ASIL_A">ASIL_A</option>
+                          <option value="ASIL_B">ASIL_B</option>
+                          <option value="ASIL_C">ASIL_C</option>
+                          <option value="ASIL_D">ASIL_D</option>
+                        </select>
+                      </div>
+                      <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>Save concept</button>
+                    </>
+                  )}
+                </section>
+
+                <section data-agent="markdown-editor-section">
+                  <div className="title">Revise concept</div>
+
+                  {activeRevisionId && (
+                    <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
+                      Revision: {activeRevisionId}
+                    </div>
+                  )}
+
+                  <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
+
+                  <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8 }}>
+                    Save revision
+                  </button>
+                </section>
+
+                <section data-agent="revisions-section">
+                  <div className="title">Concept revisions</div>
+
+                  {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
+                    <p>
+                      No revisions for this concept.
+                    </p>
+                  ) : (
+                    <div className="list-input">
+                      {(revisionsByConcept[selectedConcept] || []).map((r) => {
+                        const isBase = r.id === baseId
+                        const isTarget = r.id === targetId
+
+                        return (
+                          <div
+                            className="option2"
+                            data-agent={`revision-${r.id}`}
+                            key={r.id}
+                            style={{
+                              ...(isBase ? brutal.rowBase : {}),
+                              ...(isTarget ? brutal.rowTarget : {}),
+                            }}
+                          >
+                            <div data-agent="revision-id" className="list-id">{r.id.slice(0, 16)}</div>
+
+                            <div data-agent="revision-markdown" className="list-tooltip">{r.markdown.slice(0, 100)}...</div>
+
+                            <div style={brutal.actions}>
+                              <button
+                                data-agent="btn-load-revision"
+                                onClick={() => {
+                                  setActiveRevisionId(r.id)
+                                  setSelectedConcept(r.conceptId)
+                                  setEditorValue(r.markdown)
+                                }}
+                                style={brutal.button}
+                              >
+                                Load
+                              </button>
+
+                              <div style={{
+                                border: "1px solid black", margin: "0 1rem",
+                                ...(isBase || isTarget ? { borderColor: "white" } : {})
+                              }} />
+
+                              <button
+                                data-agent="btn-set-base"
+                                onClick={() => setBaseId(r.id)}
+                                style={{
+                                  ...brutal.button,
+                                  ...(isBase ? brutal.active : {}),
+                                }}
+                              >
+                                Base
+                              </button>
+
+                              <button
+                                data-agent="btn-set-head"
+                                onClick={() => setTargetId(r.id)}
+                                style={{
+                                  ...brutal.button,
+                                  ...(isTarget ? brutal.active : {}),
+                                }}
+                              >
+                                Head
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  {baseId && targetId && hunks.length === 0 && (
+                    <div data-agent="diff-no-differences" style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
+                      No differences between these revisions.
+                    </div>
+                  )}
+                  {baseId && targetId && hunks.length > 0 && (
+                    <div data-agent="diff-view" style={{ background: "white", border: "2px solid black", marginTop: "1em" }}>
+                      <p style={{ margin: "1em", fontStyle: "italic" }}>
+                        <code>{baseId.slice(0, 16)}</code>{" → "}
+                        <code>{targetId.slice(0, 16)}</code>
+                      </p>
+                      <Diff viewType="split" diffType="modify" hunks={hunks}>
+                        {(hunks) =>
+                          hunks.map((hunk) => (
+                            <Hunk
+                              key={`${hunk.oldStart}-${hunk.newStart}`}
+                              hunk={hunk}
+                            />
+                          ))
+                        }
+                      </Diff>
+                    </div>
+                  )}
+                </section>
+              </>
+
+            )}
 
             <hr />
             <section data-agent="import-concepts-section">
@@ -1545,60 +1561,60 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     })}
                   </div>
                 </section>
+
+
+                <section data-agent="new-baseline-section">
+                  <div className="title">New baseline</div>
+
+                  <input
+                    data-agent="input-baseline-name"
+                    placeholder="Baseline name"
+                    value={baselineName}
+                    onChange={(e) => setBaselineName(e.target.value)}
+                    style={{ ...brutal.input, marginBottom: 8 }}
+                  />
+
+                  {Object.keys(revisionsByConcept).length === 0 ? (
+                    <p>
+                      No revisions for this concept.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="list-input">
+                        {Object.values(revisionsByConcept)
+                          .flat()
+                          .map((r) => {
+                            const checked = selectedRevisions.includes(r.id)
+
+                            return (
+                              <div
+                                className="option2"
+                                data-agent={`baseline-revision-${r.id}`}
+                                key={r.id}
+                                onClick={() => toggleRevision(r.id)}
+                                style={{
+                                  background: checked ? "black" : "white",
+                                  color: checked ? "white" : "black",
+                                }}
+                              >
+                                <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
+                              </div>
+                            )
+                          })}
+                      </div>
+
+                      <button
+                        data-agent="btn-create-baseline"
+                        onClick={createBaseline}
+                        style={{ ...brutal.button, marginTop: 8 }}
+                      >
+                        Create baseline
+                      </button>
+                    </>
+                  )}
+                </section>
               </>
             )}
-
-            <section data-agent="new-baseline-section">
-              <div className="title">New baseline</div>
-
-              <input
-                data-agent="input-baseline-name"
-                placeholder="Baseline name"
-                value={baselineName}
-                onChange={(e) => setBaselineName(e.target.value)}
-                style={{ ...brutal.input, marginBottom: 8 }}
-              />
-
-              {Object.keys(revisionsByConcept).length === 0 ? (
-                <p>
-                  No revisions for this concept.
-                </p>
-              ) : (
-                <>
-                  <div className="list-input">
-                    {Object.values(revisionsByConcept)
-                      .flat()
-                      .map((r) => {
-                        const checked = selectedRevisions.includes(r.id)
-
-                        return (
-                          <div
-                            className="option2"
-                            data-agent={`baseline-revision-${r.id}`}
-                            key={r.id}
-                            onClick={() => toggleRevision(r.id)}
-                            style={{
-                              background: checked ? "black" : "white",
-                              color: checked ? "white" : "black",
-                            }}
-                          >
-                            <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
-                          </div>
-                        )
-                      })}
-                  </div>
-
-                  <button
-                    data-agent="btn-create-baseline"
-                    onClick={createBaseline}
-                    style={{ ...brutal.button, marginTop: 8 }}
-                  >
-                    Create baseline
-                  </button>
-                </>
-              )}
-            </section>
-
             <hr />
 
             <section data-agent="generate-llm-section">
@@ -1628,41 +1644,45 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </footer>
           </aside>
         </>
-      )}
-      {!!user && (
-        <main>
-          <GraphView
-            revisions={graph.revisions.filter((r) => {
-              const revisionsForConcept = graph.revisions.filter((rev) => rev.conceptId === r.conceptId)
-              const latestRevision = revisionsForConcept.reduce((latest, current) =>
-                new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-                , revisionsForConcept[0])
-
-              return r.id === latestRevision.id
-            })}
-            concepts={graph.concepts}
-            relations={graph.relations}
-            onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
-            onNodeClick={async (conceptId) => {
-              setSelectedConcept(conceptId)
-
-              const revisions = await loadRevisions(conceptId)
-
-              const latest = revisions.at(-1)
-
-              if (latest) {
-                setActiveRevisionId(latest.id)
-                setEditorValue(latest.markdown)
-              } else {
-                setActiveRevisionId(null)
-                const concept = graph.concepts.find(c => c.id === conceptId)
-                setEditorValue(concept?.title ? `# ${concept.title}` : "")
-              }
-            }}
-            API={API}
-          />
-        </main>
       )
+      }
+      {
+        !!user && (
+          <main>
+            <GraphView
+              revisions={graph.revisions.filter((r) => {
+                const revisionsForConcept = graph.revisions.filter((rev) => rev.conceptId === r.conceptId)
+                const latestRevision = revisionsForConcept.reduce((latest, current) =>
+                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                  , revisionsForConcept[0])
+
+                return r.id === latestRevision.id
+              })}
+              concepts={graph.concepts}
+              relations={graph.relations}
+              onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
+              onNodeClick={async (conceptId) => {
+                setSelectedConcept(conceptId)
+
+                const revisions = await loadRevisions(conceptId)
+
+                const latest = revisions.at(-1)
+
+                if (latest) {
+                  setActiveRevisionId(latest.id)
+                  setEditorValue(latest.markdown)
+                } else {
+                  setActiveRevisionId(null)
+                  const concept = graph.concepts.find(c => c.id === conceptId)
+                  setEditorValue(concept?.title ? `# ${concept.title}` : "")
+                }
+
+                scrollToEditor()
+              }}
+              API={API}
+            />
+          </main>
+        )
       }
     </>
   )
