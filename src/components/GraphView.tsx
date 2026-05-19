@@ -139,6 +139,7 @@ export default function GraphView({
   onRelationCreated,
   onNodeClick,
   API,
+  loading,
 }: {
   concepts: Concept[]
   revisions: Revision[]
@@ -146,6 +147,7 @@ export default function GraphView({
   onRelationCreated: () => void
   onNodeClick?: (conceptId: string) => void
   API: string
+  loading?: boolean
 }) {
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
@@ -264,19 +266,45 @@ export default function GraphView({
 
   return (
     <>
-      <div data-agent="graph-view-container" style={{
-        boxSizing: "border-box",
-        top: "20px",
-        width: "100%",
-        border: "2px solid black",
-        background: `linear-gradient(rgba(244, 143, 237, 0.2), rgba(184, 241, 241, 0.2)), url(${background})`,
-        backgroundSize: "cover, cover",
-        backgroundPosition: "center",
-        backgroundBlendMode: "color-dodge"
-      }}>
-        {graphLoading && (
+      <div
+        data-agent="graph-view-container"
+        className={loading ? "graph-background-fade-in" : ""}
+        style={{
+          boxSizing: "border-box",
+          top: "20px",
+          width: "100%",
+          border: "2px solid black",
+          background: `linear-gradient(rgba(244, 143, 237, 0.2), rgba(184, 241, 241, 0.2)), url(${background})`,
+          backgroundSize: "cover, cover",
+          backgroundPosition: "center",
+          backgroundBlendMode: "color-dodge",
+          opacity: loading ? 0 : 1,
+        }}
+      >
+        {loading && (
           <div
             data-agent="graph-loading"
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(233, 237, 233, 0.3)",
+              zIndex: 10,
+              display: "grid",
+              placeItems: "center",
+              fontFamily: "monospace",
+              fontWeight: "bold",
+              pointerEvents: "none",
+              fontSize: 18,
+              color: "#333",
+            }}
+          >
+            Loading graph...
+          </div>
+        )}
+
+        {graphLoading && (
+          <div
+            data-agent="graph-submit-loading"
             style={{
               position: "absolute",
               inset: 0,

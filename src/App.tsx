@@ -1627,42 +1627,39 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       )}
       {!!user && (
         <main>
-          {graph === null ? (
-            <p style={{ padding: 20, fontFamily: "monospace" }}>Loading graph...</p>
-          ) : (
-            <GraphView
-              revisions={(graph.revisions as Revision[]).filter((r: Revision) => {
-                const revisionsForConcept = (graph.revisions as Revision[]).filter((rev: Revision) => rev.conceptId === r.conceptId)
-                const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
-                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-                  , revisionsForConcept[0])
+          <GraphView
+            loading={graph === null}
+            revisions={(graph?.revisions ?? []).filter((r: Revision) => {
+              const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
+              const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
+                new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                , revisionsForConcept[0])
 
-                return r.id === latestRevision.id
-              })}
-              concepts={graph.concepts}
-              relations={graph.relations}
-              onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
-              onNodeClick={async (conceptId) => {
-                setSelectedConcept(conceptId)
+              return r.id === latestRevision.id
+            })}
+            concepts={graph?.concepts ?? []}
+            relations={graph?.relations ?? []}
+            onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
+            onNodeClick={async (conceptId) => {
+              setSelectedConcept(conceptId)
 
-                const revisions = await loadRevisions(conceptId)
+              const revisions = await loadRevisions(conceptId)
 
-                const latest = revisions.at(-1)
+              const latest = revisions.at(-1)
 
-                if (latest) {
-                  setActiveRevisionId(latest.id)
-                  setEditorValue(latest.markdown)
-                } else {
-                  setActiveRevisionId(null)
-                  const concept = graph.concepts.find((c: any) => c.id === conceptId)
-                  setEditorValue(concept?.title ? `# ${concept.title}` : "")
-                }
+              if (latest) {
+                setActiveRevisionId(latest.id)
+                setEditorValue(latest.markdown)
+              } else {
+                setActiveRevisionId(null)
+                const concept = (graph?.concepts ?? []).find((c: any) => c.id === conceptId)
+                setEditorValue(concept?.title ? `# ${concept.title}` : "")
+              }
 
-                scrollToEditor()
-              }}
-              API={API}
-            />
-          )}
+              scrollToEditor()
+            }}
+            API={API}
+          />
         </main>
       )
       }

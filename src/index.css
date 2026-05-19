@@ -277,10 +277,24 @@ footer {
 
 @keyframes panBackground {
   from {
-    background-position: 0 0;
+    background-position: 0% 50%;
   }
 
   to {
-    background-position: 100% 0;
+    background-position: 100% 50%;
   }
+}
+
+@keyframes fadeInBackground {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.graph-background-fade-in {
+  animation: fadeInBackground 1.2s ease-out forwards, panBackground 8s ease-in-out infinite alternate;
+  animation-fill-mode: forwards, both;
 }
