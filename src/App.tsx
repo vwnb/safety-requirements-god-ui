@@ -861,7 +861,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <div data-agent="loading-message"
             style={{
               border: "2px solid black",
-              background: "white",
+              background: "rgb(233, 237, 233)",
               padding: 18,
               fontFamily: "monospace",
               fontSize: 16,
