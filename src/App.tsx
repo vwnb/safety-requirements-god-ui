@@ -75,14 +75,6 @@ export const brutal = {
     marginBottom: "16px",
     position: "relative" as const,
   },
-  title: {
-    fontFamily: "monospace",
-    fontWeight: "bold",
-    color: "#000",
-    fontSize: 14,
-    marginBottom: "1em",
-    marginTop: "1em",
-  },
   button: {
     all: "unset" as any,
     color: "black",
@@ -128,6 +120,7 @@ export const brutal = {
     background: "white",
     maxHeight: 240,
     overflow: "auto",
+    width: "100%"
   },
 
   row: {
@@ -157,8 +150,9 @@ export const brutal = {
     fontSize: 12,
     opacity: 0.8,
     overflow: "hidden",
-    whiteSpace: "nowrap" as const,
+    whiteSpace: "wrap" as const,
     textOverflow: "ellipsis",
+    WebkitLineClamp: 2,
     flexGrow: 1,
     padding: "0 6px",
   },
@@ -836,47 +830,45 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           </div>
         </div>
       )}
-      <div style={{ width: "720px", padding: 20, fontFamily: "monospace" }}>
-        <div data-agent="top-header" className="top-header">
-          <img src={logo} alt="Logo" className="logo" data-agent="logo" />
+      <header data-agent="top-header" className="top-header">
+        <img src={logo} alt="Logo" className="logo" data-agent="logo" />
 
-          <section style={{ flex: 1 }} data-agent="user-section">
-            <div style={brutal.title}>User</div>
-            {auth0Enabled ? (
-              <Auth0UserBar onActorResolved={onActorResolved} />
-            ) : (
-              <input
-                data-agent="input-user"
-                value={"Alice"}
-                style={brutal.input}
-              />
-            )}
-          </section>
-
-          {!!user && (
-
-            <section style={{ flex: 1 }} data-agent="project-section">
-              <div style={brutal.title}>Project</div>
-              <input
-                data-agent="input-project"
-                disabled
-                value={"Mock project"}
-                style={brutal.input}
-              />
-            </section>
-
+        <section style={{ flex: 1 }} data-agent="user-section">
+          <div className="title">User</div>
+          {auth0Enabled ? (
+            <Auth0UserBar onActorResolved={onActorResolved} />
+          ) : (
+            <input
+              data-agent="input-user"
+              value={"Alice"}
+              style={brutal.input}
+            />
           )}
-        </div>
+        </section>
 
         {!!user && (
 
+          <section style={{ flex: 1 }} data-agent="project-section">
+            <div className="title">Project</div>
+            <input
+              data-agent="input-project"
+              disabled
+              value={"Mock project"}
+              style={brutal.input}
+            />
+          </section>
+
+        )}
+      </header>
+
+      <hr />
+
+      <aside>
+        {!!user && (
           <>
-
-            <hr />
-
-            <div className="work-items-layout">
+            <div className="cms-layout">
               <section data-agent="work-items-section">
-                <div style={brutal.title}>Work items</div>
+                <div className="title">Work items</div>
 
                 {workItems.length > 0 && (
                   <div style={{ marginBottom: 10 }}>
@@ -900,10 +892,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 )}
               </section>
 
-              <div className="horizontal-divider" />
-
               <section data-agent="new-work-item-section">
-                <div style={brutal.title}>New work item</div>
+                <div className="title">New work item</div>
 
                 <div style={brutal.formRow}>
                   <div style={brutal.label}>Key</div>
@@ -933,13 +923,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </section>
             </div>
 
-            <hr />
-
             <section>
 
               {!!selectedWorkItemData ? (
                 <div data-agent="edit-work-item-form">
-                  <div style={brutal.title}>Edit work item</div>
+                  <div className="title">Edit work item</div>
                   <div style={brutal.formRow}>
                     <div style={brutal.label}>Name</div>
                     <input
@@ -1023,9 +1011,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
 
-            <div className="concepts-layout">
+            <div className="cms-layout">
               <section data-agent="concepts-section">
-                <div style={brutal.title}>Concepts</div>
+                <div className="title">Concepts</div>
 
                 {typeof concepts === "undefined" ? (
                   <>
@@ -1033,9 +1021,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </>
                 ) :
                   concepts.length === 0 ? (
-                    <>
+                    <p>
                       No concepts yet.
-                    </>
+                    </p>
                   ) :
                     (
                       concepts.map((c) => (
@@ -1072,10 +1060,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     )}
               </section>
 
-              <div className="horizontal-divider" />
-
               <section data-agent="new-concept-section">
-                <div style={brutal.title}>New concept</div>
+                <div className="title">New concept</div>
 
                 <div style={brutal.formRow}>
                   <div style={brutal.label}>Key</div>
@@ -1175,10 +1161,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </section>
             </div>
 
-            <hr />
-
             <section data-agent="editor-section">
-              <div style={brutal.title}>Edit concept</div>
+              <div className="title">Edit concept</div>
 
               {activeConcept && (
                 <>
@@ -1266,13 +1250,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     </select>
                   </div>
                   <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>SAVE CONCEPT</button>
-                  <hr />
                 </>
               )}
-
             </section>
+
             <section data-agent="markdown-editor-section">
-              <div style={brutal.title}>Revise concept</div>
+              <div className="title">Revise concept</div>
 
               {activeRevisionId && (
                 <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
@@ -1287,18 +1270,15 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </button>
             </section>
 
-            <hr />
-
             <section data-agent="revisions-section">
-              <div style={brutal.title}>Concept revisions</div>
+              <div className="title">Concept revisions</div>
 
               {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
-                <>
-                  <hr />
+                <p>
                   No revisions for this concept.
-                </>
+                </p>
               ) : (
-                <div style={brutal.list}>
+                <div style={{ ...brutal.list }}>
                   {(revisionsByConcept[selectedConcept] || []).map((r) => {
                     const isBase = r.id === baseId
                     const isTarget = r.id === targetId
@@ -1315,7 +1295,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       >
                         <div data-agent="revision-id" style={brutal.cellId}>{r.id.slice(0, 6)}</div>
 
-                        <div data-agent="revision-markdown" style={brutal.cellText}>{r.markdown}</div>
+                        <div data-agent="revision-markdown" style={brutal.cellText}>{r.markdown.slice(0, 120)}...</div>
 
                         <div style={brutal.actions}>
                           <button
@@ -1389,7 +1369,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
             <section data-agent="import-concepts-section">
-              <div style={brutal.title}>Import concepts</div>
+              <div className="title">Import concepts</div>
 
               <div style={brutal.list}>
                 {templates.map((wi) => (
@@ -1408,9 +1388,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <hr />
 
             <section data-agent="baselines-section">
-              <div style={brutal.title}>Baselines</div>
-
-              <hr />
+              <div className="title">Baselines</div>
 
               {baselines.length === 0 ? (
                 <div style={{ fontStyle: "italic", color: "#666", marginBottom: 10 }}>
@@ -1436,9 +1414,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             {selectedBaseline && (
               <>
-                < hr />
                 <section data-agent="selected-baseline-section">
-                  <div style={brutal.title}>
+                  <div className="title">
                     Baseline: {selectedBaseline.name}
                   </div>
 
@@ -1448,12 +1425,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                       return (
                         <div key={r.id} style={brutal.row}>
-                          <div style={{ width: 120 }}>
+                          <div style={{ width: 120, overflow: "hidden" }}>
                             {r.concept.key} ({r.concept.type})
                           </div>
 
                           <div style={brutal.cellText}>
-                            {r.markdown.slice(0, 80)}
+                            {r.markdown.slice(0, 80)}...
                           </div>
                         </div>
                       )
@@ -1462,10 +1439,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </section>
               </>
             )}
-            <hr />
 
             <section data-agent="new-baseline-section">
-              <div style={brutal.title}>New baseline</div>
+              <div className="title">New baseline</div>
 
               <input
                 data-agent="input-baseline-name"
@@ -1475,12 +1451,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 style={{ ...brutal.input, marginBottom: 8 }}
               />
 
-              <hr />
-
               {Object.keys(revisionsByConcept).length === 0 ? (
-                <>
+                <p>
                   No revisions for this concept.
-                </>
+                </p>
               ) : (
                 <>
                   <div style={brutal.list}>
@@ -1495,14 +1469,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                             key={r.id}
                             onClick={() => toggleRevision(r.id)}
                             style={{
-                              padding: 6,
-                              borderBottom: "1px solid black",
+                              ...brutal.row,
                               background: checked ? "black" : "white",
                               color: checked ? "white" : "black",
-                              cursor: "pointer",
                             }}
                           >
-                            {r.id.slice(0, 6)} — {r.markdown.slice(0, 80)}{r.markdown.length > 80 ? "..." : ""}
+                            <div style={brutal.cellId}>{r.id.slice(0, 6)}</div><div style={brutal.cellText}>{r.markdown.slice(0, 80)}...</div>
                           </div>
                         )
                       })}
@@ -1522,7 +1494,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <hr />
 
             <section data-agent="generate-llm-section">
-              <div style={brutal.title}>Generate content with LLM</div>
+              <div className="title">Generate content with LLM</div>
 
               <input type="text"
                 data-agent="input-llm-prompt"
@@ -1543,7 +1515,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           </>
         )}
 
-      </div >
+        <hr />
+
+        <footer>&copy; WCGW software 2026 // Human-made software for strange futures.</footer>
+
+      </aside>
 
       {!!user && (
         <main>

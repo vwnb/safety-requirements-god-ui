@@ -216,10 +216,8 @@ export default function GraphView({
     <>
       <div data-agent="graph-view-container" style={{
         boxSizing: "border-box",
-        position: "sticky",
         top: "20px",
         width: "100%",
-        height: "calc(100vh - 40px)",
         border: "2px solid black",
         background: `linear-gradient(rgba(244, 143, 237, 0.2), rgba(184, 241, 241, 0.2)), url(${background})`,
         backgroundSize: "cover, cover",

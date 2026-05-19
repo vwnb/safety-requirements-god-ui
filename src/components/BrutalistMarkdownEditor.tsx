@@ -44,7 +44,7 @@ export function BrutalistMarkdownEditor({
         data-agent="markdown-editor-preview"
         style={{
           padding: 12,
-          fontFamily: "monospace",
+          fontFamily: "sans-serif",
           overflow: "auto",
           minWidth: 0,
           minHeight: 0,
