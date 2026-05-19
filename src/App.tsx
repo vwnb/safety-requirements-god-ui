@@ -5,6 +5,7 @@ import { Diff, Hunk, parseDiff, type HunkData } from "react-diff-view"
 import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
 import GraphView from "./components/GraphView"
+import { OfflineBanner } from "./components/OfflineBanner"
 import { useApiFetch } from "./lib/apiFetchContext"
 import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
 import background from "./assets/background.jpg"
@@ -59,15 +60,6 @@ type WorkItem = {
   asil?: ASIL
   applicationContext?: string
   systemBoundary?: string
-}
-
-type Relation = {
-  id: string
-  fromId: string
-  toId: string
-  type: string
-  createdBy: string
-  createdAt: string
 }
 
 export const brutal = {
@@ -288,6 +280,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   // Use initialized as false to distinguish "never loaded" from "loaded but empty"
   const [workItems, setWorkItems] = useState<WorkItem[] | null>(null)
   const [workItemsInitialized, setWorkItemsInitialized] = useState(false)
+  workItemsInitialized
   const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
   const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
 
@@ -295,6 +288,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [concepts, setConcepts] = useState<Concept[] | null>(null)
   const [conceptsInitialized, setConceptsInitialized] = useState(false)
+  conceptsInitialized
   const [selectedConcept, setSelectedConcept] = useState<string>("")
   const [activeConcept, setActiveConcept] = useState<Concept | null>(null)
 
@@ -851,6 +845,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   return (
     <>
+      <OfflineBanner />
       {loading && (
         <div data-agent="loading-overlay"
           style={{

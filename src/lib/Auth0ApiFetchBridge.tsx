@@ -12,6 +12,16 @@ class ApiError extends Error {
   }
 }
 
+async function clearApiCache() {
+  try {
+    const cache = await caches.open("api-cache")
+    const keys = await cache.keys()
+    await Promise.all(keys.map((key) => cache.delete(key)))
+  } catch {
+    // Cache API may not be available in all environments
+  }
+}
+
 export function Auth0ApiFetchBridge({
   audience,
   children,
@@ -82,6 +92,8 @@ export function Auth0ApiFetchBridge({
             message:
               "Your session has expired. Please sign in again.",
           })
+          // Clear cached data so stale data from the previous session isn't served
+          clearApiCache()
           setTimeout(() => {
             window.location.href = import.meta.env.VITE_API_URL + "/auth/logout"
           }, 3000)
