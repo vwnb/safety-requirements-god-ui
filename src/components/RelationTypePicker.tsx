@@ -57,33 +57,33 @@ export default function RelationTypePicker({
     >
       <div
         data-agent="relation-type-picker-title"
-        style={brutal.title}
+        className="title"
       >
         Select relation type
       </div>
 
       <div style={brutal.list}>
-      {RELATION_TYPES.map((t) => (
-        <div
-          data-agent={`relation-type-${t}`}
-          key={t}
-          onClick={() => {
-            onSelect(t)
-            setOpen(false)
-          }}
-          style={brutal.row}
-          onMouseEnter={(e) => {
-            ; (e.currentTarget.style.background = "black")
-              ; (e.currentTarget.style.color = "white")
-          }}
-          onMouseLeave={(e) => {
-            ; (e.currentTarget.style.background = "white")
-              ; (e.currentTarget.style.color = "black")
-          }}
-        >
-          {t}
-        </div>
-      ))}
+        {RELATION_TYPES.map((t) => (
+          <div
+            data-agent={`relation-type-${t}`}
+            key={t}
+            onClick={() => {
+              onSelect(t)
+              setOpen(false)
+            }}
+            style={brutal.row}
+            onMouseEnter={(e) => {
+              ; (e.currentTarget.style.background = "black")
+                ; (e.currentTarget.style.color = "white")
+            }}
+            onMouseLeave={(e) => {
+              ; (e.currentTarget.style.background = "white")
+                ; (e.currentTarget.style.color = "black")
+            }}
+          >
+            {t}
+          </div>
+        ))}
       </div>
 
       <button
