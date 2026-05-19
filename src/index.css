@@ -12,6 +12,10 @@
     "aside main";
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   background: rgb(233, 237, 233);
@@ -29,7 +33,7 @@ aside {
 
 hr {
   grid-area: hr;
-  border-top: 2px dotted rgba(0,0,0,0.5);
+  border-top: 2px dashed rgba(0, 0, 0, 0.7);
   border-bottom: none;
   margin: 2em 0;
 }
@@ -79,7 +83,10 @@ h2 {
   }
 }
 
-p, h3, ul, code {
+p,
+h3,
+ul,
+code {
   margin: 1em 0;
 }
 
@@ -140,6 +147,29 @@ header>* {
 
 .title+button {
   display: block !important;
+}
+
+.list-input {
+  border: 2px solid black;
+  border-radius: 4;
+  background: white;
+  max-height: 240px;
+  overflow: auto;
+  width: 100%;
+}
+
+button:hover,
+.list-input>.option:hover {
+  background-color: #eee !important;
+  color: #000 !important;
+}
+
+.option, .option2 {
+  border-bottom: 1px solid black;
+  padding: 6px;
+  font-family: monospace;
+  align-items: center;
+  display: flex;
 }
 
 footer {

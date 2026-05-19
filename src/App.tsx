@@ -114,24 +114,6 @@ export const brutal = {
     cursor: "pointer",
   },
 
-  list: {
-    border: "2px solid black",
-    borderRadius: 4,
-    background: "white",
-    maxHeight: 240,
-    overflow: "auto",
-    width: "100%"
-  },
-
-  row: {
-    borderBottom: "1px solid black",
-    padding: "6px",
-    fontFamily: "monospace",
-    alignItems: "center",
-    boxSizing: "border-box" as const,
-    display: "flex",
-  },
-
   rowBase: {
     background: "#93a9c6",
     color: "#fff",
@@ -870,14 +852,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 {workItems.length > 0 && (
                   <div style={{ marginBottom: 10 }}>
-                    <div data-agent="work-items-list" style={brutal.list}>
+                    <div data-agent="work-items-list" className="list-input">
                       {workItems.map((workItem) => (
                         <div
+                          className="option"
                           data-agent={`work-item-${workItem.id}`}
                           key={workItem.id}
                           onClick={() => setSelectedWorkItem(workItem.id)}
                           style={{
-                            ...brutal.row,
                             ...(selectedWorkItem === workItem.id ? { background: "#000", color: "#fff" } : {}),
                             cursor: "pointer",
                           }}
@@ -916,7 +898,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </div>
 
                 <button data-agent="btn-create-work-item" onClick={createWorkItem} style={brutal.button}>
-                  CREATE
+                  Create
                 </button>
               </section>
             </div>
@@ -997,7 +979,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       style={brutal.input}
                     />
                   </div>
-                  <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>SAVE CHANGES</button>
+                  <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>Save changes</button>
                 </div>
               )
                 : (
@@ -1153,7 +1135,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </div>
 
                 <button data-agent="btn-create-concept" onClick={() => { createConcept() }} style={brutal.button}>
-                  CREATE
+                  Create
                 </button>
 
               </section>
@@ -1247,7 +1229,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       <option value="ASIL_D">ASIL_D</option>
                     </select>
                   </div>
-                  <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>SAVE CONCEPT</button>
+                  <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>Save concept</button>
                 </>
               )}
             </section>
@@ -1276,17 +1258,17 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   No revisions for this concept.
                 </p>
               ) : (
-                <div style={{ ...brutal.list }}>
+                <div className="list-input">
                   {(revisionsByConcept[selectedConcept] || []).map((r) => {
                     const isBase = r.id === baseId
                     const isTarget = r.id === targetId
 
                     return (
                       <div
+                        className="option2"
                         data-agent={`revision-${r.id}`}
                         key={r.id}
                         style={{
-                          ...brutal.row,
                           ...(isBase ? brutal.rowBase : {}),
                           ...(isTarget ? brutal.rowTarget : {}),
                         }}
@@ -1309,7 +1291,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                           </button>
 
                           <div style={{
-                            borderLeft: "2px solid black", margin: "0 1rem",
+                            border: "1px solid black", margin: "0 1rem",
                             ...(isBase || isTarget ? { borderColor: "white" } : {})
                           }} />
 
@@ -1369,9 +1351,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <section data-agent="import-concepts-section">
               <div className="title">Import concepts</div>
 
-              <div style={brutal.list}>
+              <div className="list-input">
                 {templates.map((wi) => (
-                  <div data-agent={`template-${wi.id}`} style={{ ...brutal.row, ...{ cursor: "pointer" } }} key={wi.id} onClick={async () => {
+                  <div className="option" data-agent={`template-${wi.id}`} key={wi.id} onClick={async () => {
                     importConceptsFromTemplate(wi.id)
                   }}>
                     {wi.key} - {wi.name}
@@ -1417,12 +1399,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     Baseline: {selectedBaseline.name}
                   </div>
 
-                  <div style={brutal.list}>
+                  <div className="list-input">
                     {selectedBaseline.items.map((item: any) => {
                       const r = item.revision
 
                       return (
-                        <div key={r.id} style={brutal.row}>
+                        <div key={r.id}>
                           <div style={{ width: 120, overflow: "hidden" }}>
                             {r.concept.key} ({r.concept.type})
                           </div>
@@ -1455,7 +1437,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </p>
               ) : (
                 <>
-                  <div style={brutal.list}>
+                  <div className="list-input">
                     {Object.values(revisionsByConcept)
                       .flat()
                       .map((r) => {
@@ -1463,11 +1445,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                         return (
                           <div
+                            className="option"
                             data-agent={`baseline-revision-${r.id}`}
                             key={r.id}
                             onClick={() => toggleRevision(r.id)}
                             style={{
-                              ...brutal.row,
                               background: checked ? "black" : "white",
                               color: checked ? "white" : "black",
                             }}
@@ -1483,7 +1465,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     onClick={createBaseline}
                     style={{ ...brutal.button, marginTop: 8 }}
                   >
-                    CREATE BASELINE
+                    Create baseline
                   </button>
                 </>
               )}
@@ -1507,7 +1489,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 onClick={generateWithLLM}
                 style={brutal.button}
               >
-                GENERATE
+                Generate
               </button>
             </section>
 
@@ -1520,23 +1502,23 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         </>
       )}
       {!!user && (
-          <main>
-            <GraphView
-              revisions={graph.revisions.filter((r) => {
-                const revisionsForConcept = graph.revisions.filter((rev) => rev.conceptId === r.conceptId)
-                const latestRevision = revisionsForConcept.reduce((latest, current) =>
-                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-                  , revisionsForConcept[0])
+        <main>
+          <GraphView
+            revisions={graph.revisions.filter((r) => {
+              const revisionsForConcept = graph.revisions.filter((rev) => rev.conceptId === r.conceptId)
+              const latestRevision = revisionsForConcept.reduce((latest, current) =>
+                new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                , revisionsForConcept[0])
 
-                return r.id === latestRevision.id
-              })}
-              concepts={graph.concepts}
-              relations={graph.relations}
-              onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
-              API={API}
-            />
-          </main>
-        )
+              return r.id === latestRevision.id
+            })}
+            concepts={graph.concepts}
+            relations={graph.relations}
+            onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
+            API={API}
+          />
+        </main>
+      )
       }
     </>
   )
