@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import ReactFlow, {
   Background,
   Controls,
@@ -19,6 +19,7 @@ type Revision = {
   id: string
   conceptId: string
   markdown: string
+  createdAt: string
 }
 
 type Concept = {
@@ -71,22 +72,55 @@ function layoutGraph(nodes: Node[], edges: Edge[]) {
 }
 
 function ConceptNode({ data, id }: any) {
+  const [hovered, setHovered] = useState(false)
+  const [showExcerpt, setShowExcerpt] = useState(false)
+
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleMouseEnter = useCallback(() => {
+    setHovered(true)
+    timerRef.current = setTimeout(() => {
+      setShowExcerpt(true)
+    }, 500)
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    setHovered(false)
+    setShowExcerpt(false)
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
   return (
     <div
       data-agent={`graph-node-${id}`}
-      style={{
-        padding: 10,
-        borderRadius: 8,
-        border: "2px solid black",
-        background: data.color || "white",
-        fontFamily: "monospace",
-        fontSize: 12,
-        width: nodeWidth,
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-      }}
+      className="graph-node"
+      style={{ background: data.color || "white", width: nodeWidth }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      <div data-agent="graph-node-label" style={{ fontWeight: "bold" }}>{data.label}</div>
+      <div data-agent="graph-node-label" style={{ fontWeight: "bold" }}>
+        {hovered ? "Edit concept: " : ""}{data.label}
+      </div>
       <div data-agent="graph-node-type" style={{ opacity: 0.7 }}>{data.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: any) => l.toUpperCase())}</div>
+
+      <div
+        data-agent="graph-node-excerpt"
+        className="graph-node-excerpt"
+        style={{
+          boxSizing: "border-box",
+          margin: "0.5em 0",
+          fontSize: 10,
+          color: "#333",
+          overflow: "hidden",
+          maxHeight: showExcerpt ? "200px" : "0px",
+          transition: "max-height 0.3s ease",
+        }}
+      >
+        {data.excerpt}
+      </div>
 
       <Handle type="source" position={Position.Right} />
       <Handle type="target" position={Position.Left} />
@@ -103,12 +137,14 @@ export default function GraphView({
   revisions,
   relations,
   onRelationCreated,
+  onNodeClick,
   API,
 }: {
   concepts: Concept[]
   revisions: Revision[]
   relations: Relation[]
   onRelationCreated: () => void
+  onNodeClick?: (conceptId: string) => void
   API: string
 }) {
   const apiFetch = useApiFetch()
@@ -142,9 +178,21 @@ export default function GraphView({
     return m
   }, [concepts])
 
+  const latestRevisionByConcept = useMemo(() => {
+    const m = new Map<string, Revision>()
+    revisions.forEach((r) => {
+      const existing = m.get(r.conceptId)
+      if (!existing || new Date(r.createdAt) > new Date(existing.createdAt)) {
+        m.set(r.conceptId, r)
+      }
+    })
+    return m
+  }, [revisions])
+
   const nodes: Node[] = useMemo(() => {
     return revisions.map((r) => {
       const concept = conceptMap.get(r.conceptId)
+      const latestRev = latestRevisionByConcept.get(r.conceptId)
 
       return {
         id: r.id,
@@ -153,11 +201,13 @@ export default function GraphView({
           label: concept?.title || r.markdown.slice(0, 40),
           type: concept?.type,
           color: typeColor[concept?.type || ""],
+          conceptId: r.conceptId,
+          excerpt: latestRev?.markdown?.slice(0, 120) + "...",
         },
         position: { x: 0, y: 0 },
       }
     })
-  }, [revisions, conceptMap])
+  }, [revisions, conceptMap, latestRevisionByConcept])
 
   const edges: Edge[] = useMemo(() => {
     return relations.map((r) => ({
@@ -252,6 +302,11 @@ export default function GraphView({
           nodeExtent={[[0, 0], [3000, 3000]]}
           onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
           onEdgeMouseLeave={() => setHoveredEdgeId(null)}
+          onNodeClick={(_, node) => {
+            if (onNodeClick && node.data.conceptId) {
+              onNodeClick(node.data.conceptId)
+            }
+          }}
           onEdgeClick={(_, edge) => {
             if (!graphLoading) {
               deleteRelation(edge.id)

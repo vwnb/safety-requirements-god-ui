@@ -1387,7 +1387,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       >
                         <div data-agent="revision-id" className="list-id">{r.id.slice(0, 16)}</div>
 
-                        <div data-agent="revision-markdown" className="list-tooltip">{r.markdown.slice(0, 160)}...</div>
+                        <div data-agent="revision-markdown" className="list-tooltip">{r.markdown.slice(0, 100)}...</div>
 
                         <div style={brutal.actions}>
                           <button
@@ -1582,7 +1582,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               color: checked ? "white" : "black",
                             }}
                           >
-                            <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 160)}...</div>
+                            <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
                           </div>
                         )
                       })}
@@ -1643,6 +1643,22 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             concepts={graph.concepts}
             relations={graph.relations}
             onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
+            onNodeClick={async (conceptId) => {
+              setSelectedConcept(conceptId)
+
+              const revisions = await loadRevisions(conceptId)
+
+              const latest = revisions.at(-1)
+
+              if (latest) {
+                setActiveRevisionId(latest.id)
+                setEditorValue(latest.markdown)
+              } else {
+                setActiveRevisionId(null)
+                const concept = graph.concepts.find(c => c.id === conceptId)
+                setEditorValue(concept?.title ? `# ${concept.title}` : "")
+              }
+            }}
             API={API}
           />
         </main>
