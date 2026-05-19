@@ -20,6 +20,7 @@ export function BrutalistMarkdownEditor({
         height: 300,
         border: "2px solid black",
         minHeight: 0,
+        flexGrow: 1
       }}
     >
       <textarea

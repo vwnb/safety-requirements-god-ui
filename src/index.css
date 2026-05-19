@@ -275,6 +275,53 @@ footer {
   }
 }
 
+.revise-panel {
+  display:flex;
+  flex-direction: column;
+  background: rgb(233, 237, 233);
+  border: 2px solid black;
+  padding: 16px;
+  margin-bottom: 16px;
+  overflow: auto;
+  position: fixed;
+  right:20px;
+  left:720px;
+  z-index: 999;
+}
+
+.revise-panel + * {
+  display: none;
+}
+
+main.revise-active {
+  animation: popUp 0.3s ease-out;
+}
+
+.revise-panel.loaded+* {
+  display: none;
+}
+
+@media (max-width: 1280px) {
+  .revise-panel {
+    inset: 0;
+    background: rgb(233, 237, 233);
+    border: none;
+    margin: 0;
+  }
+}
+
+@keyframes popUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 @keyframes panBackground {
   from {
     background-position: 0% 50%;
@@ -285,16 +332,18 @@ footer {
   }
 }
 
-@keyframes fadeInBackground {
+@keyframes fadeIn {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
 }
 
+
 .graph-background-fade-in {
-  animation: fadeInBackground 3s ease-out forwards, panBackground 40s ease-in-out infinite alternate;
+  animation: fadeIn 3s ease-out forwards, panBackground 40s ease-in-out infinite alternate;
   animation-fill-mode: forwards, both;
 }

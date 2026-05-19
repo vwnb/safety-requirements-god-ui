@@ -186,7 +186,7 @@ function Auth0UserBar({
   )
 }
 
-function scrollToEditor() {
+function scrollToEditConcept() {
   setTimeout(() => {
     const el = document.querySelector('[data-agent="editor-section"]')
     if (el) {
@@ -320,6 +320,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
 
   const [llmPrompt, setLlmPrompt] = useState("")
+  const [nodeClickLoading, setNodeClickLoading] = useState(false)
 
   async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
     // Set loading before any async work to ensure overlay shows
@@ -421,14 +422,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       if (data.length > 0) {
         setSelectedConcept(data[0].id)
 
-        const revisions = await loadRevisions(data[0].id)
-
-        const latest = revisions.at(-1)
-
-        if (latest) {
-          setActiveRevisionId(latest.id)
-          setEditorValue(latest.markdown)
-        }
+        await loadRevisions(data[0].id)
       } else {
         setSelectedConcept("")
         setEditorValue("")
@@ -444,8 +438,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       ...prev,
       [conceptId]: data,
     }))
-
-    setActiveRevisionId(data[data.length - 1]?.id || null)
 
     return data
   }
@@ -484,21 +476,19 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         }
       }
 
-      await apiFetch(`${API}/workflow/submit-change`, {
+      const res = await apiFetch(`${API}/workflow/submit-change`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
 
-      const revisions = await loadRevisions(selectedConcept)
+      const createdRevision = res.ok ? await res.json() : null
 
-      const latest = revisions.at(-1)
-
-      if (latest) {
-        setActiveRevisionId(latest.id)
-        setEditorValue(latest.markdown)
+      if (createdRevision) {
+        setActiveRevisionId(createdRevision.id)
       }
 
+      await loadRevisions(selectedConcept)
       await refreshGraph(selectedWorkItem)
     })
   }
@@ -1105,21 +1095,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                           data-agent={`concept-${c.id}`}
                           key={c.id}
                           onClick={async () => {
+                            setNodeClickLoading(true)
                             setSelectedConcept(c.id)
-
-                            const revisions = await loadRevisions(c.id)
-
-                            const latest = revisions.at(-1)
-
-                            if (latest) {
-                              setActiveRevisionId(latest.id)
-                              setEditorValue(latest.markdown)
-                            } else {
-                              setActiveRevisionId(null)
-                              setEditorValue(c.title ? `# ${c.title}` : "")
+                            try {
+                              const revisions = await loadRevisions(c.id)
+                              setActiveRevisionId(revisions?.[0]?.id || null)
+                              setEditorValue(revisions?.[0]?.markdown || "")
+                              scrollToEditConcept()
+                            } finally {
+                              setNodeClickLoading(false)
                             }
-
-                            scrollToEditor()
                           }}
                           style={{
                             ...brutal.button,
@@ -1328,22 +1313,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>Save concept</button>
                 </>
               )}
-            </section>
-
-            <section data-agent="markdown-editor-section">
-              <div className="title">Revise concept</div>
-
-              {activeRevisionId && (
-                <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                  Revision: {activeRevisionId}
-                </div>
-              )}
-
-              <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
-
-              <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8 }}>
-                Save revision
-              </button>
             </section>
 
             <section data-agent="revisions-section">
@@ -1614,7 +1583,51 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         </>
       )}
       {!!user && (
-        <main>
+        <main className={activeRevisionId ? "revise-active" : ""}>
+          {nodeClickLoading && (
+            <div
+              data-agent="node-click-loading"
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(255, 255, 255, 0.5)",
+                zIndex: 9999,
+                display: "grid",
+                placeItems: "center",
+                padding: 20,
+                pointerEvents: "none",
+              }}
+            >
+              <div
+                style={{
+                  border: "2px solid black",
+                  background: "rgb(233, 237, 233)",
+                  padding: 18,
+                  fontFamily: "monospace",
+                  fontSize: 16,
+                }}
+              >
+                Loading concept...
+              </div>
+            </div>
+          )}
+          {activeRevisionId && (
+            <div data-agent="revise-panel" className="revise-panel">
+              <div className="title">Revise concept</div>
+              <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
+                Revision: {activeRevisionId}
+              </div>
+              <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
+              <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
+                <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8, flex: 1 }}>
+                  Save revision
+                </button>
+                <button data-agent="btn-cancel-revision" onClick={() => { setActiveRevisionId(null); setEditorValue("") }} style={{ ...brutal.button, marginTop: 8 }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           <GraphView
             loading={graph === null}
             revisions={(graph?.revisions ?? []).filter((r: Revision) => {
@@ -1629,22 +1642,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             relations={graph?.relations ?? []}
             onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
             onNodeClick={async (conceptId) => {
+              setNodeClickLoading(true)
               setSelectedConcept(conceptId)
-
-              const revisions = await loadRevisions(conceptId)
-
-              const latest = revisions.at(-1)
-
-              if (latest) {
-                setActiveRevisionId(latest.id)
-                setEditorValue(latest.markdown)
-              } else {
-                setActiveRevisionId(null)
-                const concept = (graph?.concepts ?? []).find((c: any) => c.id === conceptId)
-                setEditorValue(concept?.title ? `# ${concept.title}` : "")
+              try {
+                const revisions = await loadRevisions(conceptId)
+                setActiveRevisionId(revisions?.[0]?.id || null)
+                setEditorValue(revisions?.[0]?.markdown || "")
+                scrollToEditConcept()
+              } finally {
+                setNodeClickLoading(false)
               }
-
-              scrollToEditor()
             }}
             API={API}
           />

@@ -308,13 +308,15 @@ export default function GraphView({
             style={{
               position: "absolute",
               inset: 0,
-              background: "rgba(233, 237, 233, 0.5)",
+              background: "rgba(233, 237, 233, 0.3)",
               zIndex: 10,
               display: "grid",
               placeItems: "center",
               fontFamily: "monospace",
               fontWeight: "bold",
               pointerEvents: "none",
+              fontSize: 18,
+              color: "#333",
             }}
           >
             Loading graph...
