@@ -62,7 +62,7 @@ export default function RelationTypePicker({
         Select relation type
       </div>
 
-      <div style={brutal.list}>
+      <div className="list-input">
         {RELATION_TYPES.map((t) => (
           <div
             data-agent={`relation-type-${t}`}
@@ -71,7 +71,7 @@ export default function RelationTypePicker({
               onSelect(t)
               setOpen(false)
             }}
-            style={brutal.row}
+            className="option"
             onMouseEnter={(e) => {
               ; (e.currentTarget.style.background = "black")
                 ; (e.currentTarget.style.color = "white")
