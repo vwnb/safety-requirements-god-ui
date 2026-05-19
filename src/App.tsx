@@ -215,10 +215,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       return
     }
 
-    try {
-      setLoading(true)
-      setLoadingMessage("Joining project...")
-
+    return withLoading("Joining project...", async () => {
       const res = await apiFetch(
         `${API}/projects/${encodeURIComponent(projectKey)}/users`,
         {
@@ -230,24 +227,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         throw new Error("Failed to join project")
       }
 
-      setLoadingMessage("Refreshing projects...")
-
       await refreshProjects()
 
       setProjectKey("")
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-      setLoadingMessage("")
-    }
+    })
   }
 
   const refreshProjects = async () => {
-    try {
-      setLoading(true)
-      setLoadingMessage("Loading projects...")
-
+    return withLoading("Loading projects...", async () => {
       const res = await apiFetch(`${API}/me/projects`)
 
       if (!res.ok) {
@@ -263,12 +250,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       if (data.length > 0) {
         setSelectedProject(data[0].project)
       }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-      setLoadingMessage("")
-    }
+    })
   }
 
   useEffect(() => {
@@ -490,34 +472,35 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }, [baseId, targetId, revisionsByConcept])
 
   async function revise(revision?: Revision) {
-
-    let body;
-    if (revision) {
-      body = revision
-    } else {
-      body = {
-        conceptId: selectedConcept,
-        markdown: editorValue,
-        user: actorForApi,
+    return withLoading("Saving revision...", async () => {
+      let body;
+      if (revision) {
+        body = revision
+      } else {
+        body = {
+          conceptId: selectedConcept,
+          markdown: editorValue,
+          user: actorForApi,
+        }
       }
-    }
 
-    await apiFetch(`${API}/workflow/submit-change`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      await apiFetch(`${API}/workflow/submit-change`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
+      const revisions = await loadRevisions(selectedConcept)
+
+      const latest = revisions.at(-1)
+
+      if (latest) {
+        setActiveRevisionId(latest.id)
+        setEditorValue(latest.markdown)
+      }
+
+      await refreshGraph(selectedWorkItem)
     })
-
-    const revisions = await loadRevisions(selectedConcept)
-
-    const latest = revisions.at(-1)
-
-    if (latest) {
-      setActiveRevisionId(latest.id)
-      setEditorValue(latest.markdown)
-    }
-
-    await refreshGraph(selectedWorkItem)
   }
 
   function toggleRevision(id: string) {
@@ -529,76 +512,82 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   async function createBaseline() {
-    await apiFetch(`${API}/baselines`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: baselineName,
-        revisions: selectedRevisions,
-        user: actorForApi,
-      }),
-    })
+    return withLoading("Creating baseline...", async () => {
+      await apiFetch(`${API}/baselines`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: baselineName,
+          revisions: selectedRevisions,
+          user: actorForApi,
+        }),
+      })
 
-    refreshBaselines()
-    setSelectedRevisions([])
-    setBaselineName("")
+      await refreshBaselines()
+      setSelectedRevisions([])
+      setBaselineName("")
+    })
   }
 
   async function saveConcept() {
     if (!selectedConcept) return
 
-    await apiFetch(`${API}/concepts/${selectedConcept}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        key: editConceptKey,
-        type: editConceptType,
-        title: editConceptTitle,
-        phase: editConceptPhase,
-        asil: editConceptAsil,
-      }),
-    })
+    return withLoading("Saving concept...", async () => {
+      await apiFetch(`${API}/concepts/${selectedConcept}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: editConceptKey,
+          type: editConceptType,
+          title: editConceptTitle,
+          phase: editConceptPhase,
+          asil: editConceptAsil,
+        }),
+      })
 
-    await loadConcepts(selectedWorkItem)
+      await loadConcepts(selectedWorkItem)
+    })
   }
 
   async function createConcept(concept?: Concept) {
     if (!concept && !newConceptKey.trim()) return
 
-    const url = selectedWorkItem
-      ? `${API}/work-items/${selectedWorkItem}/concepts`
-      : `${API}/concepts`
+    return withLoading("Creating concept...", async () => {
+      const url = selectedWorkItem
+        ? `${API}/work-items/${selectedWorkItem}/concepts`
+        : `${API}/concepts`
 
-    let body;
-    if (concept) {
-      body = concept
-    } else {
-      body = {
-        key: newConceptKey,
-        type: newConceptType,
-        title: newConceptTitle,
-        phase: newConceptPhase,
-        asil: newConceptAsil,
+      let body;
+      if (concept) {
+        body = concept
+      } else {
+        body = {
+          key: newConceptKey,
+          type: newConceptType,
+          title: newConceptTitle,
+          phase: newConceptPhase,
+          asil: newConceptAsil,
+        }
       }
-    }
 
-    const res = await apiFetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      const res = await apiFetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
+      const created = await res.json()
+
+      setConcepts((prev) => [...(prev ?? []), created])
+      setSelectedConcept(created.id)
+      setNewConceptKey("")
+      setNewConceptTitle("")
+      setNewConceptPhase("")
+      setNewConceptAsil("QM")
+
+      await loadRevisions(created.id)
+      await refreshGraph(selectedWorkItem)
     })
-
-    const created = await res.json()
-
-    setConcepts((prev) => [...(prev ?? []), created])
-    setSelectedConcept(created.id)
-    setNewConceptKey("")
-    setNewConceptTitle("")
-    setNewConceptPhase("")
-    setNewConceptAsil("QM")
-
-    await loadRevisions(created.id)
-    await refreshGraph(selectedWorkItem)
   }
 
   async function loadWorkItemDetails(workItemId: string) {
@@ -614,28 +603,30 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   async function saveWorkItem() {
     if (!selectedWorkItemData) return
 
-    await apiFetch(`${API}/work-items/${selectedWorkItemData.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: editWorkItemName,
-        description: editWorkItemDescription,
-        phase: editWorkItemPhase,
-        asil: editWorkItemAsil,
-        applicationContext: editWorkItemApplicationContext,
-        systemBoundary: editWorkItemSystemBoundary,
-      }),
-    })
+    return withLoading("Saving work item...", async () => {
+      await apiFetch(`${API}/work-items/${selectedWorkItemData.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editWorkItemName,
+          description: editWorkItemDescription,
+          phase: editWorkItemPhase,
+          asil: editWorkItemAsil,
+          applicationContext: editWorkItemApplicationContext,
+          systemBoundary: editWorkItemSystemBoundary,
+        }),
+      })
 
-    await loadWorkItemDetails(selectedWorkItemData.id)
+      await loadWorkItemDetails(selectedWorkItemData.id)
 
-    setWorkItems((prev) =>
-      (prev ?? []).map((wi: WorkItem) =>
-        wi.id === selectedWorkItemData.id
-          ? { ...wi, name: editWorkItemName, description: editWorkItemDescription }
-          : wi
+      setWorkItems((prev) =>
+        (prev ?? []).map((wi: WorkItem) =>
+          wi.id === selectedWorkItemData.id
+            ? { ...wi, name: editWorkItemName, description: editWorkItemDescription }
+            : wi
+        )
       )
-    )
+    })
   }
 
   async function refreshGraph(workItemId: string) {
@@ -644,10 +635,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   async function importConceptsFromTemplate(workItemId: string) {
-    setLoading(true)
-    setLoadingMessage("Importing concepts from template...")
-
-    try {
+    return withLoading("Importing concepts from template...", async () => {
       const res = await apiFetch(`${API}/graph/${workItemId}`)
       const { concepts: importedConcepts, relations: importedRelations } = await res.json()
 
@@ -659,32 +647,32 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
       await loadConcepts(selectedWorkItem)
       await refreshGraph(selectedWorkItem)
-    } finally {
-      setLoading(false)
-    }
+    })
   }
 
   async function createWorkItem() {
     if (!newWorkItemKey.trim() || !selectedProject) return
 
-    const res = await apiFetch(`${API}/work-items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        key: newWorkItemKey,
-        name: newWorkItemTitle,
-        projectKey: selectedProject.key
-      }),
+    return withLoading("Creating work item...", async () => {
+      const res = await apiFetch(`${API}/work-items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: newWorkItemKey,
+          name: newWorkItemTitle,
+          projectKey: selectedProject.key
+        }),
+      })
+
+      if (!res.ok) return
+
+      const created = await res.json()
+
+      setWorkItems((prev) => [...(prev ?? []), created])
+      setSelectedWorkItem(created.id)
+      setNewWorkItemKey("")
+      setNewWorkItemTitle("")
     })
-
-    if (!res.ok) return
-
-    const created = await res.json()
-
-    setWorkItems((prev) => [...(prev ?? []), created])
-    setSelectedWorkItem(created.id)
-    setNewWorkItemKey("")
-    setNewWorkItemTitle("")
   }
 
   async function refreshBaselines() {
