@@ -622,10 +622,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         body: JSON.stringify({ concepts, relations }),
       })
 
-      await Promise.all([
-        refreshGraph(selectedWorkItem),
-        loadConcepts(selectedWorkItem),
-      ])
+      await loadConcepts(selectedWorkItem)
+      await refreshGraph(selectedWorkItem)
     } finally {
       setLoading(false)
     }
