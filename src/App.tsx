@@ -304,6 +304,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [loading, setLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
 
+  const [llmPrompt, setLlmPrompt] = useState("")
+
   async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
     setLoading(true)
     setLoadingMessage(message)
@@ -452,15 +454,23 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setDiff({ hunks: diff?.hunks || [] })
   }, [baseId, targetId, revisionsByConcept])
 
-  async function revise() {
-    await apiFetch(`${API}/workflow/submit-change`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+  async function revise(revision?: Revision) {
+
+    let body;
+    if (revision) {
+      body = revision
+    } else {
+      body = {
         conceptId: selectedConcept,
         markdown: editorValue,
         user: actorForApi,
-      }),
+      }
+    }
+
+    await apiFetch(`${API}/workflow/submit-change`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     })
 
     const revisions = await loadRevisions(selectedConcept)
@@ -517,23 +527,30 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     await loadConcepts(selectedWorkItem)
   }
 
-  async function createConcept() {
-    if (!newConceptKey.trim()) return
+  async function createConcept(concept?: Concept) {
+    if (!concept && !newConceptKey.trim()) return
 
     const url = selectedWorkItem
       ? `${API}/work-items/${selectedWorkItem}/concepts`
       : `${API}/concepts`
 
-    const res = await apiFetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    let body;
+    if (concept) {
+      body = concept
+    } else {
+      body = {
         key: newConceptKey,
         type: newConceptType,
         title: newConceptTitle,
         phase: newConceptPhase,
         asil: newConceptAsil,
-      }),
+      }
+    }
+
+    const res = await apiFetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     })
 
     const created = await res.json()
@@ -639,6 +656,159 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   async function refreshBaselines() {
     const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
     setBaselines(data)
+  }
+
+  const generateWithLLM = async () => {
+    if (!selectedWorkItem) return
+
+    setLoading(true)
+    setLoadingMessage("Generating content with LLM...")
+
+    try {
+      const res = await apiFetch(`${API}/generate-data`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: llmPrompt,
+          user: actorForApi,
+        }),
+      })
+
+      if (!res.ok) throw new Error("Failed to generate data")
+
+      const data = await res.json()
+
+      const keyToConceptId: Record<string, string> = Object.fromEntries(
+        concepts.map((c) => [c.key, c.id])
+      )
+
+      const createdRevisionByConceptId: Record<string, string> = {}
+
+      setLoadingMessage("Saving generated concepts...")
+
+      for (const concept of data.concepts ?? []) {
+        if (!concept.key) continue
+
+        const cres = await apiFetch(
+          `${API}/work-items/${selectedWorkItem}/concepts`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(concept),
+          }
+        )
+
+        if (!cres.ok) {
+          console.warn("Failed to create concept", concept)
+          continue
+        }
+
+        const created = await cres.json()
+        keyToConceptId[concept.key] = created.id
+      }
+
+      setLoadingMessage("Saving generated revisions...")
+
+      for (const revision of data.revisions ?? []) {
+        const conceptKey = revision.conceptKey ?? revision.key
+        const conceptId = keyToConceptId[conceptKey]
+
+        if (!conceptId) {
+          console.warn("Skipping revision; unknown concept key", revision)
+          continue
+        }
+
+        const rres = await apiFetch(`${API}/workflow/submit-change`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conceptId,
+            markdown: revision.markdown,
+            user: actorForApi,
+          }),
+        })
+
+        if (!rres.ok) {
+          console.warn("Failed to create revision", revision)
+          continue
+        }
+
+        const createdRevision = await rres.json()
+        createdRevisionByConceptId[conceptId] = createdRevision.id
+      }
+
+      setLoadingMessage("Resolving latest revisions...")
+
+      const conceptToLatestRevisionId: Record<string, string> = {
+        ...createdRevisionByConceptId,
+      }
+
+      const graphRes = await apiFetch(`${API}/graph/${selectedWorkItem}`)
+
+      if (graphRes.ok) {
+        const graph = await graphRes.json()
+
+        for (const rev of graph.revisions ?? []) {
+          const existingId = conceptToLatestRevisionId[rev.conceptId]
+          const existing = graph.revisions.find((r: any) => r.id === existingId)
+
+          if (
+            !existing ||
+            new Date(rev.createdAt).getTime() >
+            new Date(existing.createdAt).getTime()
+          ) {
+            conceptToLatestRevisionId[rev.conceptId] = rev.id
+          }
+        }
+      }
+
+      setLoadingMessage("Saving generated relations...")
+
+      for (const relation of data.relations ?? []) {
+        const fromKey = relation.fromKey ?? relation.from
+        const toKey = relation.toKey ?? relation.to
+
+        const fromConceptId = keyToConceptId[fromKey]
+        const toConceptId = keyToConceptId[toKey]
+
+        if (!fromConceptId || !toConceptId) {
+          console.warn("Skipping relation; unknown concept key", relation)
+          continue
+        }
+
+        const fromId = conceptToLatestRevisionId[fromConceptId]
+        const toId = conceptToLatestRevisionId[toConceptId]
+
+        if (!fromId || !toId) {
+          console.warn("Skipping relation; missing latest revision", relation)
+          continue
+        }
+
+        await apiFetch(`${API}/relations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fromId,
+            toId,
+            type: relation.type,
+            rationale: relation.rationale,
+            user: actorForApi,
+          }),
+        })
+      }
+
+      setLoadingMessage("Refreshing data...")
+      setLlmPrompt("")
+
+      await Promise.all([
+        refreshGraph(selectedWorkItem),
+        loadConcepts(selectedWorkItem),
+      ])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -1000,7 +1170,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 </div>
 
-                <button data-agent="btn-create-concept" onClick={createConcept} style={brutal.button}>
+                <button data-agent="btn-create-concept" onClick={() => { createConcept() }} style={brutal.button}>
                   CREATE
                 </button>
 
@@ -1114,7 +1284,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
 
-              <button data-agent="btn-save-revision" onClick={revise} style={{ ...brutal.button, marginTop: 8 }}>
+              <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8 }}>
                 SAVE REVISION
               </button>
             </section>
@@ -1352,6 +1522,26 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </section>
 
             <hr />
+
+            <section data-agent="generate-llm-section">
+              <div style={brutal.title}>Generate content with LLM</div>
+
+              <input type="text"
+                data-agent="input-llm-prompt"
+                placeholder="Enter prompt for LLM"
+                value={llmPrompt}
+                onChange={(e) => setLlmPrompt(e.target.value)}
+                style={{ ...brutal.input, marginBottom: 8 }}
+              />
+
+              <button
+                data-agent="btn-generate-llm"
+                onClick={generateWithLLM}
+                style={brutal.button}
+              >
+                GENERATE
+              </button>
+            </section>
           </>
         )}
 
