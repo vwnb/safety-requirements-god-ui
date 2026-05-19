@@ -679,7 +679,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       const keyToConceptId: Record<string, string> = Object.fromEntries(
         concepts.map((c) => [c.key, c.id])
       )
-
+      const revisionKeyToRevisionId: Record<string, string> = {}
       const createdRevisionByConceptId: Record<string, string> = {}
 
       setLoadingMessage("Saving generated concepts...")
@@ -732,7 +732,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         }
 
         const createdRevision = await rres.json()
+
         createdRevisionByConceptId[conceptId] = createdRevision.id
+
+        if (revision.key) {
+          revisionKeyToRevisionId[revision.key] = createdRevision.id
+        }
       }
 
       setLoadingMessage("Resolving latest revisions...")
@@ -766,19 +771,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         const fromKey = relation.fromKey ?? relation.from
         const toKey = relation.toKey ?? relation.to
 
-        const fromConceptId = keyToConceptId[fromKey]
-        const toConceptId = keyToConceptId[toKey]
-
-        if (!fromConceptId || !toConceptId) {
-          console.warn("Skipping relation; unknown concept key", relation)
-          continue
-        }
-
-        const fromId = conceptToLatestRevisionId[fromConceptId]
-        const toId = conceptToLatestRevisionId[toConceptId]
+        const fromId = revisionKeyToRevisionId[fromKey]
+        const toId = revisionKeyToRevisionId[toKey]
 
         if (!fromId || !toId) {
-          console.warn("Skipping relation; missing latest revision", relation)
+          console.warn("Skipping relation; unknown revision key", {
+            relation,
+            revisionKeyToRevisionId,
+          })
           continue
         }
 

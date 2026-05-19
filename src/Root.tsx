@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import App from "./App"
 import { ApiFetchProvider, type ApiFetchFn } from "./lib/apiFetchContext"
 import { Auth0ApiFetchBridge } from "./lib/Auth0ApiFetchBridge"
+import { ErrorToastProvider } from "./lib/ErrorToastProvider"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -107,9 +108,11 @@ export default function Root() {
       }}
       cacheLocation="localstorage"
     >
-      <Auth0ApiFetchBridge audience={audience}>
-        <App auth0Enabled />
-      </Auth0ApiFetchBridge>
+      <ErrorToastProvider>
+        <Auth0ApiFetchBridge audience={audience}>
+          <App auth0Enabled />
+        </Auth0ApiFetchBridge>
+      </ErrorToastProvider>
     </Auth0Provider>
   )
 }
