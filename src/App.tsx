@@ -839,7 +839,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(233, 237, 233, 0.5)",
+            background: "rgba(255, 255, 255, 0.5)",
             zIndex: 9999,
             display: "grid",
             placeItems: "center",

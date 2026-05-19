@@ -295,6 +295,6 @@ footer {
 }
 
 .graph-background-fade-in {
-  animation: fadeInBackground 1.2s ease-out forwards, panBackground 8s ease-in-out infinite alternate;
+  animation: fadeInBackground 3s ease-out forwards, panBackground 40s ease-in-out infinite alternate;
   animation-fill-mode: forwards, both;
 }
