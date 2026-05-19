@@ -792,10 +792,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       setLoadingMessage("Refreshing data...")
       setLlmPrompt("")
 
-      await Promise.all([
-        refreshGraph(selectedWorkItem),
-        loadConcepts(selectedWorkItem),
-      ])
+      await refreshGraph(selectedWorkItem)
+      await loadConcepts(selectedWorkItem)
     } catch (err) {
       console.error(err)
     } finally {
@@ -861,11 +859,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         )}
       </header>
 
-      <hr />
+      {!!user && (
+        <>
+          <hr />
 
-      <aside>
-        {!!user && (
-          <>
+          <aside>
             <div className="cms-layout">
               <section data-agent="work-items-section">
                 <div className="title">Work items</div>
@@ -1512,33 +1510,33 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 GENERATE
               </button>
             </section>
-          </>
-        )}
 
-        <hr />
+            <hr />
 
-        <footer>&copy; WCGW software 2026 // Human-made software for strange futures.</footer>
-
-      </aside>
-
+            <footer>
+              © 2026 WCGW Software // Residual vibecode HAZARD has been deemed ACCEPTABLE under nominal operating conditions. :)
+            </footer>
+          </aside>
+        </>
+      )}
       {!!user && (
-        <main>
-          <GraphView
-            revisions={graph.revisions.filter((r) => {
-              const revisionsForConcept = graph.revisions.filter((rev) => rev.conceptId === r.conceptId)
-              const latestRevision = revisionsForConcept.reduce((latest, current) =>
-                new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-                , revisionsForConcept[0])
+          <main>
+            <GraphView
+              revisions={graph.revisions.filter((r) => {
+                const revisionsForConcept = graph.revisions.filter((rev) => rev.conceptId === r.conceptId)
+                const latestRevision = revisionsForConcept.reduce((latest, current) =>
+                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                  , revisionsForConcept[0])
 
-              return r.id === latestRevision.id
-            })}
-            concepts={graph.concepts}
-            relations={graph.relations}
-            onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
-            API={API}
-          />
-        </main>
-      )
+                return r.id === latestRevision.id
+              })}
+              concepts={graph.concepts}
+              relations={graph.relations}
+              onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
+              API={API}
+            />
+          </main>
+        )
       }
     </>
   )

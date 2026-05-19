@@ -82,6 +82,9 @@ export function Auth0ApiFetchBridge({
             message:
               "Your session has expired. Please sign in again.",
           })
+          setTimeout(() => {
+            window.location.href = import.meta.env.VITE_API_URL + "/auth/logout"
+          }, 3000)
           break
 
         case 403:
