@@ -321,6 +321,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [llmPrompt, setLlmPrompt] = useState("")
   const [nodeClickLoading, setNodeClickLoading] = useState(false)
+  const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
   async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
     // Set loading before any async work to ensure overlay shows
@@ -824,6 +825,57 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   return (
     <>
       <OfflineBanner />
+      {pendingConfirm && (
+        <div
+          data-agent="confirm-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.4)",
+            zIndex: 10000,
+            display: "grid",
+            placeItems: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              border: "2px solid black",
+              background: "white",
+              padding: 24,
+              fontFamily: "monospace",
+              fontSize: 14,
+              maxWidth: 400,
+              textAlign: "center",
+            }}
+          >
+            <p style={{ margin: "0 0 16px 0" }}>{pendingConfirm.message}</p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <button
+                onClick={() => {
+                  setPendingConfirm(null)
+                }}
+                style={brutal.button}
+              >
+                Keep editing
+              </button>
+              <button
+                onClick={() => {
+                  const fn = pendingConfirm.onConfirm
+                  setActiveRevisionId(null)
+                  setEditorValue("")
+                  setPendingConfirm(null)
+                  fn()
+                }}
+                style={{ ...brutal.button, background: "#fcc" } as React.CSSProperties}
+              >
+                Discard & proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading && (
         <div data-agent="loading-overlay"
           style={{
@@ -1094,16 +1146,27 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                         <button
                           data-agent={`concept-${c.id}`}
                           key={c.id}
-                          onClick={async () => {
-                            setNodeClickLoading(true)
-                            setSelectedConcept(c.id)
-                            try {
-                              const revisions = await loadRevisions(c.id)
-                              setActiveRevisionId(revisions?.[0]?.id || null)
-                              setEditorValue(revisions?.[0]?.markdown || "")
-                              scrollToEditConcept()
-                            } finally {
-                              setNodeClickLoading(false)
+                          onClick={() => {
+                            const action = async () => {
+                              setNodeClickLoading(true)
+                              setSelectedConcept(c.id)
+                              try {
+                                const revisions = await loadRevisions(c.id)
+                                setActiveRevisionId(revisions?.[0]?.id || null)
+                                setEditorValue(revisions?.[0]?.markdown || "")
+                                scrollToEditConcept()
+                              } finally {
+                                setNodeClickLoading(false)
+                              }
+                            }
+
+                            if (activeRevisionId) {
+                              setPendingConfirm({
+                                message: "You have an active revision in progress. Discard it and open this concept?",
+                                onConfirm: action,
+                              })
+                            } else {
+                              action()
                             }
                           }}
                           style={{
@@ -1215,7 +1278,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 </div>
 
-                <button data-agent="btn-create-concept" onClick={() => { createConcept() }} style={brutal.button}>
+                <button data-agent="btn-create-concept" onClick={() => {
+                  if (activeRevisionId) {
+                    setPendingConfirm({
+                      message: "You have an active revision in progress. Discard it and create a new concept?",
+                      onConfirm: () => { createConcept() },
+                    })
+                  } else {
+                    createConcept()
+                  }
+                }} style={brutal.button}>
                   Create
                 </button>
 
@@ -1427,8 +1499,17 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 ) : (
                   <div className="list-input">
                     {templates.map((wi) => (
-                      <div className="option" data-agent={`template-${wi.id}`} key={wi.id} onClick={async () => {
-                        importConceptsFromTemplate(wi.id)
+                      <div className="option" data-agent={`template-${wi.id}`} key={wi.id} onClick={() => {
+                        const action = () => { importConceptsFromTemplate(wi.id) }
+
+                        if (activeRevisionId) {
+                          setPendingConfirm({
+                            message: "You have an active revision in progress. Discard it and import concepts from template?",
+                            onConfirm: action,
+                          })
+                        } else {
+                          action()
+                        }
                       }}>
                         <div className="list-id">{wi.key} - {wi.name}</div>
                         <div className="list-tooltip">
@@ -1567,7 +1648,18 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               <button
                 data-agent="btn-generate-llm"
-                onClick={generateWithLLM}
+                onClick={() => {
+                  const action = () => { generateWithLLM() }
+
+                  if (activeRevisionId) {
+                    setPendingConfirm({
+                      message: "You have an active revision in progress. Discard it and generate content with LLM?",
+                      onConfirm: action,
+                    })
+                  } else {
+                    action()
+                  }
+                }}
                 style={brutal.button}
               >
                 Generate
@@ -1622,9 +1714,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8, flex: 1 }}>
                   Save revision
                 </button>
-                <button data-agent="btn-cancel-revision" onClick={() => { setActiveRevisionId(null); setEditorValue("") }} style={{ ...brutal.button, marginTop: 8 }}>
-                  Cancel
-                </button>
+                  <button data-agent="btn-cancel-revision" onClick={() => { setActiveRevisionId(null); setEditorValue("") }} style={{ ...brutal.button, marginTop: 8 }}>
+                    Discard
+                  </button>
               </div>
             </div>
           )}
@@ -1642,15 +1734,26 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             relations={graph?.relations ?? []}
             onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
             onNodeClick={async (conceptId) => {
-              setNodeClickLoading(true)
-              setSelectedConcept(conceptId)
-              try {
-                const revisions = await loadRevisions(conceptId)
-                setActiveRevisionId(revisions?.[0]?.id || null)
-                setEditorValue(revisions?.[0]?.markdown || "")
-                scrollToEditConcept()
-              } finally {
-                setNodeClickLoading(false)
+              const action = async () => {
+                setNodeClickLoading(true)
+                setSelectedConcept(conceptId)
+                try {
+                  const revisions = await loadRevisions(conceptId)
+                  setActiveRevisionId(revisions?.[0]?.id || null)
+                  setEditorValue(revisions?.[0]?.markdown || "")
+                  scrollToEditConcept()
+                } finally {
+                  setNodeClickLoading(false)
+                }
+              }
+
+              if (activeRevisionId) {
+                setPendingConfirm({
+                  message: "You have an active revision in progress. Discard it and open this concept?",
+                  onConfirm: action,
+                })
+              } else {
+                action()
               }
             }}
             API={API}
