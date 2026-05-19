@@ -195,6 +195,87 @@ function Auth0UserBar({
 }
 
 export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
+
+  const apiFetch = useApiFetch()
+  const [authSub, setAuthSub] = useState("")
+  const onActorResolved = useCallback((sub: string) => {
+    setAuthSub(sub)
+  }, [])
+  const actorForApi = auth0Enabled ? authSub : "Alice"
+  const { user } = useAuth0()
+
+  const [projects, setProjects] = useState<any[]>([])
+  const [selectedProject, setSelectedProject] = useState<{ id: string, key: string } | null>(null)
+
+  const [projectKey, setProjectKey] = useState("")
+
+  const joinProject = async () => {
+    if (!projectKey.trim()) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      setLoadingMessage("Joining project...")
+
+      const res = await apiFetch(
+        `${API}/projects/${encodeURIComponent(projectKey)}/users`,
+        {
+          method: "POST",
+        }
+      )
+
+      if (!res.ok) {
+        throw new Error("Failed to join project")
+      }
+
+      setLoadingMessage("Refreshing projects...")
+
+      await refreshProjects()
+
+      setProjectKey("")
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+      setLoadingMessage("")
+    }
+  }
+
+  const refreshProjects = async () => {
+    try {
+      setLoading(true)
+      setLoadingMessage("Loading projects...")
+
+      const res = await apiFetch(`${API}/me/projects`)
+
+      if (!res.ok) {
+        throw new Error("Failed to load projects")
+      }
+
+      const data = await res.json()
+
+      setProjects(data.map((userProject: any) => {
+        return userProject.project
+      }))
+
+      if (data.length > 0) {
+        setSelectedProject(data[0].project)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+      setLoadingMessage("")
+    }
+  }
+
+  useEffect(() => {
+    if (!user) return
+
+    refreshProjects()
+  }, [user])
+
   const [workItems, setWorkItems] = useState<WorkItem[]>([])
   const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
   const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
@@ -210,13 +291,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [activeRevisionId, setActiveRevisionId] = useState<string | null>(null)
   const [editorValue, setEditorValue] = useState("")
-  const apiFetch = useApiFetch()
-  const [authSub, setAuthSub] = useState("")
-  const onActorResolved = useCallback((sub: string) => {
-    setAuthSub(sub)
-  }, [])
-  const actorForApi = auth0Enabled ? authSub : "Alice"
-  const { user } = useAuth0()
 
   const [baselineName, setBaselineName] = useState("")
   const [selectedRevisions, setSelectedRevisions] = useState<string[]>([])
@@ -279,10 +353,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   useEffect(() => {
-    async function init() {
+    async function loadWorkItems() {
       await withLoading("Loading work items...", async () => {
+        if (!selectedProject) {
+          return;
+        }
         try {
-          const res = await apiFetch(`${API}/work-items`)
+          const res = await apiFetch(`${API}/projects/${selectedProject.id}/work-items`)
           const data = res.ok ? await res.json() : []
 
           setWorkItems(data)
@@ -306,9 +383,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }
 
     if (user) {
-      init()
+      loadWorkItems()
     }
-  }, [user])
+  }, [selectedProject])
 
   useEffect(() => {
     if (!selectedWorkItem) return
@@ -591,7 +668,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   async function createWorkItem() {
-    if (!newWorkItemKey.trim()) return
+    if (!newWorkItemKey.trim() || !selectedProject) return
 
     const res = await apiFetch(`${API}/work-items`, {
       method: "POST",
@@ -599,6 +676,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       body: JSON.stringify({
         key: newWorkItemKey,
         name: newWorkItemTitle,
+        projectKey: selectedProject.key
       }),
     })
 
@@ -813,14 +891,24 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
         {!!user && (
 
-          <section style={{ flex: 1 }} data-agent="project-section">
-            <div className="title">Project</div>
+          <section style={{ flex: 1 }} data-agent="join-project-section">
+            <div className="title">Join Project</div>
+
             <input
-              data-agent="input-project"
-              disabled
-              value={"Mock project"}
-              style={brutal.input}
+              value={projectKey}
+              onChange={(e) => setProjectKey(e.target.value)}
+              placeholder="COMMON-MEGA-PROJECT"
+              style={{
+                ...brutal.input,
+              }}
             />
+
+            <button
+              onClick={joinProject}
+              style={brutal.button}
+            >
+              Join
+            </button>
           </section>
 
         )}
