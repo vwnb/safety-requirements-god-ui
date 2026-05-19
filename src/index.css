@@ -29,7 +29,8 @@ aside {
 
 hr {
   grid-area: hr;
-  border: 1px solid black;
+  border-top: 2px dotted rgba(0,0,0,0.5);
+  border-bottom: none;
   margin: 2em 0;
 }
 
@@ -59,7 +60,7 @@ h2 {
 h1 {
   font-size: 42px;
   letter-spacing: -1.68px;
-  margin: 32px 0;
+  margin: 0.5em 0;
 
   @media (max-width: 1024px) {
     font-size: 36px;
@@ -78,13 +79,13 @@ h2 {
   }
 }
 
-p {
-  margin: 0;
+p, h3, ul, code {
+  margin: 1em 0;
 }
 
 code,
 .counter {
-  font-family: "monospace";
+  font-family: monospace;
   display: inline-flex;
   border-radius: 4px;
 }
@@ -130,12 +131,11 @@ header>* {
   display: inline-block;
   font-family: monospace;
   font-weight: bold;
-  color: "#000";
-  font-size: 14;
+  font-size: 1.2em;
   margin-bottom: 1em;
   margin-top: 1em;
   padding-bottom: 0.5em;
-  border-bottom: 2px dotted black;
+  border-bottom: 2px solid black;
 }
 
 .title+button {

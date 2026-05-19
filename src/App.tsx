@@ -91,7 +91,7 @@ export const brutal = {
   },
   active: {
     background: "white",
-    borderColor: "white"
+    borderColor: "#FF5A00",
   },
   input: {
     all: "unset" as any,
@@ -133,12 +133,12 @@ export const brutal = {
   },
 
   rowBase: {
-    background: "#000",
+    background: "#93a9c6",
     color: "#fff",
   },
 
   rowTarget: {
-    background: "#222",
+    background: "#9bd5a2",
     color: "#fff",
   },
 
@@ -1264,7 +1264,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
 
               <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8 }}>
-                SAVE REVISION
+                Save revision
               </button>
             </section>
 
@@ -1305,7 +1305,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                             }}
                             style={brutal.button}
                           >
-                            LOAD
+                            Load
                           </button>
 
                           <div style={{
@@ -1321,7 +1321,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               ...(isBase ? brutal.active : {}),
                             }}
                           >
-                            BASE
+                            Base
                           </button>
 
                           <button
@@ -1332,7 +1332,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               ...(isTarget ? brutal.active : {}),
                             }}
                           >
-                            HEAD
+                            Head
                           </button>
                         </div>
                       </div>
