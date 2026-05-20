@@ -36,6 +36,7 @@ export const typeColor: Record<string, string> = {
   FSR: "#b2ebc7",
   TSR: "#a9e0ea",
   SOFTWARE_REQUIREMENT: "#d4caf0",
+  HARDWARE_REQUIREMENT: "#cccccc",
   ASSUMPTION: "#eccee4",
   CONSTRAINT: "#ace8e1",
   TEST_CASE: "#eee8ad",
@@ -840,7 +841,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <div
             style={{
               border: "2px solid black",
-              background: "rgb()",
+              background: "rgb(233, 237, 233)",
               padding: 24,
               fontFamily: "monospace",
               fontSize: 14,
@@ -890,7 +891,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <div data-agent="loading-message"
             style={{
               border: "2px solid black",
-              background: "rgb(233, 237, 233)",
+              background: "rgb(255,255,255)",
               padding: 18,
               fontFamily: "monospace",
               fontSize: 16,
@@ -1554,6 +1555,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     </>
                   )}
             </section>
+
             {selectedBaseline && (
               <>
                 <section data-agent="selected-baseline-section">
@@ -1579,59 +1581,61 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     })}
                   </div>
                 </section>
-
-
-                <section data-agent="new-baseline-section">
-                  <div className="title">New baseline</div>
-
-                  <input
-                    data-agent="input-baseline-name"
-                    placeholder="Baseline name"
-                    value={baselineName}
-                    onChange={(e) => setBaselineName(e.target.value)}
-                    style={{ ...brutal.input, marginBottom: 8 }}
-                  />
-
-                  {Object.keys(revisionsByConcept).length === 0 ? (
-                    <p>
-                      No revisions for this concept.
-                    </p>
-                  ) : (
-                    <>
-                      <div className="list-input">
-                        {Object.values(revisionsByConcept)
-                          .flat()
-                          .map((r) => {
-                            const checked = selectedRevisions.includes(r.id)
-
-                            return (
-                              <div
-                                className="option2"
-                                data-agent={`baseline-revision-${r.id}`}
-                                key={r.id}
-                                onClick={() => toggleRevision(r.id)}
-                                style={{
-                                  background: checked ? "black" : "white",
-                                  color: checked ? "white" : "black",
-                                }}
-                              >
-                                <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
-                              </div>
-                            )
-                          })}
-                      </div>
-
-                      <button
-                        data-agent="btn-create-baseline"
-                        onClick={createBaseline}
-                        style={{ ...brutal.button, marginTop: 8 }}
-                      >
-                        Create baseline
-                      </button>
-                    </>
-                  )}
-                </section>
               </>
+            )}
+
+            {!!revisionsByConcept && (
+
+              <section data-agent="new-baseline-section">
+                <div className="title">New baseline</div>
+
+                <input
+                  data-agent="input-baseline-name"
+                  placeholder="Baseline name"
+                  value={baselineName}
+                  onChange={(e) => setBaselineName(e.target.value)}
+                  style={{ ...brutal.input, marginBottom: 8 }}
+                />
+
+                {Object.keys(revisionsByConcept).length === 0 ? (
+                  <p>
+                    No revisions for this concept.
+                  </p>
+                ) : (
+                  <>
+                    <div className="list-input">
+                      {Object.values(revisionsByConcept)
+                        .flat()
+                        .map((r) => {
+                          const checked = selectedRevisions.includes(r.id)
+
+                          return (
+                            <div
+                              className="option2"
+                              data-agent={`baseline-revision-${r.id}`}
+                              key={r.id}
+                              onClick={() => toggleRevision(r.id)}
+                              style={{
+                                background: checked ? "black" : "white",
+                                color: checked ? "white" : "black",
+                              }}
+                            >
+                              <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
+                            </div>
+                          )
+                        })}
+                    </div>
+
+                    <button
+                      data-agent="btn-create-baseline"
+                      onClick={createBaseline}
+                      style={{ ...brutal.button, marginTop: 8 }}
+                    >
+                      Create baseline
+                    </button>
+                  </>
+                )}
+              </section>
             )}
             <hr />
 
