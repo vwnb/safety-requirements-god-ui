@@ -116,8 +116,8 @@ function ConceptNode({ data, id }: any) {
           fontSize: 10,
           color: "#333",
           overflow: "hidden",
-          maxHeight: showExcerpt ? "200px" : "0px",
-          marginTop: -10,
+          maxHeight: showExcerpt ? 200 : 0,
+          marginTop: showExcerpt ? 0 : -10,
           transition: "max-height 1s ease, margin-top 1s ease",
         }}
       >

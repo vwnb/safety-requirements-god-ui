@@ -925,7 +925,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <aside>
             <div className="cms-layout">
               <section style={{ flex: 1 }} data-agent="project-section">
-                <div className="title">Project</div>
+                <div className="title">Projects</div>
 
                 <select
                   value={selectedProject?.id ?? ""}
@@ -961,7 +961,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <input
                   value={projectKey}
                   onChange={(e) => setProjectKey(e.target.value)}
-                  placeholder="COMMON-MEGA-PROJECT"
+                  placeholder="e.g. COMMON-MEGA-PROJECT"
                   style={{
                     ...brutal.input,
                   }}
@@ -1399,7 +1399,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
               {revisionsByConcept[selectedConcept] !== undefined &&
                 revisionsByConcept[selectedConcept].length === 0 && (
-                  <p>No revisions for this concept.</p>
+                  <p>No revisions for this concept. <button onClick={() => revise({
+                    conceptId: selectedConcept,
+                    markdown: ""
+                  } as Revision)}>Create initial revision</button></p>
                 )}
 
               {revisionsByConcept[selectedConcept] !== undefined &&
@@ -1699,7 +1702,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <div
                   style={{
                     border: "2px solid black",
-                    background: "rgb(233, 237, 233)",
+                    background: "rgb(255, 255, 255)",
                     padding: 18,
                     fontFamily: "monospace",
                     fontSize: 16,

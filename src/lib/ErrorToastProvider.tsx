@@ -84,7 +84,7 @@ export function ErrorToastProvider({
         }}
       >
         {errors.map((error) => (
-          <div key={error.id} style={{ ...brutal.box, background: "rgb(233, 237, 233)" }}>
+          <div key={error.id} style={{ ...brutal.box, background: "rgb(255, 90, 0)", color: "white" }}>
             {error.message}
           </div>
         ))}

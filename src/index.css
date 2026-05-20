@@ -21,11 +21,6 @@ body {
   background: rgb(233, 237, 233);
 }
 
-header {
-  padding: 20px;
-  grid-area: header;
-}
-
 aside {
   padding: 20px;
   grid-area: aside;
@@ -108,7 +103,10 @@ code {
 header {
   display: flex;
   gap: 30px;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 20px;
+  grid-area: header;
+  align-items: center;
   flex-wrap: wrap;
 }
 
