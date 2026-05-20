@@ -1073,7 +1073,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             {!!selectedWorkItem && (
               <section>
-
                 <div data-agent="edit-work-item-form">
                   <div className="title">Edit work item details</div>
                   <div style={brutal.formRow}>
@@ -1149,7 +1148,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </div>
                   <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>Save changes</button>
                 </div>
-
               </section>
             )}
 

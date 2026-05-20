@@ -1,6 +1,6 @@
 
 
-const TOUR_STORAGE_KEY = "seen-onboarding-tour"
+const TOUR_STORAGE_KEY = "seen-onboarding-tour-2"
 
 const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
