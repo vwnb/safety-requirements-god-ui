@@ -72,20 +72,17 @@ function layoutGraph(nodes: Node[], edges: Edge[]) {
 }
 
 function ConceptNode({ data, id }: any) {
-  const [hovered, setHovered] = useState(false)
   const [showExcerpt, setShowExcerpt] = useState(false)
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleMouseEnter = useCallback(() => {
-    setHovered(true)
     timerRef.current = setTimeout(() => {
       setShowExcerpt(true)
-    }, 500)
+    }, 2000)
   }, [])
 
   const handleMouseLeave = useCallback(() => {
-    setHovered(false)
     setShowExcerpt(false)
     if (timerRef.current) {
       clearTimeout(timerRef.current)
@@ -97,12 +94,17 @@ function ConceptNode({ data, id }: any) {
     <div
       data-agent={`graph-node-${id}`}
       className="graph-node"
-      style={{ background: data.color || "white", width: nodeWidth }}
+      style={{
+        background: data.color || "white",
+        width: nodeWidth,
+        display: "flex",
+        flexDirection: "column"
+      }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div data-agent="graph-node-label" style={{ fontWeight: "bold" }}>
-        {hovered ? "Edit concept: " : ""}{data.label}
+        {data.label}
       </div>
       <div data-agent="graph-node-type" style={{ opacity: 0.7 }}>{data.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: any) => l.toUpperCase())}</div>
 
@@ -111,12 +113,12 @@ function ConceptNode({ data, id }: any) {
         className="graph-node-excerpt"
         style={{
           boxSizing: "border-box",
-          margin: "0.5em 0",
           fontSize: 10,
           color: "#333",
           overflow: "hidden",
           maxHeight: showExcerpt ? "200px" : "0px",
-          transition: "max-height 0.3s ease",
+          marginTop: -10,
+          transition: "max-height 1s ease, margin-top 1s ease",
         }}
       >
         {data.excerpt}
@@ -204,7 +206,7 @@ export default function GraphView({
           type: concept?.type,
           color: typeColor[concept?.type || ""],
           conceptId: r.conceptId,
-          excerpt: latestRev?.markdown?.slice(0, 120) + "...",
+          excerpt: latestRev?.markdown?.slice(0, 120) + "..."
         },
         position: { x: 0, y: 0 },
       }

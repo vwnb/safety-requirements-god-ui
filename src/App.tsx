@@ -1,7 +1,7 @@
 import logo from "./assets/logo.png"
 import { useAuth0 } from "@auth0/auth0-react"
 import { useCallback, useEffect, useState } from "react"
-import { Diff, Hunk, parseDiff, type HunkData } from "react-diff-view"
+import { parseDiff, type HunkData } from "react-diff-view"
 import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
 import GraphView from "./components/GraphView"
@@ -286,7 +286,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [baseId, setBaseId] = useState<string | null>(null)
   const [targetId, setTargetId] = useState<string | null>(null)
 
-  const [{ hunks }, setDiff] = useState<{ hunks: HunkData[] }>({
+  const [{ }, setDiff] = useState<{ hunks: HunkData[] }>({
     hunks: [],
   })
 
@@ -324,7 +324,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
   async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
-    // Set loading before any async work to ensure overlay shows
     setLoading(true)
     setLoadingMessage(message)
 
@@ -841,7 +840,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <div
             style={{
               border: "2px solid black",
-              background: "white",
+              background: "rgb()",
               padding: 24,
               fontFamily: "monospace",
               fontSize: 14,
@@ -881,7 +880,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(255, 255, 255, 0.5)",
+            background: "rgba(255,255,255,0.05)",
             zIndex: 9999,
             display: "grid",
             placeItems: "center",
@@ -956,7 +955,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </select>
               </section>
               <section style={{ flex: 1 }} data-agent="join-project-section">
-                <div className="title">Join Project</div>
+                <div className="title">Join project</div>
 
                 <input
                   value={projectKey}
@@ -978,154 +977,155 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <hr />
 
-            {workItems === null ? (
-              <p>Loading work items...</p>
-            ) :
-              workItems.length === 0 ? (
-                <p>
-                  No work items yet.
-                </p>
-              ) :
-                (
-                  <>
-                    <div className="cms-layout">
-                      <section data-agent="work-items-section">
-                        <div className="title">Work items</div>
-
-                        {workItems.length > 0 && (
-                          <div style={{ marginBottom: 10 }}>
-                            <div data-agent="work-items-list" className="list-input">
-                              {workItems.map((workItem) => (
-                                <div
-                                  className="option"
-                                  data-agent={`work-item-${workItem.id}`}
-                                  key={workItem.id}
-                                  onClick={() => setSelectedWorkItem(workItem.id)}
-                                  style={{
-                                    ...(selectedWorkItem === workItem.id ? { background: "#000", color: "#fff" } : {}),
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  {workItem.key} — {workItem.name}
-                                </div>
-                              ))}
+            <div className="cms-layout">
+              <section data-agent="work-items-section">
+                <div className="title">Work items</div>
+                {workItems === null ? (
+                  <p>Loading work items...</p>
+                ) :
+                  workItems.length === 0 ? (
+                    <p>
+                      No work items yet.
+                    </p>
+                  ) : (
+                    workItems.length > 0 && (
+                      <div style={{ marginBottom: 10 }}>
+                        <div data-agent="work-items-list" className="list-input">
+                          {workItems.map((workItem) => (
+                            <div
+                              className="option"
+                              data-agent={`work-item-${workItem.id}`}
+                              key={workItem.id}
+                              onClick={() => setSelectedWorkItem(workItem.id)}
+                              style={{
+                                ...(selectedWorkItem === workItem.id ? { background: "rgb(255, 90, 0)", color: "#fff" } : {}),
+                                cursor: "pointer",
+                              }}
+                            >
+                              {workItem.key} — {workItem.name}
                             </div>
-                          </div>
-                        )}
-                      </section>
-
-                      <section data-agent="new-work-item-section">
-                        <div className="title">New work item</div>
-
-                        <div style={brutal.formRow}>
-                          <div style={brutal.label}>Key</div>
-                          <input
-                            data-agent="input-new-work-item-key"
-                            placeholder="e.g. MYPROJ-001"
-                            value={newWorkItemKey}
-                            onChange={(e) => setNewWorkItemKey(e.target.value)}
-                            style={{ ...brutal.input, flex: 1 }}
-                          />
+                          ))}
                         </div>
-
-                        <div style={brutal.formRow}>
-                          <div style={brutal.label}>Title</div>
-                          <input
-                            data-agent="input-new-work-item-title"
-                            placeholder="e.g. Brake-by-wire system"
-                            value={newWorkItemTitle}
-                            onChange={(e) => setNewWorkItemTitle(e.target.value)}
-                            style={{ ...brutal.input, flex: 1 }}
-                          />
-                        </div>
-
-                        <button data-agent="btn-create-work-item" onClick={createWorkItem} style={brutal.button}>
-                          Create
-                        </button>
-                      </section>
-                    </div>
-
-                    <section>
-
-                      <div data-agent="edit-work-item-form">
-                        <div className="title">Edit work item</div>
-                        <div style={brutal.formRow}>
-                          <div style={brutal.label}>Name</div>
-                          <input
-                            data-agent="input-work-item-name"
-                            value={editWorkItemName}
-                            onChange={(e) => setEditWorkItemName(e.target.value)}
-                            style={brutal.input}
-                          />
-                        </div>
-                        <div style={brutal.formRow}>
-                          <div style={brutal.label}>Description</div>
-                          <textarea
-                            data-agent="input-work-item-description"
-                            value={editWorkItemDescription}
-                            onChange={(e) => setEditWorkItemDescription(e.target.value)}
-                            style={{ ...brutal.input, height: 60 }}
-                          />
-                        </div>
-                        <div style={brutal.formRow}>
-                          <div style={brutal.label}>Phase</div>
-                          <select
-                            data-agent="select-work-item-phase"
-                            value={editWorkItemPhase}
-                            onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
-                            style={brutal.select}
-                          >
-                            <option value="">-- Select Phase --</option>
-                            <option value="ITEM_DEFINITION">Item Definition</option>
-                            <option value="HARA">HARA</option>
-                            <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                            <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                            <option value="SYSTEM_DESIGN">System Design</option>
-                            <option value="SOFTWARE_DESIGN">Software Design</option>
-                            <option value="IMPLEMENTATION">Implementation</option>
-                            <option value="VERIFICATION">Verification</option>
-                          </select>
-                        </div>
-                        <div style={brutal.formRow}>
-                          <div style={brutal.label}>ASIL</div>
-                          <select
-                            data-agent="select-work-item-asil"
-                            value={editWorkItemAsil}
-                            onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
-                            style={brutal.select}
-                          >
-                            <option value="">-- Select ASIL --</option>
-                            <option value="QM">QM</option>
-                            <option value="ASIL_A">ASIL_A</option>
-                            <option value="ASIL_B">ASIL_B</option>
-                            <option value="ASIL_C">ASIL_C</option>
-                            <option value="ASIL_D">ASIL_D</option>
-                          </select>
-                        </div>
-                        <div style={brutal.formRow}>
-                          <div style={brutal.label}>Application Context</div>
-                          <input
-                            data-agent="input-work-item-application-context"
-                            value={editWorkItemApplicationContext}
-                            onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
-                            style={brutal.input}
-                          />
-                        </div>
-                        <div style={brutal.formRow}>
-                          <div style={brutal.label}>System Boundary</div>
-                          <input
-                            data-agent="input-work-item-system-boundary"
-                            value={editWorkItemSystemBoundary}
-                            onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
-                            style={brutal.input}
-                          />
-                        </div>
-                        <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>Save changes</button>
                       </div>
+                    )
+                  )}
+              </section>
 
-                    </section>
-                  </>
-                )}
+              {!!selectedProject &&
+
+                <section data-agent="new-work-item-section">
+                  <div className="title">New work item</div>
+
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Key</div>
+                    <input
+                      data-agent="input-new-work-item-key"
+                      placeholder="e.g. MYPROJ-001"
+                      value={newWorkItemKey}
+                      onChange={(e) => setNewWorkItemKey(e.target.value)}
+                      style={{ ...brutal.input, flex: 1 }}
+                    />
+                  </div>
+
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Title</div>
+                    <input
+                      data-agent="input-new-work-item-title"
+                      placeholder="e.g. Brake-by-wire system"
+                      value={newWorkItemTitle}
+                      onChange={(e) => setNewWorkItemTitle(e.target.value)}
+                      style={{ ...brutal.input, flex: 1 }}
+                    />
+                  </div>
+
+                  <button data-agent="btn-create-work-item" onClick={createWorkItem} style={brutal.button}>
+                    Create
+                  </button>
+                </section>
+              }
+            </div>
+
+            {!!selectedWorkItem && (
+              <section>
+
+                <div data-agent="edit-work-item-form">
+                  <div className="title">Edit work item details</div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Name</div>
+                    <input
+                      data-agent="input-work-item-name"
+                      value={editWorkItemName}
+                      onChange={(e) => setEditWorkItemName(e.target.value)}
+                      style={brutal.input}
+                    />
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Description</div>
+                    <textarea
+                      data-agent="input-work-item-description"
+                      value={editWorkItemDescription}
+                      onChange={(e) => setEditWorkItemDescription(e.target.value)}
+                      style={{ ...brutal.input, height: 60 }}
+                    />
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Phase</div>
+                    <select
+                      data-agent="select-work-item-phase"
+                      value={editWorkItemPhase}
+                      onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select Phase --</option>
+                      <option value="ITEM_DEFINITION">Item Definition</option>
+                      <option value="HARA">HARA</option>
+                      <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                      <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                      <option value="SYSTEM_DESIGN">System Design</option>
+                      <option value="SOFTWARE_DESIGN">Software Design</option>
+                      <option value="IMPLEMENTATION">Implementation</option>
+                      <option value="VERIFICATION">Verification</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>ASIL</div>
+                    <select
+                      data-agent="select-work-item-asil"
+                      value={editWorkItemAsil}
+                      onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select ASIL --</option>
+                      <option value="QM">QM</option>
+                      <option value="ASIL_A">ASIL_A</option>
+                      <option value="ASIL_B">ASIL_B</option>
+                      <option value="ASIL_C">ASIL_C</option>
+                      <option value="ASIL_D">ASIL_D</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Application Context</div>
+                    <input
+                      data-agent="input-work-item-application-context"
+                      value={editWorkItemApplicationContext}
+                      onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
+                      style={brutal.input}
+                    />
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>System Boundary</div>
+                    <input
+                      data-agent="input-work-item-system-boundary"
+                      value={editWorkItemSystemBoundary}
+                      onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
+                      style={brutal.input}
+                    />
+                  </div>
+                  <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>Save changes</button>
+                </div>
+
+              </section>
+            )}
 
             <hr />
 
@@ -1184,121 +1184,123 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     )}
               </section>
 
-              <section data-agent="new-concept-section">
-                <div className="title">New concept</div>
+              {!!selectedWorkItem && (
 
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Key</div>
-                  <input
-                    data-agent="input-new-concept-key"
-                    placeholder="e.g. BRAKE_FAILURE"
-                    value={newConceptKey}
-                    onChange={(e) => setNewConceptKey(e.target.value)}
-                    style={{ ...brutal.input, flex: 1 }}
-                  />
-                </div>
+                <section data-agent="new-concept-section">
+                  <div className="title">New concept</div>
 
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Title</div>
-                  <input
-                    data-agent="input-new-concept-title"
-                    placeholder="optional"
-                    value={newConceptTitle}
-                    onChange={(e) => setNewConceptTitle(e.target.value)}
-                    style={{ ...brutal.input, flex: 1 }}
-                  />
-                </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Key</div>
+                    <input
+                      data-agent="input-new-concept-key"
+                      placeholder="e.g. BRAKE_FAILURE"
+                      value={newConceptKey}
+                      onChange={(e) => setNewConceptKey(e.target.value)}
+                      style={{ ...brutal.input, flex: 1 }}
+                    />
+                  </div>
 
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Phase</div>
-                  <select
-                    data-agent="select-new-concept-phase"
-                    value={newConceptPhase}
-                    onChange={(e) => setNewConceptPhase(e.target.value)}
-                    style={{ ...brutal.select, flex: 1 }}
-                  >
-                    <option value="">-- Select Phase --</option>
-                    <option value="ITEM_DEFINITION">Item Definition</option>
-                    <option value="HARA">HARA</option>
-                    <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                    <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                    <option value="SYSTEM_DESIGN">System Design</option>
-                    <option value="SOFTWARE_DESIGN">Software Design</option>
-                    <option value="IMPLEMENTATION">Implementation</option>
-                    <option value="VERIFICATION">Verification</option>
-                  </select>
-                </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Title</div>
+                    <input
+                      data-agent="input-new-concept-title"
+                      placeholder="optional"
+                      value={newConceptTitle}
+                      onChange={(e) => setNewConceptTitle(e.target.value)}
+                      style={{ ...brutal.input, flex: 1 }}
+                    />
+                  </div>
 
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>ASIL</div>
-                  <select
-                    data-agent="select-new-concept-asil"
-                    value={newConceptAsil}
-                    onChange={(e) => setNewConceptAsil(e.target.value)}
-                    style={{ ...brutal.select, flex: 1 }}
-                  >
-                    <option value="">-- Select ASIL --</option>
-                    <option value="QM">QM</option>
-                    <option value="ASIL_A">ASIL_A</option>
-                    <option value="ASIL_B">ASIL_B</option>
-                    <option value="ASIL_C">ASIL_C</option>
-                    <option value="ASIL_D">ASIL_D</option>
-                  </select>
-                </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Phase</div>
+                    <select
+                      data-agent="select-new-concept-phase"
+                      value={newConceptPhase}
+                      onChange={(e) => setNewConceptPhase(e.target.value)}
+                      style={{ ...brutal.select, flex: 1 }}
+                    >
+                      <option value="">-- Select Phase --</option>
+                      <option value="ITEM_DEFINITION">Item Definition</option>
+                      <option value="HARA">HARA</option>
+                      <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
+                      <option value="TECHNICAL_SAFETY">Technical Safety</option>
+                      <option value="SYSTEM_DESIGN">System Design</option>
+                      <option value="SOFTWARE_DESIGN">Software Design</option>
+                      <option value="IMPLEMENTATION">Implementation</option>
+                      <option value="VERIFICATION">Verification</option>
+                    </select>
+                  </div>
 
-                <div style={brutal.formRow}>
-                  <div style={brutal.label}>Type</div>
-                  <select
-                    data-agent="select-new-concept-type"
-                    value={newConceptType}
-                    onChange={(e) => setNewConceptType(e.target.value)}
-                    style={{ ...brutal.select, flex: 1 }}
-                  >
-                    <option value="">-- Select Type --</option>
-                    <option value="ITEM">Item</option>
-                    <option value="HAZARD">Hazard</option>
-                    <option value="HARM">Harm</option>
-                    <option value="SAFETY_GOAL">Safety goal</option>
-                    <option value="FSR">Functional safety requirement</option>
-                    <option value="TSR">Technical safety requirement</option>
-                    <option value="SSR">Software safety requirement</option>
-                    <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
-                    <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
-                    <option value="ASSUMPTION">Assumption</option>
-                    <option value="CONSTRAINT">Constraint</option>
-                    <option value="TEST_CASE">Test case</option>
-                    <option value="TEST_RESULT">Test result</option>
-                    <option value="VERIFICATION_REPORT">Verification report</option>
-                    <option value="VALIDATION_REPORT">Validation report</option>
-                    <option value="SAFETY_CASE">Safety case</option>
-                    <option value="SAFETY_MANUAL">Safety manual</option>
-                    <option value="CHANGE_REQUEST">Change request</option>
-                    <option value="ANOMALY">Anomaly</option>
-                  </select>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>ASIL</div>
+                    <select
+                      data-agent="select-new-concept-asil"
+                      value={newConceptAsil}
+                      onChange={(e) => setNewConceptAsil(e.target.value)}
+                      style={{ ...brutal.select, flex: 1 }}
+                    >
+                      <option value="">-- Select ASIL --</option>
+                      <option value="QM">QM</option>
+                      <option value="ASIL_A">ASIL_A</option>
+                      <option value="ASIL_B">ASIL_B</option>
+                      <option value="ASIL_C">ASIL_C</option>
+                      <option value="ASIL_D">ASIL_D</option>
+                    </select>
+                  </div>
 
-                </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Type</div>
+                    <select
+                      data-agent="select-new-concept-type"
+                      value={newConceptType}
+                      onChange={(e) => setNewConceptType(e.target.value)}
+                      style={{ ...brutal.select, flex: 1 }}
+                    >
+                      <option value="">-- Select Type --</option>
+                      <option value="ITEM">Item</option>
+                      <option value="HAZARD">Hazard</option>
+                      <option value="HARM">Harm</option>
+                      <option value="SAFETY_GOAL">Safety goal</option>
+                      <option value="FSR">Functional safety requirement</option>
+                      <option value="TSR">Technical safety requirement</option>
+                      <option value="SSR">Software safety requirement</option>
+                      <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
+                      <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
+                      <option value="ASSUMPTION">Assumption</option>
+                      <option value="CONSTRAINT">Constraint</option>
+                      <option value="TEST_CASE">Test case</option>
+                      <option value="TEST_RESULT">Test result</option>
+                      <option value="VERIFICATION_REPORT">Verification report</option>
+                      <option value="VALIDATION_REPORT">Validation report</option>
+                      <option value="SAFETY_CASE">Safety case</option>
+                      <option value="SAFETY_MANUAL">Safety manual</option>
+                      <option value="CHANGE_REQUEST">Change request</option>
+                      <option value="ANOMALY">Anomaly</option>
+                    </select>
 
-                <button data-agent="btn-create-concept" onClick={() => {
-                  if (activeRevisionId) {
-                    setPendingConfirm({
-                      message: "You have an active revision in progress. Discard it and create a new concept?",
-                      onConfirm: () => { createConcept() },
-                    })
-                  } else {
-                    createConcept()
-                  }
-                }} style={brutal.button}>
-                  Create
-                </button>
+                  </div>
 
-              </section>
+                  <button data-agent="btn-create-concept" onClick={() => {
+                    if (activeRevisionId) {
+                      setPendingConfirm({
+                        message: "You have an active revision in progress. Discard it and create a new concept?",
+                        onConfirm: () => { createConcept() },
+                      })
+                    } else {
+                      createConcept()
+                    }
+                  }} style={brutal.button}>
+                    Create
+                  </button>
+
+                </section>
+              )}
             </div>
 
             <section data-agent="editor-section">
-              <div className="title">Edit concept</div>
-
               {activeConcept && (
                 <>
+                  <div className="title">Edit concept details</div>
                   <div style={brutal.formRow}>
                     <div style={brutal.label}>Key</div>
                     <input
@@ -1390,98 +1392,96 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <section data-agent="revisions-section">
               <div className="title">Concept revisions</div>
 
-              {(revisionsByConcept[selectedConcept] || []).length === 0 ? (
-                <p>
-                  No revisions for this concept.
-                </p>
-              ) : (
-                <div className="list-input">
-                  {(revisionsByConcept[selectedConcept] || []).map((r) => {
-                    const isBase = r.id === baseId
-                    const isTarget = r.id === targetId
+              {revisionsByConcept[selectedConcept] === undefined && (
+                <div>Loading revisions...</div>
+              )}
 
-                    return (
-                      <div
-                        className="option2"
-                        data-agent={`revision-${r.id}`}
-                        key={r.id}
-                        style={{
-                          ...(isBase ? brutal.rowBase : {}),
-                          ...(isTarget ? brutal.rowTarget : {}),
-                        }}
-                      >
-                        <div data-agent="revision-id" className="list-id">{r.id.slice(0, 16)}</div>
+              {revisionsByConcept[selectedConcept] !== undefined &&
+                revisionsByConcept[selectedConcept].length === 0 && (
+                  <p>No revisions for this concept.</p>
+                )}
 
-                        <div data-agent="revision-markdown" className="list-tooltip">{r.markdown.slice(0, 100)}...</div>
+              {revisionsByConcept[selectedConcept] !== undefined &&
+                revisionsByConcept[selectedConcept].length > 0 && (
+                  <div className="list-input">
+                    {revisionsByConcept[selectedConcept].map((r) => {
+                      const isBase = r.id === baseId
+                      const isTarget = r.id === targetId
 
-                        <div style={brutal.actions}>
-                          <button
-                            data-agent="btn-load-revision"
-                            onClick={() => {
-                              setActiveRevisionId(r.id)
-                              setSelectedConcept(r.conceptId)
-                              setEditorValue(r.markdown)
-                            }}
-                            style={brutal.button}
+                      return (
+                        <div
+                          className="option2"
+                          data-agent={`revision-${r.id}`}
+                          key={r.id}
+                          style={{
+                            ...(isBase ? brutal.rowBase : {}),
+                            ...(isTarget ? brutal.rowTarget : {}),
+                          }}
+                        >
+                          <div
+                            data-agent="revision-id"
+                            className="list-id"
                           >
-                            Load
-                          </button>
+                            {r.id.slice(0, 16)}
+                          </div>
 
-                          <div style={{
-                            border: "1px solid black", margin: "0 1rem",
-                            ...(isBase || isTarget ? { borderColor: "white" } : {})
-                          }} />
-
-                          <button
-                            data-agent="btn-set-base"
-                            onClick={() => setBaseId(r.id)}
-                            style={{
-                              ...brutal.button,
-                              ...(isBase ? brutal.active : {}),
-                            }}
+                          <div
+                            data-agent="revision-markdown"
+                            className="list-tooltip"
                           >
-                            Base
-                          </button>
+                            {r.markdown.slice(0, 100)}...
+                          </div>
 
-                          <button
-                            data-agent="btn-set-head"
-                            onClick={() => setTargetId(r.id)}
-                            style={{
-                              ...brutal.button,
-                              ...(isTarget ? brutal.active : {}),
-                            }}
-                          >
-                            Head
-                          </button>
+                          <div style={brutal.actions}>
+                            <button
+                              data-agent="btn-load-revision"
+                              onClick={() => {
+                                setActiveRevisionId(r.id)
+                                setSelectedConcept(r.conceptId)
+                                setEditorValue(r.markdown)
+                              }}
+                              style={brutal.button}
+                            >
+                              Load
+                            </button>
+
+                            <div
+                              style={{
+                                border: "1px solid black",
+                                margin: "0 1rem",
+                                ...(isBase || isTarget
+                                  ? { borderColor: "white" }
+                                  : {}),
+                              }}
+                            />
+
+                            <button
+                              data-agent="btn-set-base"
+                              onClick={() => setBaseId(r.id)}
+                              style={{
+                                ...brutal.button,
+                                ...(isBase ? brutal.active : {}),
+                              }}
+                            >
+                              Base
+                            </button>
+
+                            <button
+                              data-agent="btn-set-head"
+                              onClick={() => setTargetId(r.id)}
+                              style={{
+                                ...brutal.button,
+                                ...(isTarget ? brutal.active : {}),
+                              }}
+                            >
+                              Head
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-              {baseId && targetId && hunks.length === 0 && (
-                <div data-agent="diff-no-differences" style={{ marginTop: "1em", marginBottom: "1em", fontStyle: "italic" }}>
-                  No differences between these revisions.
-                </div>
-              )}
-              {baseId && targetId && hunks.length > 0 && (
-                <div data-agent="diff-view" style={{ background: "white", border: "2px solid black", marginTop: "1em" }}>
-                  <p style={{ margin: "1em", fontStyle: "italic" }}>
-                    <code>{baseId.slice(0, 16)}</code>{" → "}
-                    <code>{targetId.slice(0, 16)}</code>
-                  </p>
-                  <Diff viewType="split" diffType="modify" hunks={hunks}>
-                    {(hunks) =>
-                      hunks.map((hunk) => (
-                        <Hunk
-                          key={`${hunk.oldStart}-${hunk.newStart}`}
-                          hunk={hunk}
-                        />
-                      ))
-                    }
-                  </Diff>
-                </div>
-              )}
+                      )
+                    })}
+                  </div>
+                )}
             </section>
 
             <hr />
@@ -1579,60 +1579,60 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     })}
                   </div>
                 </section>
+
+
+                <section data-agent="new-baseline-section">
+                  <div className="title">New baseline</div>
+
+                  <input
+                    data-agent="input-baseline-name"
+                    placeholder="Baseline name"
+                    value={baselineName}
+                    onChange={(e) => setBaselineName(e.target.value)}
+                    style={{ ...brutal.input, marginBottom: 8 }}
+                  />
+
+                  {Object.keys(revisionsByConcept).length === 0 ? (
+                    <p>
+                      No revisions for this concept.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="list-input">
+                        {Object.values(revisionsByConcept)
+                          .flat()
+                          .map((r) => {
+                            const checked = selectedRevisions.includes(r.id)
+
+                            return (
+                              <div
+                                className="option2"
+                                data-agent={`baseline-revision-${r.id}`}
+                                key={r.id}
+                                onClick={() => toggleRevision(r.id)}
+                                style={{
+                                  background: checked ? "black" : "white",
+                                  color: checked ? "white" : "black",
+                                }}
+                              >
+                                <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
+                              </div>
+                            )
+                          })}
+                      </div>
+
+                      <button
+                        data-agent="btn-create-baseline"
+                        onClick={createBaseline}
+                        style={{ ...brutal.button, marginTop: 8 }}
+                      >
+                        Create baseline
+                      </button>
+                    </>
+                  )}
+                </section>
               </>
             )}
-
-            <section data-agent="new-baseline-section">
-              <div className="title">New baseline</div>
-
-              <input
-                data-agent="input-baseline-name"
-                placeholder="Baseline name"
-                value={baselineName}
-                onChange={(e) => setBaselineName(e.target.value)}
-                style={{ ...brutal.input, marginBottom: 8 }}
-              />
-
-              {Object.keys(revisionsByConcept).length === 0 ? (
-                <p>
-                  No revisions for this concept.
-                </p>
-              ) : (
-                <>
-                  <div className="list-input">
-                    {Object.values(revisionsByConcept)
-                      .flat()
-                      .map((r) => {
-                        const checked = selectedRevisions.includes(r.id)
-
-                        return (
-                          <div
-                            className="option2"
-                            data-agent={`baseline-revision-${r.id}`}
-                            key={r.id}
-                            onClick={() => toggleRevision(r.id)}
-                            style={{
-                              background: checked ? "black" : "white",
-                              color: checked ? "white" : "black",
-                            }}
-                          >
-                            <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
-                          </div>
-                        )
-                      })}
-                  </div>
-
-                  <button
-                    data-agent="btn-create-baseline"
-                    onClick={createBaseline}
-                    style={{ ...brutal.button, marginTop: 8 }}
-                  >
-                    Create baseline
-                  </button>
-                </>
-              )}
-            </section>
-
             <hr />
 
             <section data-agent="generate-llm-section">
@@ -1673,93 +1673,102 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </footer>
           </aside>
         </>
-      )}
-      {!!user && (
-        <main className={activeRevisionId ? "revise-active" : ""}>
-          {nodeClickLoading && (
-            <div
-              data-agent="node-click-loading"
-              style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(255, 255, 255, 0.5)",
-                zIndex: 9999,
-                display: "grid",
-                placeItems: "center",
-                padding: 20,
-                pointerEvents: "none",
-              }}
-            >
+      )
+      }
+      {
+        !!user && (
+          <main className={activeRevisionId ? "revise-active" : ""}>
+            {nodeClickLoading && (
               <div
+                data-agent="node-click-loading"
                 style={{
-                  border: "2px solid black",
-                  background: "rgb(233, 237, 233)",
-                  padding: 18,
-                  fontFamily: "monospace",
-                  fontSize: 16,
+                  position: "fixed",
+                  inset: 0,
+                  background: "rgba(255, 255, 255, 0.5)",
+                  zIndex: 9999,
+                  display: "grid",
+                  placeItems: "center",
+                  padding: 20,
+                  pointerEvents: "none",
                 }}
               >
-                Loading concept...
+                <div
+                  style={{
+                    border: "2px solid black",
+                    background: "rgb(233, 237, 233)",
+                    padding: 18,
+                    fontFamily: "monospace",
+                    fontSize: 16,
+                  }}
+                >
+                  Loading concept...
+                </div>
               </div>
-            </div>
-          )}
-          {activeRevisionId && (
-            <div data-agent="revise-panel" className="revise-panel">
-              <div className="title">Revise concept</div>
-              <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                Revision: {activeRevisionId}
-              </div>
-              <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
-              <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
-                <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8, flex: 1 }}>
-                  Save revision
-                </button>
-                  <button data-agent="btn-cancel-revision" onClick={() => { setActiveRevisionId(null); setEditorValue("") }} style={{ ...brutal.button, marginTop: 8 }}>
+            )}
+            {activeRevisionId && (
+              <div data-agent="revise-panel" className="revise-panel">
+                <div className="title">Revise concept</div>
+                <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
+                  Revision: {activeRevisionId}
+                </div>
+                <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
+                <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
+                  <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8, flex: 1 }}>
+                    Save revision
+                  </button>
+                  <button
+                    data-agent="btn-cancel-revision"
+                    onClick={() => { setActiveRevisionId(null); setEditorValue("") }}
+                    style={{
+                      ...brutal.button,
+                      marginTop: 8,
+                      backgroundColor: "#fcc"
+                    }}>
                     Discard
                   </button>
+                </div>
               </div>
-            </div>
-          )}
-          <GraphView
-            loading={graph === null}
-            revisions={(graph?.revisions ?? []).filter((r: Revision) => {
-              const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
-              const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
-                new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-                , revisionsForConcept[0])
+            )}
+            <GraphView
+              loading={graph === null}
+              revisions={(graph?.revisions ?? []).filter((r: Revision) => {
+                const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
+                const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
+                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                  , revisionsForConcept[0])
 
-              return r.id === latestRevision.id
-            })}
-            concepts={graph?.concepts ?? []}
-            relations={graph?.relations ?? []}
-            onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
-            onNodeClick={async (conceptId) => {
-              const action = async () => {
-                setNodeClickLoading(true)
-                setSelectedConcept(conceptId)
-                try {
-                  const revisions = await loadRevisions(conceptId)
-                  setActiveRevisionId(revisions?.[0]?.id || null)
-                  setEditorValue(revisions?.[0]?.markdown || "")
-                  scrollToEditConcept()
-                } finally {
-                  setNodeClickLoading(false)
+                return r.id === latestRevision.id
+              })}
+              concepts={graph?.concepts ?? []}
+              relations={graph?.relations ?? []}
+              onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
+              onNodeClick={async (conceptId) => {
+                const action = async () => {
+                  setNodeClickLoading(true)
+                  setSelectedConcept(conceptId)
+                  try {
+                    const revisions = await loadRevisions(conceptId)
+                    setActiveRevisionId(revisions?.[0]?.id || null)
+                    setEditorValue(revisions?.[0]?.markdown || "")
+                    scrollToEditConcept()
+                  } finally {
+                    setNodeClickLoading(false)
+                  }
                 }
-              }
 
-              if (activeRevisionId) {
-                setPendingConfirm({
-                  message: "You have an active revision in progress. Discard it and open this concept?",
-                  onConfirm: action,
-                })
-              } else {
-                action()
-              }
-            }}
-            API={API}
-          />
-        </main>
-      )
+                if (activeRevisionId) {
+                  setPendingConfirm({
+                    message: "You have an active revision in progress. Discard it and open this concept?",
+                    onConfirm: action,
+                  })
+                } else {
+                  action()
+                }
+              }}
+              API={API}
+            />
+          </main>
+        )
       }
     </>
   )

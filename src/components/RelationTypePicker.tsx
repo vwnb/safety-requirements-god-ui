@@ -45,6 +45,7 @@ export default function RelationTypePicker({
         position: "fixed",
         top: "50%",
         left: "50%",
+        height: "auto",
         transform: "translate(-50%, -50%)",
         border: "2px solid black",
         fontFamily: "monospace",
