@@ -9,6 +9,7 @@ import { OfflineBanner } from "./components/OfflineBanner"
 import { useApiFetch } from "./lib/apiFetchContext"
 import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
 import background from "./assets/background.jpg"
+import { runOnboardingTour } from "./lib/demoRunner"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -380,6 +381,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         loadConcepts(selectedWorkItem),
         refreshGraph(selectedWorkItem),
       ])
+
+      setLoading(true)
+      setLoadingMessage("Loading onboarding...")
+      setTimeout(() => {
+        setLoading(false)
+        setLoadingMessage("")
+        runOnboardingTour()
+      }, 3000)
     }
 
     load()
@@ -1686,7 +1695,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       }
       {
         !!user && (
-          <main className={activeRevisionId ? "revise-active" : ""}>
+          <main data-agent="graph-view" className={activeRevisionId ? "revise-active" : ""}>
             {nodeClickLoading && (
               <div
                 data-agent="node-click-loading"

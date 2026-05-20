@@ -430,6 +430,140 @@ export const graphAgent = {
     await this.clickEdge(relationId)
   },
 
+  async waitForLoadingToFinish(timeoutMs = 30000) {
+    const deadline = Date.now() + timeoutMs
+
+    while (Date.now() < deadline) {
+      if (!this.exists("loading-overlay")) {
+        return
+      }
+
+      await sleep(100)
+    }
+
+    throw new Error("Timed out waiting for loading overlay")
+  },
+
+  // ── Template operations ───────────────────────────
+
+  async importTemplate(templateId: string) {
+    await this.click(`template-${templateId}`)
+
+    // confirm dialog may appear
+    if (this.exists("confirm-overlay")) {
+      await sleep(200)
+
+      const buttons = document.querySelectorAll(
+        '[data-agent="confirm-overlay"] button'
+      )
+
+      const discardBtn = buttons[1] as HTMLButtonElement | undefined
+
+      discardBtn?.click()
+    }
+
+    await this.waitForLoadingToFinish()
+  },
+
+  // ── LLM operations ────────────────────────────────
+
+  async generateWithLLM(prompt: string) {
+    await this.type("input-llm-prompt", prompt)
+
+    await sleep(150)
+
+    await this.click("btn-generate-llm")
+
+    // active revision confirmation
+    if (this.exists("confirm-overlay")) {
+      await sleep(200)
+
+      const buttons = document.querySelectorAll(
+        '[data-agent="confirm-overlay"] button'
+      )
+
+      const discardBtn = buttons[1] as HTMLButtonElement | undefined
+
+      discardBtn?.click()
+    }
+
+    await this.waitForLoadingToFinish(120000)
+  },
+
+  // ── Revision operations ───────────────────────────
+
+  async saveRevision() {
+    await this.click("btn-save-revision")
+    await this.waitForLoadingToFinish()
+  },
+
+  async discardRevision() {
+    await this.click("btn-cancel-revision")
+  },
+
+  async loadRevision(revisionId: string) {
+    const row = await ensureElementVisible(`revision-${revisionId}`)
+
+    if (!row) {
+      throw new Error(`Revision not found: ${revisionId}`)
+    }
+
+    const btn = row.querySelector(
+      '[data-agent="btn-load-revision"]'
+    ) as HTMLButtonElement | null
+
+    btn?.click()
+  },
+
+  // ── Concept operations ────────────────────────────
+
+  async createConcept(opts: {
+    key: string
+    title?: string
+    type: string
+    phase?: string
+    asil?: string
+  }) {
+    await this.type("input-new-concept-key", opts.key)
+
+    if (opts.title) {
+      await this.type("input-new-concept-title", opts.title)
+    }
+
+    if (opts.phase) {
+      await this.selectOption(
+        "select-new-concept-phase",
+        opts.phase
+      )
+    }
+
+    if (opts.asil) {
+      await this.selectOption(
+        "select-new-concept-asil",
+        opts.asil
+      )
+    }
+
+    await this.selectOption(
+      "select-new-concept-type",
+      opts.type
+    )
+
+    await this.click("btn-create-concept")
+
+    if (this.exists("confirm-overlay")) {
+      const buttons = document.querySelectorAll(
+        '[data-agent="confirm-overlay"] button'
+      )
+
+      const discardBtn = buttons[1] as HTMLButtonElement | undefined
+
+      discardBtn?.click()
+    }
+
+    await this.waitForLoadingToFinish()
+  },
+
   /** Fit the graph view to show all nodes. */
   fitView() {
     fitView()
