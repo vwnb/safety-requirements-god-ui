@@ -255,19 +255,21 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   useEffect(() => {
+    async function welcomeUser(): Promise<void> {
+      await refreshProjects()
+    }
     if (!user) return
 
-    refreshProjects()
+    welcomeUser();
   }, [user])
 
-  // Use initialized as false to distinguish "never loaded" from "loaded but empty"
   const [workItems, setWorkItems] = useState<WorkItem[] | null>(null)
   const [workItemsInitialized, setWorkItemsInitialized] = useState(false)
   workItemsInitialized
   const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
   const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
 
-  const [templates, setTemplates] = useState<WorkItem[]>([])
+  const [templates, setTemplates] = useState<WorkItem[]>()
 
   const [concepts, setConcepts] = useState<Concept[] | null>(null)
   const [conceptsInitialized, setConceptsInitialized] = useState(false)
@@ -315,7 +317,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [graph, setGraph] = useState<any>(null)
 
-  const [baselines, setBaselines] = useState<any[]>([])
+  const [baselines, setBaselines] = useState<any[]>()
   const [selectedBaseline, setSelectedBaseline] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
@@ -1491,10 +1493,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <hr />
             <section data-agent="import-concepts-section">
               <div className="title">Import concepts</div>
-              {typeof templates === "undefined" ? (
-                <>
+              {templates === undefined ? (
+                <p>
                   Loading templates...
-                </>
+                </p>
               ) :
                 templates.length === 0 ? (
                   <p>
@@ -1530,10 +1532,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <section data-agent="baselines-section">
               <div className="title">Baselines</div>
 
-              {typeof baselines === "undefined" ? (
-                <>
+              {baselines === undefined ? (
+                <p>
                   Loading baselines...
-                </>
+                </p>
               ) :
                 baselines.length === 0 ? (
                   <p>

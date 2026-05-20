@@ -341,6 +341,10 @@ main.revise-active {
 
 
 .graph-background-fade-in {
-  animation: fadeIn 3s ease-out forwards, panBackground 40s ease-in-out infinite alternate;
+  animation: fadeIn 5s ease-out forwards, panBackground 40s ease-in-out infinite alternate;
   animation-fill-mode: forwards, both;
+}
+
+section {
+  animation: fadeIn 5s ease-out forwards
 }
