@@ -26,6 +26,7 @@ type Concept = {
   title: string
   phase?: LifecyclePhase
   asil?: ASIL
+  createdBy: string
 }
 
 export const backgroundImage = background;
@@ -544,6 +545,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           title: editConceptTitle,
           phase: editConceptPhase,
           asil: editConceptAsil,
+          user: actorForApi
         }),
       })
 
@@ -569,6 +571,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           title: newConceptTitle,
           phase: newConceptPhase,
           asil: newConceptAsil,
+          createdBy: actorForApi
         }
       }
 
@@ -589,6 +592,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
       await loadRevisions(created.id)
       await refreshGraph(selectedWorkItem)
+      await refreshBaselines()
     })
   }
 
@@ -616,6 +620,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           asil: editWorkItemAsil,
           applicationContext: editWorkItemApplicationContext,
           systemBoundary: editWorkItemSystemBoundary,
+          user: actorForApi
         }),
       })
 
@@ -644,7 +649,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ concepts: importedConcepts, relations: importedRelations }),
+        body: JSON.stringify({
+          concepts: importedConcepts,
+          relations: importedRelations,
+          user: actorForApi
+        }),
       })
 
       await loadConcepts(selectedWorkItem)
@@ -662,7 +671,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         body: JSON.stringify({
           key: newWorkItemKey,
           name: newWorkItemTitle,
-          projectKey: selectedProject.key
+          projectKey: selectedProject.key,
+          createdBy: actorForApi
         }),
       })
 
@@ -888,7 +898,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       )}
 
       {loading && (
-        <div data-agent="loading-overlay"
+        <div
+          className="loading-overlay"
+          data-agent="loading-overlay"
           style={{
             position: "fixed",
             inset: 0,
@@ -899,7 +911,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             padding: 20,
           }}
         >
-          <div data-agent="loading-message"
+          <div
+            className="loading-message"
+            data-agent="loading-message"
             style={{
               border: "2px solid black",
               background: "rgb(255,255,255)",
