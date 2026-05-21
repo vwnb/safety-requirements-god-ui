@@ -17,7 +17,7 @@ const steps: TourStep[] = [
     selector: "graph-view",
     title: "⁉️ Live traceability graph",
     body:
-      "Visualize relationships between hazards, safety goals, requirements, revisions, and evidence. Engineers can immediately inspect traceability gaps, impact chains, and downstream compliance effects during safety analysis.",
+      "Visualize relationships between hazards, safety goals, requirements, revisions, and evidence. Engineers can downstream on compliance from the early stages of manufacturing.",
     placement: "left",
   },
 
@@ -33,7 +33,7 @@ const steps: TourStep[] = [
     selector: "import-concepts-section",
     title: "🤯 Kinda like Lego for safety",
     body:
-      "Import reusable concept structures for common automotive systems and safety patterns. This reduces duplicated work and standardizes ISO 26262 process adoption across projects and product lines.",
+      "Building blocks of safe automotives, robotics et cetera.",
     placement: "bottom",
   },
 
@@ -41,7 +41,7 @@ const steps: TourStep[] = [
     selector: "werk-that-llm-section",
     title: "🧯 AI-assisted ISO 26262 generation",
     body:
-      "Generate hazards, safety goals, requirements, and traceability links via prompt. Evaluate and go audit-ready.",
+      "Generate hazards, safety goals, requirements, and traceability links via prompt. Evaluate regularly and go audit-ready.",
     placement: "top",
   },
 
