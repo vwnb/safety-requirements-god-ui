@@ -960,11 +960,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         <img src={logo} alt="Logo" className="logo" data-agent="logo" />
 
         <section style={{ flex: 1 }} data-agent="user-section">
-          <div className="title">User</div>
           {auth0Enabled ? (
-            <Auth0UserBar onActorResolved={onActorResolved} />
+            <>
+              <div className="title">User</div>
+              <Auth0UserBar onActorResolved={onActorResolved} />
+            </>
           ) : (
-            <p>Something went wrong. Call the developer.</p>
+            <>
+              <h1>👺</h1>
+              <p>Something went wrong. Call the developer.</p>
+            </>
           )}
         </section>
       </header>

@@ -2,7 +2,7 @@
 
 :root {
   --font-mono: 'IBM Plex Mono', monospace;
-  --font-serif: 'Spectral', serif;
+  --font-serif: 'Libre Caslon Text', serif;
 }
 
 #root {
@@ -10,7 +10,6 @@
   margin: 0 auto;
   min-height: 100svh;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
   display: grid;
   box-sizing: border-box;
   grid-template-columns: 720px 1fr;
