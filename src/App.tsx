@@ -383,6 +383,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         loadWorkItemDetails(selectedWorkItem),
         loadConcepts(selectedWorkItem),
         refreshGraph(selectedWorkItem),
+        refreshBaselines()
       ])
 
       setLoading(true)
@@ -1749,6 +1750,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </button>
                 {!!suggestions && suggestions.map((suggestion: { text: string }) => {
                   const suggestionKey = suggestion.text.slice(0, 8).replaceAll(" ", "-");
+                  console.log(suggestionKey)
                   return <p data-agent={`suggestion-${suggestionKey}`} key={suggestionKey}>{suggestion.text}</p>
                 })}
               </section>

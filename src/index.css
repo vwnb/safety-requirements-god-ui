@@ -1,8 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Spectral:wght@400;500;600&display=swap');
+
+:root {
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-serif: 'Spectral', serif;
+}
+
 #root {
   max-width: 100%;
   margin: 0 auto;
   min-height: 100svh;
-  font-family: monospace;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
   display: grid;
   box-sizing: border-box;
   grid-template-columns: 720px 1fr;
@@ -51,9 +59,11 @@ main>* {
 }
 
 h1,
-h2 {
-  font-family: sans-serif;
-  font-weight: 500;
+h2,
+p,
+ul {
+  font-family: var(--font-serif);
+  font-weight: 300;
   line-height: 1em;
 }
 
@@ -88,7 +98,7 @@ code {
 
 code,
 .counter {
-  font-family: monospace;
+  font-family: var(--font-mono);;
   display: inline-flex;
   border-radius: 4px;
 }
@@ -136,7 +146,7 @@ header>* {
 .title {
   display: inline-block;
   width: max-content;
-  font-family: monospace;
+  font-family: var(--font-mono);;
   font-weight: bold;
   font-size: 1.2em;
   margin-bottom: 1em;
@@ -180,7 +190,7 @@ header>* {
   padding: 10px;
   border-radius: 8px;
   border: 2px solid black;
-  font-family: monospace;
+  font-family: var(--font-mono);;
   font-size: 12;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
@@ -202,7 +212,7 @@ button:hover,
 .option2 {
   border-bottom: 1px solid black;
   padding: 6px;
-  font-family: monospace;
+  font-family: var(--font-mono);;
   align-items: center;
   display: flex;
   cursor: pointer;
