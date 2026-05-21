@@ -136,6 +136,7 @@ export const brutal = {
     width: "150px",
     marginRight: 10,
     color: "black",
+    font: "IBM Plex Mono, monospace"
   },
 }
 
@@ -699,7 +700,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     if (!selectedWorkItem) return
 
     setLoading(true)
-    setLoadingMessage("Generating content with LLM...")
+    setLoadingMessage("👺 Generating content with LLM...")
 
     try {
       const res = await apiFetch(`${API}/generate-data`, {
@@ -850,7 +851,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     if (!selectedWorkItem) return
 
     setLoading(true)
-    setLoadingMessage("Generating suggestions with LLM...")
+    setLoadingMessage("👺 Generating suggestions with LLM...")
 
     try {
       const res = await apiFetch(`${API}/evaluate-work-item/${workItemId}`, {
@@ -948,7 +949,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               border: "2px solid black",
               background: "rgb(255,255,255)",
               padding: 18,
-              fontFamily: "monospace",
               fontSize: 16,
             }}
           >
@@ -1448,7 +1448,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               <div className="title">Concept revisions</div>
 
               {revisionsByConcept[selectedConcept] === undefined && (
-                <div>Loading revisions...</div>
+                <p>Loading revisions...</p>
               )}
 
               {revisionsByConcept[selectedConcept] !== undefined &&
@@ -1625,9 +1625,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       const r = item.revision
 
                       return (
-                        <div key={r.id}>
-                          <div style={{ width: 120, overflow: "hidden" }}>
-                            {r.concept.key} ({r.concept.type})
+                        <div
+                          key={r.id}
+                          className="option"
+                          onClick={() => {
+                            setActiveRevisionId(r.id)
+                            setSelectedConcept(r.conceptId)
+                            setEditorValue(r.markdown)
+                          }}>
+                          <div className="list-id">
+                            {r.concept.key} - {r.concept.type} ({r.id})
                           </div>
 
                           <div className="list-tooltip">
@@ -1694,73 +1701,85 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 )}
               </section>
             )}
-            <hr />
 
-            <div className="cms-layout" data-agent="werk-that-llm-section">
-              <section data-agent="generate-llm-section">
-                <div className="title">Generate content with LLM</div>
+            {!!selectedWorkItem && (
+              <>
+                <hr />
 
-                <input type="text"
-                  data-agent="input-llm-prompt"
-                  placeholder="Enter prompt for LLM"
-                  value={llmPrompt}
-                  onChange={(e) => setLlmPrompt(e.target.value)}
-                  style={{ ...brutal.input, marginBottom: 8 }}
-                />
+                <div className="cms-layout" data-agent="werk-that-llm-section">
+                  <section data-agent="generate-llm-section">
+                    <div className="title">👺 Append work item with LLM</div>
 
-                <button
-                  data-agent="btn-generate-llm"
-                  onClick={() => {
-                    const action = () => { generateWithLLM() }
+                    <input type="text"
+                      data-agent="input-llm-prompt"
+                      placeholder="Enter prompt for LLM"
+                      value={llmPrompt}
+                      onChange={(e) => setLlmPrompt(e.target.value)}
+                      style={{ ...brutal.input, marginBottom: 8 }}
+                    />
 
-                    if (activeRevisionId) {
-                      setPendingConfirm({
-                        message: "You have an active revision in progress. Discard it and generate content with LLM?",
-                        onConfirm: action,
-                      })
-                    } else {
-                      action()
-                    }
-                  }}
-                  style={brutal.button}
-                >
-                  Generate
-                </button>
-              </section>
+                    <button
+                      data-agent="btn-generate-llm"
+                      onClick={() => {
+                        const action = () => { generateWithLLM() }
 
-              <section data-agent="llm-suggestions-section">
-                <div className="title">Evaluate work item with LLM</div>
+                        if (activeRevisionId) {
+                          setPendingConfirm({
+                            message: "You have an active revision in progress. Discard it and generate content with LLM?",
+                            onConfirm: action,
+                          })
+                        } else {
+                          action()
+                        }
+                      }}
+                      style={brutal.button}
+                    >
+                      Generate
+                    </button>
+                  </section>
 
-                <button
-                  data-agent="btn-llm-suggestions"
-                  onClick={() => {
-                    const action = () => { suggestWithLLM(selectedWorkItem) }
+                  <section data-agent="llm-suggestions-section">
+                    <div className="title">👺 Evaluate work item with LLM</div>
 
-                    if (activeRevisionId) {
-                      setPendingConfirm({
-                        message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
-                        onConfirm: action,
-                      })
-                    } else {
-                      action()
-                    }
-                  }}
-                  style={brutal.button}
-                >
-                  Evaluate
-                </button>
-                {!!suggestions && suggestions.map((suggestion: { text: string }) => {
-                  const suggestionKey = suggestion.text.slice(0, 8).replaceAll(" ", "-");
-                  console.log(suggestionKey)
-                  return <p data-agent={`suggestion-${suggestionKey}`} key={suggestionKey}>{suggestion.text}</p>
-                })}
-              </section>
-            </div>
+                    <button
+                      data-agent="btn-llm-suggestions"
+                      onClick={() => {
+                        const action = () => { suggestWithLLM(selectedWorkItem) }
+
+                        if (activeRevisionId) {
+                          setPendingConfirm({
+                            message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
+                            onConfirm: action,
+                          })
+                        } else {
+                          action()
+                        }
+                      }}
+                      style={brutal.button}
+                    >
+                      Evaluate
+                    </button>
+
+                    <article>
+                      {!!suggestions && selectedWorkItemData && (
+                        <h2>Completeness Report for {selectedWorkItemData.key} {selectedWorkItemData.name}</h2>
+                      )}
+                      {!!suggestions && (
+                        suggestions.map((suggestion: { text: string }) => {
+                          const suggestionKey = suggestion.text.slice(0, 8).replaceAll(" ", "-");
+                          console.log(suggestionKey)
+                          return <p data-agent={`suggestion-${suggestionKey}`} key={suggestionKey}>{suggestion.text}</p>
+                        }))}
+                    </article>
+                  </section>
+                </div>
+              </>
+            )}
 
             <hr />
 
             <footer>
-              © 2026 WCGW Software // Residual vibecode HAZARD has been deemed ACCEPTABLE under nominal operating conditions. :)
+              2026 WCGW. 👺 denotes hazardous software!
             </footer>
           </aside>
         </>

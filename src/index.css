@@ -10,6 +10,7 @@
   margin: 0 auto;
   min-height: 100svh;
   font-family: var(--font-mono);
+  font-size: 0.8rem;
   display: grid;
   box-sizing: border-box;
   grid-template-columns: 720px 1fr;
@@ -57,14 +58,43 @@ main>* {
   height: calc(100vh - 40px);
 }
 
-h1,
-h2,
-p,
-ul {
-  font-family: var(--font-serif);
-  font-weight: 300;
-  line-height: 1em;
-  font-size: 1rem;
+.revise-panel {
+
+  h1,
+  h2,
+  p,
+  ul {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    line-height: 1em;
+    font-size: 1rem;
+  }
+}
+
+article {
+
+  h1,
+  h2,
+  h3 p,
+  ul {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    line-height: 1em;
+  }
+
+  h1 {
+    font-size: 2em;
+  }
+
+  h2 {
+    font-size: 1.6em;
+  }
+
+  h3 {
+    font-size: 1.2em;
+  }
+
+
 }
 
 h1 {
@@ -98,7 +128,8 @@ code {
 
 code,
 .counter {
-  font-family: var(--font-mono);;
+  font-family: var(--font-mono);
+  ;
   display: inline-flex;
   border-radius: 4px;
 }
@@ -146,7 +177,7 @@ header>* {
 .title {
   display: inline-block;
   width: max-content;
-  font-family: var(--font-mono);;
+  font-family: var(--font-mono);
   font-weight: bold;
   font-size: 1.2em;
   margin-bottom: 1em;
@@ -190,7 +221,8 @@ header>* {
   padding: 10px;
   border-radius: 8px;
   border: 2px solid black;
-  font-family: var(--font-mono);;
+  font-family: var(--font-mono);
+  ;
   font-size: 12;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
@@ -212,7 +244,8 @@ button:hover,
 .option2 {
   border-bottom: 1px solid black;
   padding: 6px;
-  font-family: var(--font-mono);;
+  font-family: var(--font-mono);
+  ;
   align-items: center;
   display: flex;
   cursor: pointer;
@@ -355,6 +388,9 @@ main.revise-active {
   animation-fill-mode: forwards, both;
 }
 
-section, .graph-node, .loading-overlay, .loading-message {
+section,
+.graph-node,
+.loading-overlay,
+.loading-message {
   animation: fadeIn 1s ease-out forwards
 }
