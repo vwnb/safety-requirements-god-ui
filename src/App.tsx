@@ -1696,7 +1696,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             )}
             <hr />
 
-            <div className="cms-layout">
+            <div className="cms-layout" data-agent="werk-that-llm-section">
               <section data-agent="generate-llm-section">
                 <div className="title">Generate content with LLM</div>
 

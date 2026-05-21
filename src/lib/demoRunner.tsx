@@ -38,11 +38,11 @@ const steps: TourStep[] = [
   },
 
   {
-    selector: "generate-llm-section",
+    selector: "werk-that-llm-section",
     title: "🧯 AI-assisted ISO 26262 generation",
     body:
-      "Generate hazards, safety goals, requirements, revisions, and traceability links directly from natural-language prompts. This dramatically accelerates HARA preparation and helps bootstrap compliance structures before detailed engineering begins.",
-    placement: "right",
+      "Generate hazards, safety goals, requirements, and traceability links via prompt. Evaluate and go audit-ready.",
+    placement: "top",
   },
 
 ]
