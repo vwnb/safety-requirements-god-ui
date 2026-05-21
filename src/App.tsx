@@ -964,11 +964,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           {auth0Enabled ? (
             <Auth0UserBar onActorResolved={onActorResolved} />
           ) : (
-            <input
-              data-agent="input-user"
-              value={"Alice"}
-              style={brutal.input}
-            />
+            <p>Something went wrong. Call the developer.</p>
           )}
         </section>
       </header>
