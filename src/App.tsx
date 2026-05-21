@@ -328,6 +328,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [nodeClickLoading, setNodeClickLoading] = useState(false)
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
+  const [suggestions, setSuggestions] = useState<any | null>(null);
+
   async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
     setLoading(true)
     setLoadingMessage(message)
@@ -843,6 +845,33 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }
   }
 
+  const suggestWithLLM = async (workItemId: string) => {
+    if (!selectedWorkItem) return
+
+    setLoading(true)
+    setLoadingMessage("Generating suggestions with LLM...")
+
+    try {
+      const res = await apiFetch(`${API}/hone-work-item/${workItemId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: llmPrompt,
+          user: actorForApi,
+        }),
+      })
+
+      if (!res.ok) throw new Error("Failed to generate suggestions")
+
+      const suggestionsData = await res.json()
+      setSuggestions(suggestionsData.suggestions);
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <>
       <OfflineBanner />
@@ -904,7 +933,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(255,255,255,0.05)",
+            background: "rgba(255,255,255,0.5)",
             zIndex: 9999,
             display: "grid",
             placeItems: "center",
@@ -1694,6 +1723,34 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               >
                 Generate
               </button>
+            </section>
+
+            <hr />
+
+            <section data-agent="llm-suggestions-section">
+              <div className="title">Evaluate work item with LLM</div>
+
+              <button
+                data-agent="btn-llm-suggestions"
+                onClick={() => {
+                  const action = () => { suggestWithLLM(selectedWorkItem) }
+
+                  if (activeRevisionId) {
+                    setPendingConfirm({
+                      message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
+                      onConfirm: action,
+                    })
+                  } else {
+                    action()
+                  }
+                }}
+                style={brutal.button}
+              >
+                Evaluate
+              </button>
+              {!!suggestions && suggestions.map((suggestion: { text: string }) => {
+                return <p>{suggestion.text}</p>
+              })}
             </section>
 
             <hr />
