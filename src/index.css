@@ -64,6 +64,7 @@ ul {
   font-family: var(--font-serif);
   font-weight: 300;
   line-height: 1em;
+  font-size: 1rem;
 }
 
 h1 {
