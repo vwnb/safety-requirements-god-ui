@@ -852,7 +852,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setLoadingMessage("Generating suggestions with LLM...")
 
     try {
-      const res = await apiFetch(`${API}/hone-work-item/${workItemId}`, {
+      const res = await apiFetch(`${API}/evaluate-work-item/${workItemId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -933,7 +933,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(255,255,255,0.5)",
+            background: "rgba(255,255,255,0.8)",
             zIndex: 9999,
             display: "grid",
             placeItems: "center",
@@ -1694,64 +1694,65 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             )}
             <hr />
 
-            <section data-agent="generate-llm-section">
-              <div className="title">Generate content with LLM</div>
+            <div className="cms-layout">
+              <section data-agent="generate-llm-section">
+                <div className="title">Generate content with LLM</div>
 
-              <input type="text"
-                data-agent="input-llm-prompt"
-                placeholder="Enter prompt for LLM"
-                value={llmPrompt}
-                onChange={(e) => setLlmPrompt(e.target.value)}
-                style={{ ...brutal.input, marginBottom: 8 }}
-              />
+                <input type="text"
+                  data-agent="input-llm-prompt"
+                  placeholder="Enter prompt for LLM"
+                  value={llmPrompt}
+                  onChange={(e) => setLlmPrompt(e.target.value)}
+                  style={{ ...brutal.input, marginBottom: 8 }}
+                />
 
-              <button
-                data-agent="btn-generate-llm"
-                onClick={() => {
-                  const action = () => { generateWithLLM() }
+                <button
+                  data-agent="btn-generate-llm"
+                  onClick={() => {
+                    const action = () => { generateWithLLM() }
 
-                  if (activeRevisionId) {
-                    setPendingConfirm({
-                      message: "You have an active revision in progress. Discard it and generate content with LLM?",
-                      onConfirm: action,
-                    })
-                  } else {
-                    action()
-                  }
-                }}
-                style={brutal.button}
-              >
-                Generate
-              </button>
-            </section>
+                    if (activeRevisionId) {
+                      setPendingConfirm({
+                        message: "You have an active revision in progress. Discard it and generate content with LLM?",
+                        onConfirm: action,
+                      })
+                    } else {
+                      action()
+                    }
+                  }}
+                  style={brutal.button}
+                >
+                  Generate
+                </button>
+              </section>
 
-            <hr />
+              <section data-agent="llm-suggestions-section">
+                <div className="title">Evaluate work item with LLM</div>
 
-            <section data-agent="llm-suggestions-section">
-              <div className="title">Evaluate work item with LLM</div>
+                <button
+                  data-agent="btn-llm-suggestions"
+                  onClick={() => {
+                    const action = () => { suggestWithLLM(selectedWorkItem) }
 
-              <button
-                data-agent="btn-llm-suggestions"
-                onClick={() => {
-                  const action = () => { suggestWithLLM(selectedWorkItem) }
-
-                  if (activeRevisionId) {
-                    setPendingConfirm({
-                      message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
-                      onConfirm: action,
-                    })
-                  } else {
-                    action()
-                  }
-                }}
-                style={brutal.button}
-              >
-                Evaluate
-              </button>
-              {!!suggestions && suggestions.map((suggestion: { text: string }) => {
-                return <p>{suggestion.text}</p>
-              })}
-            </section>
+                    if (activeRevisionId) {
+                      setPendingConfirm({
+                        message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
+                        onConfirm: action,
+                      })
+                    } else {
+                      action()
+                    }
+                  }}
+                  style={brutal.button}
+                >
+                  Evaluate
+                </button>
+                {!!suggestions && suggestions.map((suggestion: { text: string }) => {
+                  const suggestionKey = suggestion.text.slice(0, 8).replaceAll(" ", "-");
+                  return <p data-agent={`suggestion-${suggestionKey}`} key={suggestionKey}>{suggestion.text}</p>
+                })}
+              </section>
+            </div>
 
             <hr />
 
