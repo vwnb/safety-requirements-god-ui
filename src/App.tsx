@@ -1752,8 +1752,17 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       <h2>Completeness Report for {selectedWorkItemData.key} {selectedWorkItemData.name}</h2>
                     )}
                     {!!suggestions && (
-                      suggestions.map((suggestion: { text: string }, index: number) => {
+                      [...suggestions].sort((a: { importance?: string }, b: { importance?: string }) => {
+                        const order: Record<string, number> = { "VERY HIGH": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1 };
+                        return (order[b.importance ?? "LOW"] ?? 0) - (order[a.importance ?? "LOW"] ?? 0);
+                      }).map((suggestion: { text: string; importance?: string }, index: number) => {
                         const suggestionKey = suggestion.text.slice(0, 32).replaceAll(" ", "-");
+                        const importanceColor: Record<string, string> = {
+                          "VERY HIGH": "#d32f2f",
+                          "HIGH": "#f57c00",
+                          "MEDIUM": "#fbc02d",
+                          "LOW": "#7cb342",
+                        };
                         return (
                           <div
                             key={suggestionKey}
@@ -1764,7 +1773,25 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               gap: 8,
                             }}
                           >
-                            <p data-agent={`suggestion-${suggestionKey}`} style={{ margin: 0 }}>{suggestion.text}</p>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              {suggestion.importance && (
+                                <span
+                                  style={{
+                                    background: importanceColor[suggestion.importance] || "#999",
+                                    color: "#fff",
+                                    padding: "2px 8px",
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    fontFamily: "monospace",
+                                    borderRadius: 2,
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {suggestion.importance}
+                                </span>
+                              )}
+                              <p data-agent={`suggestion-${suggestionKey}`} style={{ margin: 0, flex: 1 }}>{suggestion.text}</p>
+                            </div>
                             <div style={brutal.actions}>
                               <button
                                 data-agent={`btn-act-on-suggestion-${index}`}
