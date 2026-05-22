@@ -387,8 +387,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         refreshBaselines()
       ])
 
-      setLoading(true)
-      setLoadingMessage("Loading onboarding...")
       setTimeout(() => {
         setLoading(false)
         setLoadingMessage("")
