@@ -38,10 +38,10 @@ const steps: TourStep[] = [
   },
 
   {
-    selector: "werk-that-llm-section",
+    selector: "llm-suggestions-section",
     title: "🧯 AI tools backed by full ISO standards",
     body:
-      "Generate hazards, safety goals, requirements, and traceability links via prompt. Evaluate regularly and go audit-ready.",
+      "Evaluate work items against ISO standards and iterate on details powerfully.",
     placement: "top",
   },
 
