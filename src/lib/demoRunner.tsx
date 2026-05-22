@@ -1,6 +1,6 @@
 
 
-const TOUR_STORAGE_KEY = "seen-onboarding-tour-2"
+const TOUR_STORAGE_KEY = "seen-onboarding-tour-3"
 
 const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -39,7 +39,7 @@ const steps: TourStep[] = [
 
   {
     selector: "werk-that-llm-section",
-    title: "🧯 AI-assisted ISO 26262 generation",
+    title: "🧯 AI tools backed by full ISO standards",
     body:
       "Generate hazards, safety goals, requirements, and traceability links via prompt. Evaluate regularly and go audit-ready.",
     placement: "top",
