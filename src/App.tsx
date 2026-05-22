@@ -18,6 +18,9 @@ type Project = { id: string, key: string }
 type LifecyclePhase = "ITEM_DEFINITION" | "HARA" | "FUNCTIONAL_SAFETY" | "TECHNICAL_SAFETY" | "SYSTEM_DESIGN" | "SOFTWARE_DESIGN" | "IMPLEMENTATION" | "VERIFICATION" | "VALIDATION" | "PRODUCTION" | "OPERATION" | "DECOMMISSIONING"
 
 type ASIL = "QM" | "A" | "B" | "C" | "D"
+type SIL = "SIL1" | "SIL2" | "SIL3" | "SIL4"
+type PL = "PL_a" | "PL_b" | "PL_c" | "PL_d" | "PL_e"
+type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 
 type Concept = {
   id: string
@@ -26,6 +29,9 @@ type Concept = {
   title: string
   phase?: LifecyclePhase
   asil?: ASIL
+  sil?: SIL
+  pl?: PL
+  standards?: Standard[]
   createdBy: string
 }
 
@@ -61,6 +67,9 @@ type WorkItem = {
   createdAt: string
   phase?: LifecyclePhase
   asil?: ASIL
+  sil?: SIL
+  pl?: PL
+  standards?: Standard[]
   applicationContext?: string
   systemBoundary?: string
 }
@@ -300,11 +309,17 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [newConceptType, setNewConceptType] = useState("ITEM")
   const [newConceptTitle, setNewConceptTitle] = useState("")
   const [newConceptPhase, setNewConceptPhase] = useState("ITEM_DEFINITION")
-  const [newConceptAsil, setNewConceptAsil] = useState("QM")
+  const [newConceptAsil, setNewConceptAsil] = useState("")
+  const [newConceptSil, setNewConceptSil] = useState("")
+  const [newConceptPl, setNewConceptPl] = useState("")
+  const [newConceptStandards, setNewConceptStandards] = useState<Standard[]>([])
 
   const [editConceptType, setEditConceptType] = useState("ITEM")
   const [editConceptPhase, setEditConceptPhase] = useState("ITEM_DEFINITION")
   const [editConceptAsil, setEditConceptAsil] = useState("QM")
+  const [editConceptSil, setEditConceptSil] = useState("")
+  const [editConceptPl, setEditConceptPl] = useState("")
+  const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
   const [editConceptKey, setEditConceptKey] = useState("")
 
@@ -315,6 +330,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [editWorkItemDescription, setEditWorkItemDescription] = useState("")
   const [editWorkItemPhase, setEditWorkItemPhase] = useState<LifecyclePhase | "">("")
   const [editWorkItemAsil, setEditWorkItemAsil] = useState<ASIL | "">("")
+  const [editWorkItemSil, setEditWorkItemSil] = useState<SIL | "">("")
+  const [editWorkItemPl, setEditWorkItemPl] = useState<PL | "">("")
+  const [editWorkItemStandards, setEditWorkItemStandards] = useState<Standard[]>([])
   const [editWorkItemApplicationContext, setEditWorkItemApplicationContext] = useState("")
   const [editWorkItemSystemBoundary, setEditWorkItemSystemBoundary] = useState("")
 
@@ -403,6 +421,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       setEditWorkItemDescription(selectedWorkItemData.description || "")
       setEditWorkItemPhase(selectedWorkItemData.phase || "")
       setEditWorkItemAsil(selectedWorkItemData.asil || "")
+      setEditWorkItemSil(selectedWorkItemData.sil || "")
+      setEditWorkItemPl(selectedWorkItemData.pl || "")
+      setEditWorkItemStandards(selectedWorkItemData.standards || [])
       setEditWorkItemApplicationContext(selectedWorkItemData.applicationContext || "")
       setEditWorkItemSystemBoundary(selectedWorkItemData.systemBoundary || "")
     }
@@ -418,6 +439,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         setEditConceptType(concept.type)
         setEditConceptPhase(concept.phase || "")
         setEditConceptAsil(concept.asil || "")
+        setEditConceptSil(concept.sil || "")
+        setEditConceptPl(concept.pl || "")
+        setEditConceptStandards(concept.standards || [])
       }
     }
   }, [selectedConcept])
@@ -546,7 +570,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           type: editConceptType,
           title: editConceptTitle,
           phase: editConceptPhase,
-          asil: editConceptAsil,
+          asil: editConceptAsil || undefined,
+          sil: editConceptSil || undefined,
+          pl: editConceptPl || undefined,
+          standards: editConceptStandards.length > 0 ? editConceptStandards : undefined,
           user: actorForApi
         }),
       })
@@ -572,7 +599,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           type: newConceptType,
           title: newConceptTitle,
           phase: newConceptPhase,
-          asil: newConceptAsil,
+          asil: newConceptAsil || undefined,
+          sil: newConceptSil || undefined,
+          pl: newConceptPl || undefined,
+          standards: newConceptStandards.length > 0 ? newConceptStandards : undefined,
           createdBy: actorForApi
         }
       }
@@ -590,7 +620,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       setNewConceptKey("")
       setNewConceptTitle("")
       setNewConceptPhase("")
-      setNewConceptAsil("QM")
+      setNewConceptAsil("")
 
       await loadRevisions(created.id)
       await refreshGraph(selectedWorkItem)
@@ -619,7 +649,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           name: editWorkItemName,
           description: editWorkItemDescription,
           phase: editWorkItemPhase,
-          asil: editWorkItemAsil,
+          asil: editWorkItemAsil || undefined,
+          sil: editWorkItemSil || undefined,
+          pl: editWorkItemPl || undefined,
+          standards: editWorkItemStandards.length > 0 ? editWorkItemStandards : undefined,
           applicationContext: editWorkItemApplicationContext,
           systemBoundary: editWorkItemSystemBoundary,
           user: actorForApi
@@ -1179,6 +1212,58 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     </select>
                   </div>
                   <div style={brutal.formRow}>
+                    <div style={brutal.label}>SIL</div>
+                    <select
+                      data-agent="select-work-item-sil"
+                      value={editWorkItemSil}
+                      onChange={(e) => setEditWorkItemSil(e.target.value as SIL | "")}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select SIL --</option>
+                      <option value="SIL1">SIL 1</option>
+                      <option value="SIL2">SIL 2</option>
+                      <option value="SIL3">SIL 3</option>
+                      <option value="SIL4">SIL 4</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>PL</div>
+                    <select
+                      data-agent="select-work-item-pl"
+                      value={editWorkItemPl}
+                      onChange={(e) => setEditWorkItemPl(e.target.value as PL | "")}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select PL --</option>
+                      <option value="PL_a">PL a</option>
+                      <option value="PL_b">PL b</option>
+                      <option value="PL_c">PL c</option>
+                      <option value="PL_d">PL d</option>
+                      <option value="PL_e">PL e</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Standards</div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+                      {(["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]).map((s) => (
+                        <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="checkbox"
+                            checked={editWorkItemStandards.includes(s)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEditWorkItemStandards([...editWorkItemStandards, s])
+                              } else {
+                                setEditWorkItemStandards(editWorkItemStandards.filter((x) => x !== s))
+                              }
+                            }}
+                          />
+                          {s.replace("_", " ")}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={brutal.formRow}>
                     <div style={brutal.label}>Application Context</div>
                     <input
                       data-agent="input-work-item-application-context"
@@ -1323,6 +1408,61 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </div>
 
                   <div style={brutal.formRow}>
+                    <div style={brutal.label}>SIL</div>
+                    <select
+                      data-agent="select-new-concept-sil"
+                      value={newConceptSil}
+                      onChange={(e) => setNewConceptSil(e.target.value)}
+                      style={{ ...brutal.select, flex: 1 }}
+                    >
+                      <option value="">-- Select SIL --</option>
+                      <option value="SIL1">SIL 1</option>
+                      <option value="SIL2">SIL 2</option>
+                      <option value="SIL3">SIL 3</option>
+                      <option value="SIL4">SIL 4</option>
+                    </select>
+                  </div>
+
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>PL</div>
+                    <select
+                      data-agent="select-new-concept-pl"
+                      value={newConceptPl}
+                      onChange={(e) => setNewConceptPl(e.target.value)}
+                      style={{ ...brutal.select, flex: 1 }}
+                    >
+                      <option value="">-- Select PL --</option>
+                      <option value="PL_a">PL a</option>
+                      <option value="PL_b">PL b</option>
+                      <option value="PL_c">PL c</option>
+                      <option value="PL_d">PL d</option>
+                      <option value="PL_e">PL e</option>
+                    </select>
+                  </div>
+
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Standards</div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+                      {(["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]).map((s) => (
+                        <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="checkbox"
+                            checked={newConceptStandards.includes(s)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNewConceptStandards([...newConceptStandards, s])
+                              } else {
+                                setNewConceptStandards(newConceptStandards.filter((x) => x !== s))
+                              }
+                            }}
+                          />
+                          {s.replace("_", " ")}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={brutal.formRow}>
                     <div style={brutal.label}>Type</div>
                     <select
                       data-agent="select-new-concept-type"
@@ -1457,6 +1597,58 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       <option value="ASIL_C">ASIL_C</option>
                       <option value="ASIL_D">ASIL_D</option>
                     </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>SIL</div>
+                    <select
+                      data-agent="select-edit-concept-sil"
+                      value={editConceptSil}
+                      onChange={(e) => setEditConceptSil(e.target.value)}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select SIL --</option>
+                      <option value="SIL1">SIL 1</option>
+                      <option value="SIL2">SIL 2</option>
+                      <option value="SIL3">SIL 3</option>
+                      <option value="SIL4">SIL 4</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>PL</div>
+                    <select
+                      data-agent="select-edit-concept-pl"
+                      value={editConceptPl}
+                      onChange={(e) => setEditConceptPl(e.target.value)}
+                      style={brutal.select}
+                    >
+                      <option value="">-- Select PL --</option>
+                      <option value="PL_a">PL a</option>
+                      <option value="PL_b">PL b</option>
+                      <option value="PL_c">PL c</option>
+                      <option value="PL_d">PL d</option>
+                      <option value="PL_e">PL e</option>
+                    </select>
+                  </div>
+                  <div style={brutal.formRow}>
+                    <div style={brutal.label}>Standards</div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+                      {(["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]).map((s) => (
+                        <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="checkbox"
+                            checked={editConceptStandards.includes(s)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEditConceptStandards([...editConceptStandards, s])
+                              } else {
+                                setEditConceptStandards(editConceptStandards.filter((x) => x !== s))
+                              }
+                            }}
+                          />
+                          {s.replace("_", " ")}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                   <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>Save concept</button>
                 </>
