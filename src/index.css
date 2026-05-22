@@ -62,6 +62,7 @@ main>* {
 
   h1,
   h2,
+  h3,
   p,
   ul {
     font-family: var(--font-serif);
@@ -75,7 +76,8 @@ article {
 
   h1,
   h2,
-  h3 p,
+  h3,
+  p,
   ul {
     font-family: var(--font-serif);
     font-weight: 300;
@@ -91,6 +93,11 @@ article {
   }
 
   h3 {
+    font-size: 1.2em;
+  }
+
+  p,
+  ul {
     font-size: 1.2em;
   }
 
