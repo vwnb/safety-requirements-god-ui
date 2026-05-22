@@ -872,6 +872,27 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }
   }
 
+  const actOnSuggestion = useCallback((suggestionText: string) => {
+    const lower = suggestionText.toLowerCase()
+
+    if (lower.includes("create") || lower.includes("generate") || lower.includes("add")) {
+      generateWithLLM()
+    } else if (lower.includes("save") || lower.includes("revise") || lower.includes("update")) {
+      revise()
+    } else if (lower.includes("discard") || lower.includes("cancel") || lower.includes("reject")) {
+      setActiveRevisionId(null)
+      setEditorValue("")
+    } else if (lower.includes("evaluate") || lower.includes("suggest") || lower.includes("assess")) {
+      if (selectedWorkItem) {
+        suggestWithLLM(selectedWorkItem)
+      }
+    }
+  }, [generateWithLLM, revise, suggestWithLLM, selectedWorkItem])
+
+  const discardSuggestion = useCallback((index: number) => {
+    setSuggestions((prev: any[]) => prev.filter((_: any, i: number) => i !== index))
+  }, [])
+
   return (
     <>
       <OfflineBanner />
@@ -1704,73 +1725,67 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               <>
                 <hr />
 
-                <div className="cms-layout" data-agent="werk-that-llm-section">
-                  <section data-agent="generate-llm-section">
-                    <div className="title">👺 Append work item with LLM</div>
+                <section data-agent="llm-suggestions-section">
+                  <div className="title">👺 Evaluate work item with LLM</div>
 
-                    <input type="text"
-                      data-agent="input-llm-prompt"
-                      placeholder="Enter prompt for LLM"
-                      value={llmPrompt}
-                      onChange={(e) => setLlmPrompt(e.target.value)}
-                      style={{ ...brutal.input, marginBottom: 8 }}
-                    />
+                  <button
+                    data-agent="btn-llm-suggestions"
+                    onClick={() => {
+                      const action = () => { suggestWithLLM(selectedWorkItem) }
 
-                    <button
-                      data-agent="btn-generate-llm"
-                      onClick={() => {
-                        const action = () => { generateWithLLM() }
+                      if (activeRevisionId) {
+                        setPendingConfirm({
+                          message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
+                          onConfirm: action,
+                        })
+                      } else {
+                        action()
+                      }
+                    }}
+                    style={brutal.button}
+                  >
+                    Evaluate
+                  </button>
 
-                        if (activeRevisionId) {
-                          setPendingConfirm({
-                            message: "You have an active revision in progress. Discard it and generate content with LLM?",
-                            onConfirm: action,
-                          })
-                        } else {
-                          action()
-                        }
-                      }}
-                      style={brutal.button}
-                    >
-                      Generate
-                    </button>
-                  </section>
-
-                  <section data-agent="llm-suggestions-section">
-                    <div className="title">👺 Evaluate work item with LLM</div>
-
-                    <button
-                      data-agent="btn-llm-suggestions"
-                      onClick={() => {
-                        const action = () => { suggestWithLLM(selectedWorkItem) }
-
-                        if (activeRevisionId) {
-                          setPendingConfirm({
-                            message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
-                            onConfirm: action,
-                          })
-                        } else {
-                          action()
-                        }
-                      }}
-                      style={brutal.button}
-                    >
-                      Evaluate
-                    </button>
-
-                    <article>
-                      {!!suggestions && selectedWorkItemData && (
-                        <h2>Completeness Report for {selectedWorkItemData.key} {selectedWorkItemData.name}</h2>
-                      )}
-                      {!!suggestions && (
-                        suggestions.map((suggestion: { text: string }) => {
-                          const suggestionKey = suggestion.text.slice(0, 8).replaceAll(" ", "-");
-                          console.log(suggestionKey)
-                          return <p data-agent={`suggestion-${suggestionKey}`} key={suggestionKey}>{suggestion.text}</p>
-                        }))}
-                    </article>
-                  </section>
-                </div>
+                  <article>
+                    {!!suggestions && selectedWorkItemData && (
+                      <h2>Completeness Report for {selectedWorkItemData.key} {selectedWorkItemData.name}</h2>
+                    )}
+                    {!!suggestions && (
+                      suggestions.map((suggestion: { text: string }, index: number) => {
+                        const suggestionKey = suggestion.text.slice(0, 32).replaceAll(" ", "-");
+                        return (
+                          <div
+                            key={suggestionKey}
+                            style={{
+                              ...brutal.box,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 8,
+                            }}
+                          >
+                            <p data-agent={`suggestion-${suggestionKey}`} style={{ margin: 0 }}>{suggestion.text}</p>
+                            <div style={brutal.actions}>
+                              <button
+                                data-agent={`btn-act-on-suggestion-${index}`}
+                                onClick={() => actOnSuggestion(suggestion.text)}
+                                style={brutal.button}
+                              >
+                                Act on
+                              </button>
+                              <button
+                                data-agent={`btn-discard-suggestion-${index}`}
+                                onClick={() => discardSuggestion(index)}
+                                style={{ ...brutal.button, background: "#fcc" } as React.CSSProperties}
+                              >
+                                Discard
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      }))}
+                  </article>
+                </section>
               </>
             )}
 
