@@ -981,11 +981,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               Our platform enables manufacturers and safety consultants to design for
               compliance from the start — reducing rework, accelerating certification
               readiness, and improving traceability across the entire safety process.
-              Built around IEC 61508 and its derived standards including ISO 26262,
-              ISO 13849 and related machinery and robotics frameworks, the platform
-              covers hazard analysis, safety requirements, validation evidence,
-              lifecycle documentation and traceability within a single structured
-              environment.
+              Built around IEC 61508 and its derived standards ISO 26262 and
+              ISO 13849, the platform covers hazard analysis, safety requirements,
+              validation evidence, lifecycle documentation and traceability within a 
+              single structured environment.
             </p>
 
             <p>
