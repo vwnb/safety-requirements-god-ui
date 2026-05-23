@@ -1985,101 +1985,97 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         </>
       )
       }
-      {
-        !!user && !!selectedProject && (
-          <main data-agent="graph-view" className={activeRevisionId ? "revise-active" : ""}>
-            {nodeClickLoading && (
-              <div
-                data-agent="node-click-loading"
-                style={{
-                  position: "fixed",
-                  inset: 0,
-                  background: "rgba(255, 255, 255, 0.5)",
-                  zIndex: 9999,
-                  display: "grid",
-                  placeItems: "center",
-                  padding: 20,
-                  pointerEvents: "none",
-                }}
-              >
-                <div
-                  style={{
-                    border: "2px solid black",
-                    background: "rgb(255, 255, 255)",
-                    padding: 18,
-                    fontFamily: "monospace",
-                    fontSize: 16,
-                  }}
-                >
-                  Loading concept...
-                </div>
-              </div>
-            )}
-            {activeRevisionId && (
-              <div data-agent="revise-panel" className="revise-panel">
-                <div className="title">Revise concept</div>
-                <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                  Revision: {activeRevisionId}
-                </div>
-                <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
-                <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
-                  <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8, flex: 1 }}>
-                    Save revision
-                  </button>
-                  <button
-                    data-agent="btn-cancel-revision"
-                    onClick={() => { setActiveRevisionId(null); setEditorValue("") }}
-                    style={{
-                      ...brutal.button,
-                      marginTop: 8,
-                      backgroundColor: "#fcc"
-                    }}>
-                    Discard
-                  </button>
-                </div>
-              </div>
-            )}
-            <GraphView
-              loading={graph === null}
-              revisions={(graph?.revisions ?? []).filter((r: Revision) => {
-                const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
-                const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
-                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-                  , revisionsForConcept[0])
-
-                return r.id === latestRevision.id
-              })}
-              concepts={graph?.concepts ?? []}
-              relations={graph?.relations ?? []}
-              onRelationCreated={() => { refreshGraph(selectedWorkItem) }}
-              onNodeClick={async (conceptId) => {
-                const action = async () => {
-                  setNodeClickLoading(true)
-                  setSelectedConcept(conceptId)
-                  try {
-                    const revisions = await loadRevisions(conceptId)
-                    setActiveRevisionId(revisions?.[0]?.id || null)
-                    setEditorValue(revisions?.[0]?.markdown || "")
-                    scrollToEditConcept()
-                  } finally {
-                    setNodeClickLoading(false)
-                  }
-                }
-
-                if (activeRevisionId) {
-                  setPendingConfirm({
-                    message: "You have an active revision in progress. Discard it and open this concept?",
-                    onConfirm: action,
-                  })
-                } else {
-                  action()
-                }
+      <main data-agent="graph-view" className={!!user && activeRevisionId ? "revise-active" : ""}>
+        {nodeClickLoading && (
+          <div
+            data-agent="node-click-loading"
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(255, 255, 255, 0.5)",
+              zIndex: 9999,
+              display: "grid",
+              placeItems: "center",
+              padding: 20,
+              pointerEvents: "none",
+            }}
+          >
+            <div
+              style={{
+                border: "2px solid black",
+                background: "rgb(255, 255, 255)",
+                padding: 18,
+                fontFamily: "monospace",
+                fontSize: 16,
               }}
-              API={API}
-            />
-          </main>
-        )
-      }
+            >
+              Loading concept...
+            </div>
+          </div>
+        )}
+        {activeRevisionId && (
+          <div data-agent="revise-panel" className="revise-panel">
+            <div className="title">Revise concept</div>
+            <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
+              Revision: {activeRevisionId}
+            </div>
+            <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
+            <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
+              <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8, flex: 1 }}>
+                Save revision
+              </button>
+              <button
+                data-agent="btn-cancel-revision"
+                onClick={() => { setActiveRevisionId(null); setEditorValue("") }}
+                style={{
+                  ...brutal.button,
+                  marginTop: 8,
+                  backgroundColor: "#fcc"
+                }}>
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
+        <GraphView
+          loading={!!user && graph === null && !!selectedWorkItem}
+          revisions={user ? (graph?.revisions ?? []).filter((r: Revision) => {
+            const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
+            const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
+              new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+              , revisionsForConcept[0])
+
+            return r.id === latestRevision.id
+          }) : []}
+          concepts={user ? (graph?.concepts ?? []) : []}
+          relations={user ? (graph?.relations ?? []) : []}
+          onRelationCreated={user ? () => { refreshGraph(selectedWorkItem) } : () => {}}
+          onNodeClick={user ? async (conceptId) => {
+            const action = async () => {
+              setNodeClickLoading(true)
+              setSelectedConcept(conceptId)
+              try {
+                const revisions = await loadRevisions(conceptId)
+                setActiveRevisionId(revisions?.[0]?.id || null)
+                setEditorValue(revisions?.[0]?.markdown || "")
+                scrollToEditConcept()
+              } finally {
+                setNodeClickLoading(false)
+              }
+            }
+
+            if (activeRevisionId) {
+              setPendingConfirm({
+                message: "You have an active revision in progress. Discard it and open this concept?",
+                onConfirm: action,
+              })
+            } else {
+              action()
+            }
+          } : undefined}
+          API={API}
+        />
+      </main>
     </>
   )
 }

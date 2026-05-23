@@ -304,7 +304,7 @@ export default function GraphView({
           </div>
         )}
 
-        {graphLoading && (
+        {graphLoading && loading && (
           <div
             data-agent="graph-submit-loading"
             style={{
@@ -363,9 +363,13 @@ export default function GraphView({
             }, 100)
           }}
         >
-          <MiniMap />
-          <Controls />
-          <Background variant={BackgroundVariant.Cross} />
+          {loading && (
+            <>
+              <MiniMap />
+              <Controls />
+              <Background variant={BackgroundVariant.Cross} />
+            </>
+          )}
         </ReactFlow>
       </div>
 
