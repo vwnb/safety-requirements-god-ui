@@ -77,6 +77,7 @@ export function ErrorToastProvider({
           position: "fixed",
           top: 40,
           right: 40,
+          left: 40,
           display: "flex",
           flexDirection: "column",
           gap: 16,
