@@ -68,8 +68,25 @@ main>* {
     font-family: var(--font-serif);
     font-weight: 300;
     line-height: 1em;
-    font-size: 1rem;
   }
+
+  h1 {
+    font-size: 2em;
+  }
+
+  h2 {
+    font-size: 1.6em;
+  }
+
+  h3 {
+    font-size: 1.2em;
+  }
+
+  p,
+  ul {
+    font-size: 1.2em;
+  }
+
 }
 
 article {
@@ -100,7 +117,6 @@ article {
   ul {
     font-size: 1.2em;
   }
-
 
 }
 

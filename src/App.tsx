@@ -889,7 +889,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: llmPrompt,
+          demo: false,
           user: actorForApi,
         }),
       })
@@ -905,22 +905,112 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }
   }
 
-  const actOnSuggestion = useCallback((suggestionText: string) => {
-    const lower = suggestionText.toLowerCase()
+  const actOnSuggestion = useCallback(async (suggestion: { action: string; payload: any }) => {
+    const { action, payload } = suggestion
 
-    if (lower.includes("create") || lower.includes("generate") || lower.includes("add")) {
-      generateWithLLM()
-    } else if (lower.includes("save") || lower.includes("revise") || lower.includes("update")) {
-      revise()
-    } else if (lower.includes("discard") || lower.includes("cancel") || lower.includes("reject")) {
-      setActiveRevisionId(null)
-      setEditorValue("")
-    } else if (lower.includes("evaluate") || lower.includes("suggest") || lower.includes("assess")) {
-      if (selectedWorkItem) {
-        suggestWithLLM(selectedWorkItem)
+    switch (action) {
+      case 'create': {
+        if (!selectedWorkItem) return
+
+        return withLoading("Creating from suggestion...", async () => {
+          const concepts = (payload.concepts ?? []).map((c: any) => ({
+            key: c.key,
+            type: c.type,
+            title: c.title || "",
+            phase: c.phase || undefined,
+            asil: c.asil || undefined,
+            sil: c.sil || undefined,
+            pl: c.pl || undefined,
+            standards: c.standards || undefined,
+            createdBy: actorForApi,
+          }))
+
+          const revisions = (payload.revisions ?? []).map((r: any) => ({
+            conceptKey: r.conceptKey,
+            markdown: r.markdown,
+          }))
+
+          const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              concepts,
+              revisions,
+              user: actorForApi,
+            }),
+          })
+
+          if (!res.ok) {
+            console.warn("Failed to create from suggestion", payload)
+            return
+          }
+
+          await loadConcepts(selectedWorkItem)
+          await refreshGraph(selectedWorkItem)
+
+          // Remove the suggestion after acting on it
+          setSuggestions((prev: any[]) =>
+            Array.isArray(prev)
+              ? prev.filter((s: any) => s !== suggestion)
+              : prev
+          )
+        })
       }
+
+      case 'revise':
+      case 'update': {
+        if (!selectedWorkItem) return
+
+        return withLoading("Revising from suggestion...", async () => {
+          const revisions = [{
+            conceptKey: payload.conceptKey,
+            markdown: payload.markdown,
+          }]
+
+          const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              concepts: [],
+              revisions,
+              user: actorForApi,
+            }),
+          })
+
+          if (!res.ok) {
+            console.warn("Failed to revise from suggestion", payload)
+            return
+          }
+
+          // Refresh data to reflect the revision
+          await loadConcepts(selectedWorkItem)
+          await refreshGraph(selectedWorkItem)
+
+          setSuggestions((prev: any[]) =>
+            Array.isArray(prev)
+              ? prev.filter((s: any) => s !== suggestion)
+              : prev
+          )
+        })
+      }
+
+      case 'discard':
+      case 'cancel':
+      case 'reject': {
+        setActiveRevisionId(null)
+        setEditorValue("")
+        setSuggestions((prev: any[]) =>
+          Array.isArray(prev)
+            ? prev.filter((s: any) => s !== suggestion)
+            : prev
+        )
+        break
+      }
+
+      default:
+        break
     }
-  }, [generateWithLLM, revise, suggestWithLLM, selectedWorkItem])
+  }, [apiFetch, selectedWorkItem, concepts, actorForApi, loadConcepts, loadRevisions, refreshGraph, setConcepts, setSelectedConcept, setActiveRevisionId, setEditorValue])
 
   const discardSuggestion = useCallback((index: number) => {
     setSuggestions((prev: any[]) => prev.filter((_: any, i: number) => i !== index))
@@ -1947,7 +2037,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       [...suggestions].sort((a: { importance?: string }, b: { importance?: string }) => {
                         const order: Record<string, number> = { "VERY HIGH": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1 };
                         return (order[b.importance ?? "LOW"] ?? 0) - (order[a.importance ?? "LOW"] ?? 0);
-                      }).map((suggestion: { text: string; importance?: string }, index: number) => {
+                      }).map((suggestion: { text: string; importance?: string; action: string; payload: any }, index: number) => {
                         const suggestionKey = suggestion.text.slice(0, 32).replaceAll(" ", "-");
                         const importanceColor: Record<string, string> = {
                           "VERY HIGH": "#d32f2f",
@@ -1987,7 +2077,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                             <div style={brutal.actions}>
                               <button
                                 data-agent={`btn-act-on-suggestion-${index}`}
-                                onClick={() => actOnSuggestion(suggestion.text)}
+                                onClick={() => actOnSuggestion(suggestion)}
                                 style={brutal.button}
                               >
                                 Act on
