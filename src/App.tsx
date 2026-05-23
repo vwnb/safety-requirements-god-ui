@@ -779,7 +779,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           }))
 
           const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
-            method: "POST",
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               concepts,
@@ -816,7 +816,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           }]
 
           const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
-            method: "POST",
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               concepts: [],
