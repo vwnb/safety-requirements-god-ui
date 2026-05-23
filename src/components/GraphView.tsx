@@ -6,6 +6,7 @@ import ReactFlow, {
   Handle,
   Position,
   BackgroundVariant,
+  PanOnScrollMode,
 } from "reactflow"
 import type { Node, Edge } from "reactflow"
 import "reactflow/dist/style.css"
@@ -326,6 +327,7 @@ export default function GraphView({
         )}
 
         <ReactFlow
+          className="react-flow"
           data-agent="react-flow"
           nodes={layoutedNodes}
           edges={layoutedEdges}
@@ -362,6 +364,11 @@ export default function GraphView({
               }
             }, 100)
           }}
+          panOnScroll
+          panOnScrollMode={PanOnScrollMode.Free}
+          zoomOnScroll={false}
+          zoomOnPinch
+          panOnDrag={false}
         >
           {loading && (
             <>
