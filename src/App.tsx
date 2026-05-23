@@ -777,10 +777,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           const revisions = (payload.revisions ?? []).map((r: any) => ({
             conceptKey: r.conceptKey,
             markdown: r.markdown,
+            versionMajor: r.versionMajor,
+            versionMinor: r.versionMinor,
+            versionPatch: r.versionPatch
           }))
 
           const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
-            method: "PUT",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               concepts,
@@ -1023,6 +1026,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </section>
             </div>
 
+            {!!selectedProject && (
+            <>
             <hr />
 
             <div className="cms-layout">
@@ -1972,12 +1977,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <footer>
               2026 WCGW. 👺 denotes hazardous software!
             </footer>
+            </>
+            )}
           </aside>
         </>
       )
       }
       {
-        !!user && (
+        !!user && !!selectedProject && (
           <main data-agent="graph-view" className={activeRevisionId ? "revise-active" : ""}>
             {nodeClickLoading && (
               <div
