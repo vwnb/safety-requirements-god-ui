@@ -867,19 +867,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const discardSuggestion = useCallback((index: number) => {
     setSuggestions((prev: any[]) => prev.filter((_: any, i: number) => i !== index))
   }, [])
-
-  const th = {
-    textAlign: "left",
-    padding: "18px 16px",
-    borderBottom: "1px solid #ddd",
-  };
-
-  const td = {
-    padding: "18px 16px",
-    borderBottom: "1px solid #eee",
-    verticalAlign: "top",
-  };
-
+  
   return (
     <>
       <OfflineBanner />
