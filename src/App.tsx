@@ -868,6 +868,18 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setSuggestions((prev: any[]) => prev.filter((_: any, i: number) => i !== index))
   }, [])
 
+  const th = {
+    textAlign: "left",
+    padding: "18px 16px",
+    borderBottom: "1px solid #ddd",
+  };
+
+  const td = {
+    padding: "18px 16px",
+    borderBottom: "1px solid #eee",
+    verticalAlign: "top",
+  };
+
   return (
     <>
       <OfflineBanner />
@@ -950,7 +962,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           </div>
         </div>
       )}
-      <header data-agent="top-header" className="top-header">
+      <header data-agent="top-header" className="top-header" style={!user && {padding: 80} || {}}>
         <img src={logo} alt="Logo" className="logo" data-agent="logo" />
 
         <section style={{ flex: 1 }} data-agent="user-section">
@@ -968,6 +980,38 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         </section>
       </header>
 
+      {!user && (
+        <aside>
+          <hr />
+          <article style={{ padding: 80, maxWidth: 1100 }}>
+            <h1>
+              IEC 61508 -derived standardisation for functional safety across automotive,
+              robotics, components and industrial machinery
+            </h1>
+
+            <p>
+              Our platform enables manufacturers and safety consultants to design for
+              compliance from the start — reducing rework, accelerating certification
+              readiness, and improving traceability across the entire safety process.
+              Built around IEC 61508 and its derived standards including ISO 26262,
+              ISO 13849 and related machinery and robotics frameworks, the platform
+              covers hazard analysis, safety requirements, validation evidence,
+              lifecycle documentation and traceability within a single structured
+              environment.
+            </p>
+
+            <p>
+              Teams can proactively identify risks, maintain audit-ready documentation,
+              and align engineering decisions with functional safety obligations long
+              before production or assessment begins.
+            </p>
+          </article>
+          <hr />
+          <footer>
+            2026 WCGW. 👺 denotes hazardous software!
+          </footer>
+        </aside>
+      )}
       {!!user && (
         <>
           <hr />
@@ -2049,7 +2093,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           }) : []}
           concepts={user ? (graph?.concepts ?? []) : []}
           relations={user ? (graph?.relations ?? []) : []}
-          onRelationCreated={user ? () => { refreshGraph(selectedWorkItem) } : () => {}}
+          onRelationCreated={user ? () => { refreshGraph(selectedWorkItem) } : () => { }}
           onNodeClick={user ? async (conceptId) => {
             const action = async () => {
               setNodeClickLoading(true)
