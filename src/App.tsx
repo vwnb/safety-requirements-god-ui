@@ -347,6 +347,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
   const [suggestions, setSuggestions] = useState<any | null>(null);
+  const [evaluateDemoMode, setEvaluateDemoMode] = useState(false);
 
   async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
     setLoading(true)
@@ -737,7 +738,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          demo: false,
+          demo: evaluateDemoMode,
           user: actorForApi,
         }),
       })
@@ -1857,6 +1858,26 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 <section data-agent="llm-suggestions-section">
                   <div className="title">👺 Evaluate work item with LLM</div>
+
+                  <label
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: 13,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={evaluateDemoMode}
+                      onChange={(e) => setEvaluateDemoMode(e.target.checked)}
+                      style={{ cursor: "pointer" }}
+                    />
+                    Demo report mode
+                  </label>
 
                   <button
                     data-agent="btn-llm-suggestions"
