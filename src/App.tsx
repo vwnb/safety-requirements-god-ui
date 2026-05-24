@@ -971,7 +971,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       {!user && (
         <aside>
           <hr />
-          <article style={{ maxWidth: 1100 }}>
+          <article style={{ padding: 80, maxWidth: 1100 }}>
             <h1>
               IEC 61508 -derived standardisation for functional safety across automotive,
               robotics, components and industrial machinery
