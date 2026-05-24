@@ -706,8 +706,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         body: JSON.stringify({
           key: newWorkItemKey,
           name: newWorkItemTitle,
-          projectKey: selectedProject.key,
-          createdBy: actorForApi
+          projectId: selectedProject.id,
+          user: actorForApi
         }),
       })
 
@@ -1639,7 +1639,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                   {revisionsByConcept[selectedConcept] !== undefined &&
                     revisionsByConcept[selectedConcept].length === 0 && (
-                      <p>No revisions for this concept. <button onClick={() => revise({
+                      <p>No revisions for this concept. <button style={brutal.button} onClick={() => revise({
                         conceptId: selectedConcept,
                         markdown: ""
                       } as Revision)}>Create initial revision</button></p>
