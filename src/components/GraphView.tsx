@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ReactFlow, {
   Background,
   Controls,
@@ -152,6 +152,17 @@ export default function GraphView({
   API: string
   loading?: boolean
 }) {
+  const [isTouchDevice, setIsTouchDevice] = useState(true)
+
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: fine)")
+    setIsTouchDevice(!mq.matches)
+
+    const handler = (e: MediaQueryListEvent) => setIsTouchDevice(!e.matches)
+    mq.addEventListener("change", handler)
+    return () => mq.removeEventListener("change", handler)
+  }, [])
+
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
     from: string
@@ -364,11 +375,11 @@ export default function GraphView({
               }
             }, 100)
           }}
-          panOnScroll
-          panOnScrollMode={PanOnScrollMode.Free}
-          zoomOnScroll={false}
-          zoomOnPinch
-          panOnDrag={false}
+          panOnScroll={isTouchDevice}
+          panOnScrollMode={isTouchDevice ? PanOnScrollMode.Free : undefined}
+          zoomOnScroll={!isTouchDevice}
+          zoomOnPinch={isTouchDevice}
+          panOnDrag={!isTouchDevice}
         >
           {loading && (
             <>
