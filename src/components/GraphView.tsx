@@ -377,9 +377,7 @@ export default function GraphView({
           }}
           panOnScroll={isTouchDevice}
           panOnScrollMode={isTouchDevice ? PanOnScrollMode.Free : undefined}
-          zoomOnScroll={isTouchDevice}
           zoomOnPinch={isTouchDevice}
-          panOnDrag={isTouchDevice}
         >
           {loading && (
             <>
