@@ -38,16 +38,40 @@ type Concept = {
 export const backgroundImage = background;
 
 export const typeColor: Record<string, string> = {
-  ITEM: "#c9dbf0",
-  HAZARD: "#eecccc",
-  SAFETY_GOAL: "#f3e1c3",
-  FSR: "#b2ebc7",
-  TSR: "#a9e0ea",
-  SOFTWARE_REQUIREMENT: "#d4caf0",
-  HARDWARE_REQUIREMENT: "#cccccc",
-  ASSUMPTION: "#eccee4",
-  CONSTRAINT: "#ace8e1",
-  TEST_CASE: "#eee8ad",
+  // Neutral / base
+  ITEM: "#DCE7F5",
+
+  // Risk / hazard domain
+  HAZARD: "#F2B8B5",
+  HARM: "#F2B8B5",
+  ANOMALY: "#F2B8B5",
+
+  // Safety intent / argumentation
+  SAFETY_GOAL: "#F3D9A2",
+  SAFETY_CASE: "#F3D9A2",
+
+  // Functional / technical requirements
+  FSR: "#A8E6CF",
+  TSR: "#9DD9F3",
+  SSR: "#CDBCF6",
+  SOFTWARE_REQUIREMENT: "#CDBCF6",
+  HARDWARE_REQUIREMENT: "#D6D6D6",
+
+  // Constraints / assumptions
+  ASSUMPTION: "#E7C6E6",
+  CONSTRAINT: "#AEE5DF",
+
+  // Testing family
+  TEST_CASE: "#F6E58D",
+  TEST_RESULT: "#F2D16B",
+  VERIFICATION_REPORT: "#BFE7C6",
+  VALIDATION_REPORT: "#A9D6E5",
+
+  // Documentation
+  SAFETY_MANUAL: "#AEE5DF",
+
+  // Change / process
+  CHANGE_REQUEST: "#E7C6E6",
 }
 
 type Revision = {
