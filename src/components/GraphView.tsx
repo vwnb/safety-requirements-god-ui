@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   Handle,
   Position,
-  BackgroundVariant,
-  PanOnScrollMode,
+  BackgroundVariant
 } from "reactflow"
 import type { FitViewOptions } from "reactflow"
 import type { Node, Edge } from "reactflow"
@@ -153,17 +152,6 @@ export default function GraphView({
   API: string
   loading?: boolean
 }) {
-  const [isTouchDevice, setIsTouchDevice] = useState(true)
-
-  useEffect(() => {
-    const mq = window.matchMedia("(pointer: fine)")
-    setIsTouchDevice(!mq.matches)
-
-    const handler = (e: MediaQueryListEvent) => setIsTouchDevice(!e.matches)
-    mq.addEventListener("change", handler)
-    return () => mq.removeEventListener("change", handler)
-  }, [])
-
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
     from: string
@@ -282,7 +270,6 @@ export default function GraphView({
   // Graph key to force re-initialization when data changes (e.g., template import)
   const graphKey = `${layoutedNodes.length}-${layoutedEdges.length}`
 
-  // Fit view options - minZoom allows zooming out far enough to see all nodes
   const fitViewOptions: FitViewOptions = {
     padding: 0.2,
     minZoom: 0.05,
@@ -306,28 +293,7 @@ export default function GraphView({
           opacity: loading ? 0 : 1,
         }}
       >
-        {loading && (
-          <div
-            data-agent="graph-loading"
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(233, 237, 233, 0.3)",
-              zIndex: 10,
-              display: "grid",
-              placeItems: "center",
-              fontFamily: "monospace",
-              fontWeight: "bold",
-              pointerEvents: "none",
-              fontSize: 18,
-              color: "#333",
-            }}
-          >
-            Loading graph...
-          </div>
-        )}
-
-        {graphLoading && loading && (
+        {(graphLoading || loading) && (
           <div
             data-agent="graph-submit-loading"
             style={{
@@ -378,16 +344,10 @@ export default function GraphView({
               to: params.target,
             })
           }}
-          panOnScroll={isTouchDevice}
-          panOnScrollMode={isTouchDevice ? PanOnScrollMode.Free : undefined}
         >
-          {loading && (
-            <>
-              <MiniMap />
-              <Controls />
-              <Background variant={BackgroundVariant.Cross} />
-            </>
-          )}
+          <MiniMap />
+          <Controls />
+          <Background variant={BackgroundVariant.Cross} />
         </ReactFlow>
       </div>
 
