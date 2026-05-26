@@ -8,6 +8,7 @@ import ReactFlow, {
   BackgroundVariant,
   PanOnScrollMode,
 } from "reactflow"
+import type { FitViewOptions } from "reactflow"
 import type { Node, Edge } from "reactflow"
 import "reactflow/dist/style.css"
 import dagre from "dagre"
@@ -278,6 +279,16 @@ export default function GraphView({
     return layoutGraph(nodes, edges)
   }, [nodes, edges])
 
+  // Graph key to force re-initialization when data changes (e.g., template import)
+  const graphKey = `${layoutedNodes.length}-${layoutedEdges.length}`
+
+  // Fit view options - minZoom allows zooming out far enough to see all nodes
+  const fitViewOptions: FitViewOptions = {
+    padding: 0.2,
+    minZoom: 0.05,
+    maxZoom: 1.5,
+  }
+
   return (
     <>
       <div
@@ -338,12 +349,14 @@ export default function GraphView({
         )}
 
         <ReactFlow
+          key={graphKey}
           className="react-flow"
           data-agent="react-flow"
           nodes={layoutedNodes}
           edges={layoutedEdges}
           nodeTypes={nodeTypes}
           fitView
+          fitViewOptions={fitViewOptions}
           nodeExtent={[[0, 0], [3000, 3000]]}
           onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
           onEdgeMouseLeave={() => setHoveredEdgeId(null)}
@@ -364,16 +377,6 @@ export default function GraphView({
               from: params.source,
               to: params.target,
             })
-          }}
-          onLoad={() => {
-            setTimeout(() => {
-              const container = document.querySelector(".react-flow") as HTMLElement
-              console.log("Fitting view", { container })
-              if (container) {
-                const event = new CustomEvent("fitview", { detail: { padding: 0.1 } })
-                container.dispatchEvent(event)
-              }
-            }, 100)
           }}
           panOnScroll={isTouchDevice}
           panOnScrollMode={isTouchDevice ? PanOnScrollMode.Free : undefined}
