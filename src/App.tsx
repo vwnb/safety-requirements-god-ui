@@ -368,7 +368,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
 
   const [nodeClickLoading, setNodeClickLoading] = useState(false)
-  const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void } | null>(null)
+  const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string } | null>(null)
 
   const [suggestions, setSuggestions] = useState<any | null>(null);
   const [evaluateDemoMode, setEvaluateDemoMode] = useState(false);
@@ -919,7 +919,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               textAlign: "center",
             }}
           >
-            <p style={{ margin: "0 0 16px 0" }}>{pendingConfirm.message}</p>
+              <p style={{ margin: "0 0 16px 0" }}>{pendingConfirm.message}</p>
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
               <button
                 onClick={() => {
@@ -927,7 +927,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 }}
                 style={brutal.button}
               >
-                Keep editing
+                {pendingConfirm.cancelLabel || "Keep editing"}
               </button>
               <button
                 onClick={() => {
@@ -939,7 +939,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 }}
                 style={{ ...brutal.button, background: "#fcc" } as React.CSSProperties}
               >
-                Discard & proceed
+                {pendingConfirm.confirmLabel || "Discard & proceed"}
               </button>
             </div>
           </div>
@@ -1974,6 +1974,51 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               "MEDIUM": "#fbc02d",
                               "LOW": "#7cb342",
                             };
+
+                            // Build a description of what this suggestion will do to the graph
+                            const payload = suggestion.payload || {};
+                            const payloadConcepts = payload.concepts || [];
+                            const payloadRelations = payload.relations || [];
+                            const payloadRevisions = payload.revisions || [];
+                            const hasPayloadData = payloadConcepts.length > 0 || payloadRelations.length > 0 || payloadRevisions.length > 0 || payload.conceptKey || payload.markdown;
+
+                            let actionLabel = "";
+                            let graphDescription = "";
+
+                            switch (suggestion.action) {
+                              case 'create':
+                                actionLabel = "CREATE";
+                                graphDescription = [
+                                  payloadConcepts.length > 0 && `${payloadConcepts.length} concept(s)`,
+                                  payloadRelations.length > 0 && `${payloadRelations.length} relation(s)`,
+                                  payloadRevisions.length > 0 && `${payloadRevisions.length} revision(s)`,
+                                ].filter(Boolean).join(", ") || "no graph data";
+                                break;
+                              case 'revise':
+                              case 'update':
+                                actionLabel = "REVISE";
+                                graphDescription = payload.conceptKey
+                                  ? `concept "${payload.conceptKey}" — update its revision content`
+                                  : "no graph data";
+                                break;
+                              case 'discard':
+                              case 'cancel':
+                              case 'reject':
+                                actionLabel = "DISCARD";
+                                graphDescription = "no graph changes";
+                                break;
+                              default:
+                                actionLabel = suggestion.action.toUpperCase();
+                                graphDescription = hasPayloadData ? "graph changes available" : "no graph data";
+                                break;
+                            }
+
+                            const actionColor: Record<string, string> = {
+                              "CREATE": "#22c55e",
+                              "REVISE": "#3b82f6",
+                              "DISCARD": "#ef4444",
+                            };
+
                             return (
                               <div
                                 key={suggestionKey}
@@ -2001,14 +2046,89 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                       </span>
                                     )}
                                     {suggestion.text}</p>
+
+                                  {/* Action & graph effect indicator */}
+                                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                                    <span
+                                      style={{
+                                        background: actionColor[actionLabel] || "#999",
+                                        color: "#fff",
+                                        padding: "2px 8px",
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        fontFamily: "monospace",
+                                        borderRadius: 2,
+                                        letterSpacing: "0.5px",
+                                      }}
+                                    >
+                                      {actionLabel}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontFamily: "monospace",
+                                        fontSize: 11,
+                                        color: hasPayloadData ? "#333" : "#999",
+                                        fontStyle: hasPayloadData ? "normal" : "italic",
+                                      }}
+                                    >
+                                      {graphDescription}
+                                    </span>
+                                  </div>
+
                                   {suggestion.reason && (
-                                    <p>Reason: {suggestion.reason}</p>
+                                    <p style={{ fontSize: 12, color: "#555" }}>Reason: {suggestion.reason}</p>
                                   )}
                                 </>
                                 <div style={brutal.actions}>
                                   <button
                                     data-agent={`btn-act-on-suggestion-${index}`}
-                                    onClick={() => actOnSuggestion(suggestion)}
+                                    onClick={() => {
+                                      const payload = suggestion.payload || {};
+                                      const payloadConcepts = payload.concepts || [];
+                                      const payloadRelations = payload.relations || [];
+                                      const payloadRevisions = payload.revisions || [];
+                                      const hasPayloadData = payloadConcepts.length > 0 || payloadRelations.length > 0 || payloadRevisions.length > 0 || payload.conceptKey || payload.markdown;
+
+                                      let confirmMessage = "";
+                                      let confirmLabel = "";
+
+                                      if (["discard", "cancel", "reject"].includes(suggestion.action)) {
+                                        confirmMessage = "No updates will be performed. Discard this suggestion?";
+                                        confirmLabel = "Discard";
+                                      } else if (["revise", "update"].includes(suggestion.action) && payload.conceptKey) {
+                                        confirmMessage = `Revision will be created for concept "${payload.conceptKey}". Continue?`;
+                                        confirmLabel = "Continue";
+                                      } else if (suggestion.action === "create") {
+                                        const parts = [];
+                                        if (payloadConcepts.length > 0) parts.push(`${payloadConcepts.length} concept(s)`);
+                                        if (payloadRelations.length > 0) parts.push(`${payloadRelations.length} relation(s)`);
+                                        if (payloadRevisions.length > 0) parts.push(`${payloadRevisions.length} revision(s)`);
+                                        const desc = parts.join(", ") || "no graph data";
+                                        confirmMessage = `${desc} will be created. Continue?`;
+                                        confirmLabel = "Continue";
+                                      } else {
+                                        confirmMessage = hasPayloadData
+                                          ? "This action will modify the graph. Continue?"
+                                          : "No updates can be performed. Discard this suggestion?";
+                                        confirmLabel = hasPayloadData ? "Continue" : "Discard";
+                                      }
+
+                                      if (activeRevisionId) {
+                                        setPendingConfirm({
+                                          message: `You have an active revision in progress. ${confirmMessage}`,
+                                          onConfirm: () => actOnSuggestion(suggestion),
+                                          confirmLabel,
+                                          cancelLabel: "Cancel",
+                                        })
+                                      } else {
+                                        setPendingConfirm({
+                                          message: confirmMessage,
+                                          onConfirm: () => actOnSuggestion(suggestion),
+                                          confirmLabel,
+                                          cancelLabel: "Cancel",
+                                        })
+                                      }
+                                    }}
                                     style={brutal.button}
                                   >
                                     Act on
