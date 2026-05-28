@@ -809,6 +809,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           const relations = (payload.relations ?? []).map((r: any) => ({
             sourceConceptKey: r.sourceConceptKey,
             targetConceptKey: r.targetConceptKey,
+            fromKey: r.fromKey,
+            toKey: r.toKey,
             type: r.type,
           }))
 
@@ -1974,7 +1976,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                             const order: Record<string, number> = { "VERY HIGH": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1 };
                             return (order[b.importance ?? "LOW"] ?? 0) - (order[a.importance ?? "LOW"] ?? 0);
                           }).map((suggestion: { text: string; importance?: string; action: string; payload: any; reason?: string }, index: number) => {
-                            const suggestionKey = suggestion.text.slice(0, 32).replaceAll(" ", "-");
+                            const suggestionKey = suggestion.text.slice(0, 64).replaceAll(" ", "-");
                             const importanceColor: Record<string, string> = {
                               "VERY HIGH": "#d32f2f",
                               "HIGH": "#f57c00",
