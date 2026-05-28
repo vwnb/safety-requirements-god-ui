@@ -806,12 +806,19 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             versionPatch: r.versionPatch
           }))
 
+          const relations = (payload.relations ?? []).map((r: any) => ({
+            sourceConceptKey: r.sourceConceptKey,
+            targetConceptKey: r.targetConceptKey,
+            type: r.type,
+          }))
+
           const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               concepts,
               revisions,
+              relations,
               user: actorForApi,
             }),
           })
