@@ -117,6 +117,7 @@ export const brutal = {
     margin: "8px 0",
     cursor: "pointer",
     fontFamily: "monospace",
+    fontWeight: 600,
     boxSizing: "border-box" as const,
   },
   active: {
@@ -928,13 +929,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               textAlign: "center",
             }}
           >
-              <p style={{ margin: "0 0 16px 0" }}>{pendingConfirm.message}</p>
+            <p style={{ margin: "0 0 16px 0" }}>{pendingConfirm.message}</p>
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
               <button
                 onClick={() => {
                   setPendingConfirm(null)
                 }}
-                style={brutal.button}
+                style={{ ...brutal.button, background: "#BFE7C6" }}
               >
                 {pendingConfirm.cancelLabel || "Keep editing"}
               </button>
@@ -946,7 +947,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   setPendingConfirm(null)
                   fn()
                 }}
-                style={{ ...brutal.button, background: "#fcc" } as React.CSSProperties}
+
+                style={{ ...brutal.button, background: "#F2B8B5" }}
               >
                 {pendingConfirm.confirmLabel || "Discard & proceed"}
               </button>
@@ -1340,6 +1342,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                 ...brutal.button,
                                 ...(selectedConcept === c.id ? brutal.active : {}),
                                 display: "block",
+                                fontWeight: 300,
                                 width: "100%",
                                 marginBottom: 4,
                                 background: typeColor[c.type] || "#ccc",
@@ -1969,7 +1972,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                       <article>
                         {!!suggestions && selectedWorkItemData && (
-                          <h2>Completeness Report for {selectedWorkItemData.key} {selectedWorkItemData.name}</h2>
+                          <>
+                            <h1>Completeness Report</h1><h2>{selectedWorkItemData.key} - {selectedWorkItemData.name}</h2>
+                          </>
                         )}
                         {!!suggestions && (
                           [...suggestions].sort((a: { importance?: string }, b: { importance?: string }) => {
@@ -1984,7 +1989,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               "LOW": "#7cb342",
                             };
 
-                            // Build a description of what this suggestion will do to the graph
                             const payload = suggestion.payload || {};
                             const payloadConcepts = payload.concepts || [];
                             const payloadRelations = payload.relations || [];
@@ -2001,24 +2005,24 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                   payloadConcepts.length > 0 && `${payloadConcepts.length} concept(s)`,
                                   payloadRelations.length > 0 && `${payloadRelations.length} relation(s)`,
                                   payloadRevisions.length > 0 && `${payloadRevisions.length} revision(s)`,
-                                ].filter(Boolean).join(", ") || "no graph data";
+                                ].filter(Boolean).join(", ") || "No graph data";
                                 break;
                               case 'revise':
                               case 'update':
                                 actionLabel = "REVISE";
                                 graphDescription = payload.conceptKey
                                   ? `concept "${payload.conceptKey}" — update its revision content`
-                                  : "no graph data";
+                                  : "No graph data";
                                 break;
                               case 'discard':
                               case 'cancel':
                               case 'reject':
                                 actionLabel = "DISCARD";
-                                graphDescription = "no graph changes";
+                                graphDescription = "No graph changes";
                                 break;
                               default:
                                 actionLabel = suggestion.action.toUpperCase();
-                                graphDescription = hasPayloadData ? "graph changes available" : "no graph data";
+                                graphDescription = hasPayloadData ? "Graph changes available" : "No graph data";
                                 break;
                             }
 
@@ -2056,8 +2060,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                     )}
                                     {suggestion.text}</p>
 
-                                  {/* Action & graph effect indicator */}
-                                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
                                     <span
                                       style={{
                                         background: actionColor[actionLabel] || "#999",
@@ -2085,7 +2088,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                   </div>
 
                                   {suggestion.reason && (
-                                    <p style={{ fontSize: 12, color: "#555" }}>Reason: {suggestion.reason}</p>
+                                    <p>Reason: {suggestion.reason}</p>
                                   )}
                                 </>
                                 <div style={brutal.actions}>
@@ -2138,14 +2141,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                         })
                                       }
                                     }}
-                                    style={brutal.button}
+                                    style={{ ...brutal.button, background: "#BFE7C6" } as React.CSSProperties}
                                   >
                                     Act on
                                   </button>
                                   <button
                                     data-agent={`btn-discard-suggestion-${index}`}
                                     onClick={() => discardSuggestion(index)}
-                                    style={{ ...brutal.button, background: "#fcc" } as React.CSSProperties}
+                                    style={{ ...brutal.button, background: "#F2B8B5" }}
                                   >
                                     Discard
                                   </button>
@@ -2206,7 +2209,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </div>
               <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
               <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
-                <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, marginTop: 8, flex: 1 }}>
+                <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, background: "#BFE7C6" }}>
                   Save revision
                 </button>
                 <button
@@ -2214,8 +2217,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   onClick={() => { setActiveRevisionId(null); setEditorValue("") }}
                   style={{
                     ...brutal.button,
-                    marginTop: 8,
-                    backgroundColor: "#fcc"
+                    backgroundColor: "#F2B8B5"
                   }}>
                   Discard
                 </button>
