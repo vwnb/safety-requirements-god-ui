@@ -135,6 +135,11 @@ export const brutal = {
     boxSizing: "border-box" as const,
   },
 
+  disabled: {
+    opacity: 0.6,
+    cursor: "not-allowed"
+  },
+
   select: {
     all: "unset" as any,
     background: "white",
@@ -190,13 +195,14 @@ function Auth0UserBar({
   return (
     <div data-agent="auth-section">
       {isLoading ? (
-        <div data-agent="auth-loading" style={{ ...brutal.input, opacity: 0.7 }}>Auth…</div>
+        <div data-agent="auth-loading" style={{ ...brutal.input, ...brutal.disabled }}>Auth…</div>
       ) : isAuthenticated ? (
         <>
           <div
             data-agent="auth-user-info"
             style={{
               ...brutal.input,
+              ...brutal.disabled,
               display: "flex",
               alignItems: "center",
             }}
@@ -220,8 +226,9 @@ function Auth0UserBar({
         <button data-agent="btn-login" type="button" style={brutal.button} onClick={() => loginWithRedirect()}>
           Log in
         </button>
-      )}
-    </div>
+      )
+      }
+    </div >
   )
 }
 
@@ -1016,6 +1023,15 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   <section>
                     <div data-agent="edit-work-item-form">
                       <div className="title">Edit work item details</div>
+                      <div style={brutal.formRow}>
+                        <div style={brutal.label}>Key</div>
+                        <div
+                          data-agent="input-work-item-key"
+                          style={{ ...brutal.input, ...brutal.disabled }}
+                        >
+                          {selectedWorkItemData?.key || ""}
+                        </div>
+                      </div>
                       <div style={brutal.formRow}>
                         <div style={brutal.label}>Name</div>
                         <input
