@@ -954,15 +954,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <hr />
 
                 <section data-agent="work-items-section">
-                  <div className="title">Work items</div>
-
-                  <button
-                    data-agent="btn-open-new-work-item-modal"
-                    onClick={() => setShowNewWorkItemModal(true)}
-                    style={brutal.button}
-                  >
-                    + Create new
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+                    <div className="title" style={{ margin: 0 }}>Work items</div>
+                    <button
+                      data-agent="btn-open-new-work-item-modal"
+                      onClick={() => setShowNewWorkItemModal(true)}
+                      style={{ ...brutal.button, margin: 0 }}
+                    >
+                      + Create new
+                    </button>
+                  </div>
                   {workItems === null ? (
                     <p>Loading work items...</p>
                   ) :
@@ -1147,14 +1148,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <hr />
 
                 <section data-agent="concepts-section">
-                  <div className="title">Concepts</div>
-                  <button
-                    data-agent="btn-open-new-concept-modal"
-                    onClick={() => setShowNewConceptModal(true)}
-                    style={brutal.button}
-                  >
-                    + Create new
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+                    <div className="title" style={{ margin: 0 }}>Concepts</div>
+                    <button
+                      data-agent="btn-open-new-concept-modal"
+                      onClick={() => setShowNewConceptModal(true)}
+                      style={{ ...brutal.button, margin: 0 }}
+                    >
+                      + Create new
+                    </button>
+                  </div>
                   {concepts === null ? (
                     <p>Loading concepts...</p>
                   ) :
