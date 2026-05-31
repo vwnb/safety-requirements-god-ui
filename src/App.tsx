@@ -495,12 +495,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
       if (data.length > 0) {
         setSelectedConcept(data[0].id)
-
-        await loadRevisions(data[0].id)
       } else {
         setSelectedConcept("")
         setEditorValue("")
       }
+      await loadRevisions(data[0].id)
     })
   }
 
@@ -630,16 +629,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         (prev ?? []).map((c) =>
           c.id === selectedConcept
             ? {
-                ...c,
-                key: editConceptKey,
-                type: editConceptType,
-                title: editConceptTitle,
-                phase: editConceptPhase as LifecyclePhase,
-                asil: editConceptAsil as ASIL,
-                sil: editConceptSil as SIL,
-                pl: editConceptPl as PL,
-                standards: editConceptStandards,
-              }
+              ...c,
+              key: editConceptKey,
+              type: editConceptType,
+              title: editConceptTitle,
+              phase: editConceptPhase as LifecyclePhase,
+              asil: editConceptAsil as ASIL,
+              sil: editConceptSil as SIL,
+              pl: editConceptPl as PL,
+              standards: editConceptStandards,
+            }
             : c
         )
       )
@@ -1125,14 +1124,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                 color: selectedConcept === c.id ? "#fff" : undefined,
                               } as React.CSSProperties}
                             >
-                            <span style={{
-                              ...brutal.tag,
-                              background: typeColor[c.type] || "#ccc",
-                              color: "#000",
-                              whiteSpace: "nowrap",
-                            }}>
-                              {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}
-                            </span>
+                              <span style={{
+                                ...brutal.tag,
+                                background: typeColor[c.type] || "#ccc",
+                                color: "#000",
+                                whiteSpace: "nowrap",
+                              }}>
+                                {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}
+                              </span>
                               <div className="list-tooltip">
                                 {c.key} {c.title && `- ${c.title}`}
                               </div>
