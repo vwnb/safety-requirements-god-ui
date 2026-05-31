@@ -603,11 +603,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           key: editConceptKey,
           type: editConceptType,
           title: editConceptTitle,
-          phase: editConceptPhase,
-          asil: editConceptAsil || undefined,
-          sil: editConceptSil || undefined,
-          pl: editConceptPl || undefined,
-          standards: editConceptStandards.length > 0 ? editConceptStandards : undefined,
+          phase: editConceptPhase || null,
+          asil: editConceptAsil || null,
+          sil: editConceptSil || null,
+          pl: editConceptPl || null,
+          standards: editConceptStandards.length > 0 ? editConceptStandards : null,
           user: actorForApi
         }),
       })
@@ -665,18 +665,18 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       await apiFetch(`${API}/work-items/${selectedWorkItemData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editWorkItemName,
-          description: editWorkItemDescription,
-          phase: editWorkItemPhase,
-          asil: editWorkItemAsil || undefined,
-          sil: editWorkItemSil || undefined,
-          pl: editWorkItemPl || undefined,
-          standards: editWorkItemStandards.length > 0 ? editWorkItemStandards : undefined,
-          applicationContext: editWorkItemApplicationContext,
-          systemBoundary: editWorkItemSystemBoundary,
-          user: actorForApi
-        }),
+      body: JSON.stringify({
+        name: editWorkItemName,
+        description: editWorkItemDescription,
+        phase: editWorkItemPhase || null,
+        asil: editWorkItemAsil || null,
+        sil: editWorkItemSil || null,
+        pl: editWorkItemPl || null,
+        standards: editWorkItemStandards.length > 0 ? editWorkItemStandards : null,
+        applicationContext: editWorkItemApplicationContext,
+        systemBoundary: editWorkItemSystemBoundary,
+        user: actorForApi
+      }),
       })
 
       await loadWorkItemDetails(selectedWorkItemData.id)
@@ -759,11 +759,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         key,
         type,
         title,
-        phase,
-        asil: asil || undefined,
-        sil: sil || undefined,
-        pl: pl || undefined,
-        standards: standards.length > 0 ? standards : undefined,
+        phase: phase || null,
+        asil: asil || null,
+        sil: sil || null,
+        pl: pl || null,
+        standards: standards.length > 0 ? standards : null,
         createdBy: { name: actorForApi }
       }
 
