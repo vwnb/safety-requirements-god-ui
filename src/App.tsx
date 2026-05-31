@@ -11,6 +11,8 @@ import NewConceptModal from "./components/NewConceptModal"
 import { OfflineBanner } from "./components/OfflineBanner"
 import { useApiFetch } from "./lib/apiFetchContext"
 import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
+import WorkItemCard from "./components/WorkItemCard"
+import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
 import { runOnboardingTour } from "./lib/demoRunner"
 
@@ -18,14 +20,14 @@ const API = import.meta.env.VITE_API_URL || ""
 
 type Project = { id: string, key: string }
 
-type LifecyclePhase = "ITEM_DEFINITION" | "HARA" | "FUNCTIONAL_SAFETY" | "TECHNICAL_SAFETY" | "SYSTEM_DESIGN" | "SOFTWARE_DESIGN" | "IMPLEMENTATION" | "VERIFICATION" | "VALIDATION" | "PRODUCTION" | "OPERATION" | "DECOMMISSIONING"
+export type LifecyclePhase = "ITEM_DEFINITION" | "HARA" | "FUNCTIONAL_SAFETY" | "TECHNICAL_SAFETY" | "SYSTEM_DESIGN" | "SOFTWARE_DESIGN" | "IMPLEMENTATION" | "VERIFICATION" | "VALIDATION" | "PRODUCTION" | "OPERATION" | "DECOMMISSIONING"
 
-type ASIL = "QM" | "A" | "B" | "C" | "D"
-type SIL = "SIL1" | "SIL2" | "SIL3" | "SIL4"
-type PL = "PL_a" | "PL_b" | "PL_c" | "PL_d" | "PL_e"
-type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
+export type ASIL = "QM" | "A" | "B" | "C" | "D"
+export type SIL = "SIL1" | "SIL2" | "SIL3" | "SIL4"
+export type PL = "PL_a" | "PL_b" | "PL_c" | "PL_d" | "PL_e"
+export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 
-type Concept = {
+export type Concept = {
   id: string
   key: string
   type: string
@@ -85,7 +87,7 @@ type Revision = {
   createdAt: string
 }
 
-type WorkItem = {
+export type WorkItem = {
   id: string
   key: string
   name: string
@@ -773,7 +775,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 onClick={() => {
                   setPendingConfirm(null)
                 }}
-                style={{ ...brutal.button, background: "#F2B8B5" }}
+                style={{ ...brutal.button, background: "#BFE7C6" }}
               >
                 {pendingConfirm.cancelLabel || "Keep editing"}
               </button>
@@ -786,7 +788,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   fn()
                 }}
 
-                style={{ ...brutal.button, background: "#BFE7C6" }}
+                style={{ ...brutal.button, background: "#F2B8B5" }}
               >
                 {pendingConfirm.confirmLabel || "Discard & proceed"}
               </button>
@@ -997,151 +999,29 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 {!!selectedWorkItem && (
                   <section>
-                    <div data-agent="edit-work-item-form">
-                      <div className="title">Edit work item details</div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Key</div>
-                        <div
-                          data-agent="input-work-item-key"
-                          style={{ ...brutal.input, ...brutal.disabled }}
-                        >
-                          {selectedWorkItemData?.key || ""}
-                        </div>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Created by</div>
-                        <div
-                          data-agent="input-work-item-created-by"
-                          style={{ ...brutal.input, ...brutal.disabled }}
-                        >
-                          {selectedWorkItemData?.createdBy?.name || ""}
-                        </div>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Name</div>
-                        <input
-                          data-agent="input-work-item-name"
-                          value={editWorkItemName}
-                          onChange={(e) => setEditWorkItemName(e.target.value)}
-                          style={brutal.input}
-                        />
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Description</div>
-                        <textarea
-                          data-agent="input-work-item-description"
-                          value={editWorkItemDescription}
-                          onChange={(e) => setEditWorkItemDescription(e.target.value)}
-                          style={{ ...brutal.input, height: 60 }}
-                        />
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Phase</div>
-                        <select
-                          data-agent="select-work-item-phase"
-                          value={editWorkItemPhase}
-                          onChange={(e) => setEditWorkItemPhase(e.target.value as LifecyclePhase | "")}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select Phase --</option>
-                          <option value="ITEM_DEFINITION">Item Definition</option>
-                          <option value="HARA">HARA</option>
-                          <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                          <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                          <option value="SYSTEM_DESIGN">System Design</option>
-                          <option value="SOFTWARE_DESIGN">Software Design</option>
-                          <option value="IMPLEMENTATION">Implementation</option>
-                          <option value="VERIFICATION">Verification</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>ASIL</div>
-                        <select
-                          data-agent="select-work-item-asil"
-                          value={editWorkItemAsil}
-                          onChange={(e) => setEditWorkItemAsil(e.target.value as ASIL | "")}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select ASIL --</option>
-                          <option value="QM">QM</option>
-                          <option value="ASIL_A">ASIL_A</option>
-                          <option value="ASIL_B">ASIL_B</option>
-                          <option value="ASIL_C">ASIL_C</option>
-                          <option value="ASIL_D">ASIL_D</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>SIL</div>
-                        <select
-                          data-agent="select-work-item-sil"
-                          value={editWorkItemSil}
-                          onChange={(e) => setEditWorkItemSil(e.target.value as SIL | "")}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select SIL --</option>
-                          <option value="SIL1">SIL 1</option>
-                          <option value="SIL2">SIL 2</option>
-                          <option value="SIL3">SIL 3</option>
-                          <option value="SIL4">SIL 4</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>PL</div>
-                        <select
-                          data-agent="select-work-item-pl"
-                          value={editWorkItemPl}
-                          onChange={(e) => setEditWorkItemPl(e.target.value as PL | "")}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select PL --</option>
-                          <option value="PL_a">PL a</option>
-                          <option value="PL_b">PL b</option>
-                          <option value="PL_c">PL c</option>
-                          <option value="PL_d">PL d</option>
-                          <option value="PL_e">PL e</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Standards</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
-                          {(["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]).map((s) => (
-                            <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                              <input
-                                type="checkbox"
-                                checked={editWorkItemStandards.includes(s)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setEditWorkItemStandards([...editWorkItemStandards, s])
-                                  } else {
-                                    setEditWorkItemStandards(editWorkItemStandards.filter((x) => x !== s))
-                                  }
-                                }}
-                              />
-                              {s.replace("_", " ")}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Application Context</div>
-                        <input
-                          data-agent="input-work-item-application-context"
-                          value={editWorkItemApplicationContext}
-                          onChange={(e) => setEditWorkItemApplicationContext(e.target.value)}
-                          style={brutal.input}
-                        />
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>System Boundary</div>
-                        <input
-                          data-agent="input-work-item-system-boundary"
-                          value={editWorkItemSystemBoundary}
-                          onChange={(e) => setEditWorkItemSystemBoundary(e.target.value)}
-                          style={brutal.input}
-                        />
-                      </div>
-                      <button data-agent="btn-save-changes" style={brutal.button} onClick={saveWorkItem}>Save changes</button>
-                    </div>
+                    <WorkItemCard
+                      workItem={selectedWorkItemData}
+                      editName={editWorkItemName}
+                      editDescription={editWorkItemDescription}
+                      editPhase={editWorkItemPhase}
+                      editAsil={editWorkItemAsil}
+                      editSil={editWorkItemSil}
+                      editPl={editWorkItemPl}
+                      editStandards={editWorkItemStandards}
+                      editApplicationContext={editWorkItemApplicationContext}
+                      editSystemBoundary={editWorkItemSystemBoundary}
+                      onEditName={setEditWorkItemName}
+                      onEditDescription={setEditWorkItemDescription}
+                      onEditPhase={setEditWorkItemPhase}
+                      onEditAsil={setEditWorkItemAsil}
+                      onEditSil={setEditWorkItemSil}
+                      onEditPl={setEditWorkItemPl}
+                      onEditStandards={setEditWorkItemStandards}
+                      onEditApplicationContext={setEditWorkItemApplicationContext}
+                      onEditSystemBoundary={setEditWorkItemSystemBoundary}
+                      onSave={saveWorkItem}
+                      onPendingConfirm={setPendingConfirm}
+                    />
                   </section>
                 )}
 
@@ -1211,156 +1091,27 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </section>
 
                 <section data-agent="editor-section">
-                  {activeConcept && (
-                    <>
-                      <div className="title">Edit concept details</div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Key</div>
-                        <input
-                          data-agent="input-edit-concept-key"
-                          value={editConceptKey}
-                          onChange={(e) => setEditConceptKey(e.target.value)}
-                          style={brutal.input}
-                        />
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Created by</div>
-                        <div
-                          data-agent="input-edit-concept-created-by"
-                          style={{ ...brutal.input, ...brutal.disabled }}
-                        >
-                          {activeConcept?.createdBy?.name || ""}
-                        </div>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Title</div>
-                        <input
-                          data-agent="input-edit-concept-title"
-                          value={editConceptTitle}
-                          onChange={(e) => setEditConceptTitle(e.target.value)}
-                          style={brutal.input}
-                        />
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Type</div>
-                        <select
-                          data-agent="select-edit-concept-type"
-                          value={editConceptType}
-                          onChange={(e) => setEditConceptType(e.target.value)}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select Type --</option>
-                          <option value="ITEM">Item</option>
-                          <option value="HAZARD">Hazard</option>
-                          <option value="HARM">Harm</option>
-                          <option value="SAFETY_GOAL">Safety goal</option>
-                          <option value="FSR">Functional safety requirement</option>
-                          <option value="TSR">Technical safety requirement</option>
-                          <option value="SSR">Software safety requirement</option>
-                          <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
-                          <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
-                          <option value="ASSUMPTION">Assumption</option>
-                          <option value="CONSTRAINT">Constraint</option>
-                          <option value="TEST_CASE">Test case</option>
-                          <option value="TEST_RESULT">Test result</option>
-                          <option value="VERIFICATION_REPORT">Verification report</option>
-                          <option value="VALIDATION_REPORT">Validation report</option>
-                          <option value="SAFETY_CASE">Safety case</option>
-                          <option value="SAFETY_MANUAL">Safety manual</option>
-                          <option value="CHANGE_REQUEST">Change request</option>
-                          <option value="ANOMALY">Anomaly</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Phase</div>
-                        <select
-                          data-agent="select-edit-concept-phase"
-                          value={editConceptPhase}
-                          onChange={(e) => setEditConceptPhase(e.target.value)}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select Phase --</option>
-                          <option value="ITEM_DEFINITION">Item Definition</option>
-                          <option value="HARA">HARA</option>
-                          <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                          <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                          <option value="SYSTEM_DESIGN">System Design</option>
-                          <option value="SOFTWARE_DESIGN">Software Design</option>
-                          <option value="IMPLEMENTATION">Implementation</option>
-                          <option value="VERIFICATION">Verification</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>ASIL</div>
-                        <select
-                          data-agent="select-edit-concept-asil"
-                          value={editConceptAsil}
-                          onChange={(e) => setEditConceptAsil(e.target.value)}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select ASIL --</option>
-                          <option value="QM">QM</option>
-                          <option value="ASIL_A">ASIL_A</option>
-                          <option value="ASIL_B">ASIL_B</option>
-                          <option value="ASIL_C">ASIL_C</option>
-                          <option value="ASIL_D">ASIL_D</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>SIL</div>
-                        <select
-                          data-agent="select-edit-concept-sil"
-                          value={editConceptSil}
-                          onChange={(e) => setEditConceptSil(e.target.value)}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select SIL --</option>
-                          <option value="SIL1">SIL 1</option>
-                          <option value="SIL2">SIL 2</option>
-                          <option value="SIL3">SIL 3</option>
-                          <option value="SIL4">SIL 4</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>PL</div>
-                        <select
-                          data-agent="select-edit-concept-pl"
-                          value={editConceptPl}
-                          onChange={(e) => setEditConceptPl(e.target.value)}
-                          style={brutal.select}
-                        >
-                          <option value="">-- Select PL --</option>
-                          <option value="PL_a">PL a</option>
-                          <option value="PL_b">PL b</option>
-                          <option value="PL_c">PL c</option>
-                          <option value="PL_d">PL d</option>
-                          <option value="PL_e">PL e</option>
-                        </select>
-                      </div>
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Standards</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
-                          {(["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]).map((s) => (
-                            <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                              <input
-                                type="checkbox"
-                                checked={editConceptStandards.includes(s)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setEditConceptStandards([...editConceptStandards, s])
-                                  } else {
-                                    setEditConceptStandards(editConceptStandards.filter((x) => x !== s))
-                                  }
-                                }}
-                              />
-                              {s.replace("_", " ")}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                      <button data-agent="btn-save-concept" onClick={saveConcept} style={brutal.button}>Save concept</button>
-                    </>
-                  )}
+                  <ConceptCard
+                    concept={activeConcept}
+                    editKey={editConceptKey}
+                    editTitle={editConceptTitle}
+                    editType={editConceptType}
+                    editPhase={editConceptPhase}
+                    editAsil={editConceptAsil}
+                    editSil={editConceptSil}
+                    editPl={editConceptPl}
+                    editStandards={editConceptStandards}
+                    onEditKey={setEditConceptKey}
+                    onEditTitle={setEditConceptTitle}
+                    onEditType={setEditConceptType}
+                    onEditPhase={setEditConceptPhase}
+                    onEditAsil={setEditConceptAsil}
+                    onEditSil={setEditConceptSil}
+                    onEditPl={setEditConceptPl}
+                    onEditStandards={setEditConceptStandards}
+                    onSave={saveConcept}
+                    onPendingConfirm={setPendingConfirm}
+                  />
                 </section>
 
                 <section data-agent="revisions-section">
