@@ -25,16 +25,6 @@ const fieldLabel: React.CSSProperties = {
   color: "#000",
 }
 
-const tagStyle: React.CSSProperties = {
-  display: "inline-block",
-  padding: "2px 8px",
-  borderRadius: 3,
-  fontSize: 11,
-  fontWeight: 600,
-  marginRight: 4,
-  marginBottom: 2,
-}
-
 export default function ConceptCard({
   concept,
   editKey,
@@ -103,13 +93,8 @@ export default function ConceptCard({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
               <span style={{
-                display: "inline-block",
-                padding: "1px 8px",
-                borderRadius: 3,
-                fontSize: 11,
-                fontWeight: 600,
+                ...brutal.tag,
                 background: typeColor[concept.type] || "#ccc",
-                width: "fit-content",
               }}>
                 {typeLabel}
               </span>
@@ -134,11 +119,11 @@ export default function ConceptCard({
           </p>
 
           <p style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-            {concept.asil && <span style={{ ...tagStyle, background: "#F2B8B5" }}>ASIL: {concept.asil}</span>}
-            {concept.sil && <span style={{ ...tagStyle, background: "#A8E6CF" }}>SIL: {concept.sil}</span>}
-            {concept.pl && <span style={{ ...tagStyle, background: "#F3D9A2" }}>PL: {concept.pl}</span>}
+            {concept.asil && <span style={{ ...brutal.tag, background: "#F2B8B5" }}>ASIL: {concept.asil}</span>}
+            {concept.sil && <span style={{ ...brutal.tag, background: "#A8E6CF" }}>SIL: {concept.sil}</span>}
+            {concept.pl && <span style={{ ...brutal.tag, background: "#F3D9A2" }}>PL: {concept.pl}</span>}
             {(concept.standards ?? []).map((s) => (
-              <span key={s} style={{ ...tagStyle, background: "#DCE7F5" }}>{s.replace(/_/g, " ")}</span>
+              <span key={s} style={{ ...brutal.tag, background: "#DCE7F5" }}>{s.replace(/_/g, " ")}</span>
             ))}
           </p>
         </article>

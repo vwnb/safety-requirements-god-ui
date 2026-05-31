@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react"
+import { brutal } from "../App"
 
 type WorkItem = {
   id: string
@@ -76,37 +77,7 @@ const importanceColor: Record<SuggestionImportance, string> = {
   "LOW": "#7cb342",
 }
 
-const brutal = {
-  box: {
-    border: "2px solid black",
-    padding: "12px",
-    marginBottom: "16px",
-    position: "relative" as const,
-  },
-  button: {
-    all: "unset" as any,
-    color: "black",
-    background: "white",
-    borderWidth: "2px",
-    borderStyle: "solid",
-    borderLeftWidth: "6px",
-    borderRadius: 4,
-    padding: "8px 16px",
-    margin: "8px 0",
-    cursor: "pointer",
-    fontFamily: "monospace",
-    fontWeight: 600,
-    boxSizing: "border-box" as const,
-  },
-  active: {
-    background: "white",
-    borderColor: "#FF5A00",
-  },
-  actions: {
-    display: "flex",
-    gap: "4px",
-  },
-}
+
 
 interface LlmToolsProps {
   selectedWorkItem: string
@@ -439,14 +410,9 @@ export function LlmTools({
                     {suggestion.importance && (
                       <span
                         style={{
+                          ...brutal.tag,
                           background: importanceColor[suggestion.importance] || "#999",
                           color: "#fff",
-                          padding: "2px 8px",
-                          fontSize: 11,
-                          fontWeight: 700,
-                          fontFamily: "monospace",
-                          borderRadius: 2,
-                          whiteSpace: "nowrap",
                           marginRight: 8,
                         }}
                       >
@@ -459,13 +425,9 @@ export function LlmTools({
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
                     <span
                       style={{
+                        ...brutal.tag,
                         background: actionColor[actionLabel] || "#999",
                         color: "#fff",
-                        padding: "2px 8px",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        fontFamily: "monospace",
-                        borderRadius: 2,
                         letterSpacing: "0.5px",
                       }}
                     >

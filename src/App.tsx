@@ -181,6 +181,18 @@ export const brutal = {
     color: "black",
     font: "IBM Plex Mono, monospace"
   },
+
+  tag: {
+    display: "inline-block",
+    padding: "1px 8px",
+    border: "2px solid black",
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: "monospace",
+    marginRight: 4,
+    marginBottom: 2,
+    lineHeight: 1.4,
+  },
 }
 
 function Auth0UserBar({
@@ -1081,19 +1093,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                 color: selectedConcept === c.id ? "#fff" : undefined,
                               } as React.CSSProperties}
                             >
-                              <span style={{
-                                display: "inline-block",
-                                padding: "1px 6px",
-                                borderRadius: 3,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                background: typeColor[c.type] || "#ccc",
-                                color: "#000",
-                                width: "fit-content",
-                                whiteSpace: "nowrap",
-                              }}>
-                                {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}
-                              </span>
+                            <span style={{
+                              ...brutal.tag,
+                              background: typeColor[c.type] || "#ccc",
+                              color: "#000",
+                              whiteSpace: "nowrap",
+                            }}>
+                              {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </span>
                               <div className="list-tooltip">
                                 {c.key} {c.title && `- ${c.title}`}
                               </div>

@@ -45,7 +45,7 @@ hr {
   grid-area: hr;
   border-top: 2px dashed rgba(0, 0, 0, 0.7);
   border-bottom: none;
-  margin: 2em 0;
+  margin: 3em 0;
   height: 0;
 }
 

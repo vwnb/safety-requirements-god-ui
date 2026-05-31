@@ -18,16 +18,6 @@ const fieldLabel: React.CSSProperties = {
   color: "#000",
 }
 
-const tagStyle: React.CSSProperties = {
-  display: "inline-block",
-  padding: "2px 8px",
-  borderRadius: 3,
-  fontSize: 11,
-  fontWeight: 600,
-  marginRight: 4,
-  marginBottom: 2,
-}
-
 export default function WorkItemCard({
   workItem,
   editName,
@@ -122,11 +112,11 @@ export default function WorkItemCard({
           </p>
 
           <p style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-            {workItem.asil && <span style={{ ...tagStyle, background: "#F2B8B5" }}>ASIL: {workItem.asil}</span>}
-            {workItem.sil && <span style={{ ...tagStyle, background: "#A8E6CF" }}>SIL: {workItem.sil}</span>}
-            {workItem.pl && <span style={{ ...tagStyle, background: "#F3D9A2" }}>PL: {workItem.pl}</span>}
+            {workItem.asil && <span style={{ ...brutal.tag, background: "#F2B8B5" }}>ASIL: {workItem.asil}</span>}
+            {workItem.sil && <span style={{ ...brutal.tag, background: "#A8E6CF" }}>SIL: {workItem.sil}</span>}
+            {workItem.pl && <span style={{ ...brutal.tag, background: "#F3D9A2" }}>PL: {workItem.pl}</span>}
             {(workItem.standards ?? []).map((s) => (
-              <span key={s} style={{ ...tagStyle, background: "#DCE7F5" }}>{s.replace(/_/g, " ")}</span>
+              <span key={s} style={{ ...brutal.tag, background: "#DCE7F5" }}>{s.replace(/_/g, " ")}</span>
             ))}
           </p>
 
