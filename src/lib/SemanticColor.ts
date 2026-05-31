@@ -1,25 +1,20 @@
 export const SemanticColor = {
-  // Core model entities
   STRUCTURE: "#DCE7F5",
-  RISK: "#F28B82",
-  ARGUMENT: "#F6C26B",
+  RISK: "#F5C8C5",
+  ARGUMENT: "#F6DEB8",
 
-  // Requirements
-  FUNCTIONAL: "#81C995",
-  TECHNICAL: "#6FA8DC",
-  SOFTWARE: "#B39DDB",
-  HARDWARE: "#BDBDBD",
+  FUNCTIONAL: "#C8E6D0",
+  TECHNICAL: "#C7DCF3",
+  SOFTWARE: "#DDD3F0",
+  HARDWARE: "#DCDCDC",
 
-  // Supporting artifacts
-  ASSUMPTION: "#E6A8D7",
-  EVIDENCE: "#F9E26B",
-  DOCUMENTATION: "#8FD3C7",
+  ASSUMPTION: "#E9C9E1",
+  EVIDENCE: "#F7F0BF",
+  DOCUMENTATION: "#C6E8E2",
 
-  // Lifecycle / process
-  PROCESS: "#D9A6A6",
-  METRIC: "#F4B183",
+  PROCESS: "#E9D3D3",
+  METRIC: "#F5DABF",
 
-  // Generic UI semantics
   SUCCESS: "#BFE7C6",
   DANGER: "#F2B8B5",
 } as const;
