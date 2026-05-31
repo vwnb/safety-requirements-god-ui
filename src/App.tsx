@@ -1142,29 +1142,31 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       )}
                 </section>
 
-                <section data-agent="editor-section">
-                  <ConceptCard
-                    concept={activeConcept}
-                    editKey={editConceptKey}
-                    editTitle={editConceptTitle}
-                    editType={editConceptType}
-                    editPhase={editConceptPhase}
-                    editAsil={editConceptAsil}
-                    editSil={editConceptSil}
-                    editPl={editConceptPl}
-                    editStandards={editConceptStandards}
-                    onEditKey={setEditConceptKey}
-                    onEditTitle={setEditConceptTitle}
-                    onEditType={setEditConceptType}
-                    onEditPhase={setEditConceptPhase}
-                    onEditAsil={setEditConceptAsil}
-                    onEditSil={setEditConceptSil}
-                    onEditPl={setEditConceptPl}
-                    onEditStandards={setEditConceptStandards}
-                    onSave={saveConcept}
-                    onPendingConfirm={setPendingConfirm}
-                  />
-                </section>
+                {selectedConcept && (
+                  <section data-agent="editor-section">
+                    <ConceptCard
+                      concept={activeConcept}
+                      editKey={editConceptKey}
+                      editTitle={editConceptTitle}
+                      editType={editConceptType}
+                      editPhase={editConceptPhase}
+                      editAsil={editConceptAsil}
+                      editSil={editConceptSil}
+                      editPl={editConceptPl}
+                      editStandards={editConceptStandards}
+                      onEditKey={setEditConceptKey}
+                      onEditTitle={setEditConceptTitle}
+                      onEditType={setEditConceptType}
+                      onEditPhase={setEditConceptPhase}
+                      onEditAsil={setEditConceptAsil}
+                      onEditSil={setEditConceptSil}
+                      onEditPl={setEditConceptPl}
+                      onEditStandards={setEditConceptStandards}
+                      onSave={saveConcept}
+                      onPendingConfirm={setPendingConfirm}
+                    />
+                  </section>
+                )}
 
                 <section data-agent="revisions-section">
                   <div className="title">Concept revisions</div>
