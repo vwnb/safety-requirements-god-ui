@@ -72,10 +72,10 @@ const actionColor: Record<string, string> = {
 }
 
 const importanceColor: Record<SuggestionImportance, string> = {
-  "Very high": "#d32f2f",
-  "High": "#f57c00",
-  "Medium": "#fbc02d",
-  "Low": "#7cb342",
+  "Very high": SemanticColor.DANGER,
+  "High": SemanticColor.ARGUMENT,
+  "Medium": SemanticColor.EVIDENCE,
+  "Low": SemanticColor.FUNCTIONAL,
 }
 
 
@@ -413,7 +413,6 @@ export function LlmTools({
                         style={{
                           ...brutal.tag,
                           background: importanceColor[suggestion.importance] || "#999",
-                          color: "#fff",
                           marginRight: 8,
                         }}
                       >
@@ -423,13 +422,11 @@ export function LlmTools({
                     {suggestion.text}
                   </p>
 
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
                     <span
                       style={{
                         ...brutal.tag,
                         background: actionColor[actionLabel] || "#999",
-                        color: "#fff",
-                        letterSpacing: "0.5px",
                       }}
                     >
                       {actionLabel}
