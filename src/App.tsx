@@ -613,7 +613,38 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         }),
       })
 
-      await loadConcepts(selectedWorkItem)
+      setActiveConcept({
+        id: selectedConcept,
+        key: editConceptKey,
+        type: editConceptType,
+        title: editConceptTitle,
+        phase: editConceptPhase as LifecyclePhase,
+        asil: editConceptAsil as ASIL,
+        sil: editConceptSil as SIL,
+        pl: editConceptPl as PL,
+        standards: editConceptStandards,
+        createdBy: activeConcept?.createdBy || { name: "" },
+      })
+
+      setConcepts((prev) =>
+        (prev ?? []).map((c) =>
+          c.id === selectedConcept
+            ? {
+                ...c,
+                key: editConceptKey,
+                type: editConceptType,
+                title: editConceptTitle,
+                phase: editConceptPhase as LifecyclePhase,
+                asil: editConceptAsil as ASIL,
+                sil: editConceptSil as SIL,
+                pl: editConceptPl as PL,
+                standards: editConceptStandards,
+              }
+            : c
+        )
+      )
+
+      await refreshGraph(selectedWorkItem)
     })
   }
 
@@ -650,6 +681,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       })
 
       await loadWorkItemDetails(selectedWorkItemData.id)
+      await refreshGraph(selectedWorkItem)
 
       setWorkItems((prev) =>
         (prev ?? []).map((wi: WorkItem) =>
