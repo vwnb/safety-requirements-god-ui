@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { brutal, typeColor, type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type Concept } from "../App"
+import { SemanticColor } from "../lib/SemanticColor"
 
 const PHASES = [
   "ITEM_DEFINITION", "HARA", "FUNCTIONAL_SAFETY", "TECHNICAL_SAFETY",
   "SYSTEM_DESIGN", "SOFTWARE_DESIGN", "IMPLEMENTATION", "VERIFICATION",
+  "VALIDATION", "PRODUCTION", "OPERATION", "DECOMMISSIONING",
 ] as LifecyclePhase[]
 
 const ASIL_OPTIONS = ["QM", "ASIL_A", "ASIL_B", "ASIL_C", "ASIL_D"] as ASIL[]
@@ -12,10 +14,17 @@ const PL_OPTIONS = ["PL_A", "PL_B", "PL_C", "PL_D", "PL_E"] as PL[]
 const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]
 
 const TYPES = [
-  "ITEM", "HAZARD", "HARM", "SAFETY_GOAL", "FSR", "TSR", "SSR",
-  "HARDWARE_REQUIREMENT", "SOFTWARE_REQUIREMENT", "ASSUMPTION", "CONSTRAINT",
-  "TEST_CASE", "TEST_RESULT", "VERIFICATION_REPORT", "VALIDATION_REPORT",
-  "SAFETY_CASE", "SAFETY_MANUAL", "CHANGE_REQUEST", "ANOMALY",
+  "ITEM", "HAZARD", "HARM", "SAFETY_GOAL",
+  "FUNCTIONAL_SAFETY_REQUIREMENT", "TECHNICAL_SAFETY_REQUIREMENT",
+  "HARDWARE_REQUIREMENT", "SOFTWARE_REQUIREMENT",
+  "HARDWARE_SAFETY_REQUIREMENT", "SOFTWARE_SAFETY_REQUIREMENT",
+  "ASSUMPTION", "CONSTRAINT",
+  "TEST_CASE", "TEST_RESULT", "PROOF_TEST",
+  "VERIFICATION_REPORT", "VALIDATION_REPORT",
+  "SAFETY_CASE", "SAFETY_MANUAL",
+  "CHANGE_REQUEST", "ANOMALY",
+  "FAILURE_RATE", "DIAGNOSTIC_COVERAGE", "COMMON_CAUSE_FAILURE",
+  "ARCHITECTURE",
 ] as const
 
 const fieldLabel: React.CSSProperties = {
@@ -118,11 +127,11 @@ export default function ConceptCard({
           </p>
 
           <p style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-            {concept.asil && <span style={{ ...brutal.tag, background: "#F2B8B5" }}>ASIL: {concept.asil}</span>}
-            {concept.sil && <span style={{ ...brutal.tag, background: "#A8E6CF" }}>SIL: {concept.sil}</span>}
-            {concept.pl && <span style={{ ...brutal.tag, background: "#F3D9A2" }}>PL: {concept.pl}</span>}
+            {concept.asil && <span style={{ ...brutal.tag, background: SemanticColor.RISK }}>ASIL: {concept.asil}</span>}
+            {concept.sil && <span style={{ ...brutal.tag, background: SemanticColor.FUNCTIONAL }}>SIL: {concept.sil}</span>}
+            {concept.pl && <span style={{ ...brutal.tag, background: SemanticColor.METRIC }}>PL: {concept.pl}</span>}
             {(concept.standards ?? []).map((s) => (
-              <span key={s} style={{ ...brutal.tag, background: "#DCE7F5" }}>{s.replace(/_/g, " ")}</span>
+              <span key={s} style={{ ...brutal.tag, background: SemanticColor.STRUCTURE }}>{s.replace(/_/g, " ")}</span>
             ))}
           </p>
         </article>
@@ -247,7 +256,7 @@ export default function ConceptCard({
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button data-agent="btn-save-concept" style={brutal.button} onClick={handleSave}>Save concept</button>
-            <button data-agent="btn-cancel-edit-concept" onClick={handleCancel} style={{ ...brutal.button, backgroundColor: "#F2B8B5" }}>Cancel</button>
+            <button data-agent="btn-cancel-edit-concept" onClick={handleCancel} style={{ ...brutal.button, backgroundColor: SemanticColor.DANGER }}>Cancel</button>
           </div>
         </>
       )}

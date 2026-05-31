@@ -15,6 +15,7 @@ import WorkItemCard from "./components/WorkItemCard"
 import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
 import { runOnboardingTour } from "./lib/demoRunner"
+import { SemanticColor } from "./lib/SemanticColor"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -43,41 +44,46 @@ export type Concept = {
 export const backgroundImage = background;
 
 export const typeColor: Record<string, string> = {
-  // Neutral / base
-  ITEM: "#DCE7F5",
+  ITEM: SemanticColor.STRUCTURE,
+  ARCHITECTURE: SemanticColor.STRUCTURE,
 
-  // Risk / hazard domain
-  HAZARD: "#F2B8B5",
-  HARM: "#F2B8B5",
-  ANOMALY: "#F2B8B5",
+  HAZARD: SemanticColor.RISK,
+  HARM: SemanticColor.RISK,
+  ANOMALY: SemanticColor.RISK,
+  FAILURE_RATE: SemanticColor.RISK,
+  COMMON_CAUSE_FAILURE: SemanticColor.RISK,
 
-  // Safety intent / argumentation
-  SAFETY_GOAL: "#F3D9A2",
-  SAFETY_CASE: "#F3D9A2",
+  SAFETY_GOAL: SemanticColor.ARGUMENT,
+  SAFETY_CASE: SemanticColor.ARGUMENT,
 
-  // Functional / technical requirements
-  FSR: "#A8E6CF",
-  TSR: "#9DD9F3",
-  SSR: "#CDBCF6",
-  SOFTWARE_REQUIREMENT: "#CDBCF6",
-  HARDWARE_REQUIREMENT: "#D6D6D6",
+  FSR: SemanticColor.FUNCTIONAL,
+  FUNCTIONAL_SAFETY_REQUIREMENT: SemanticColor.FUNCTIONAL,
 
-  // Constraints / assumptions
-  ASSUMPTION: "#E7C6E6",
-  CONSTRAINT: "#AEE5DF",
+  TSR: SemanticColor.TECHNICAL,
+  TECHNICAL_SAFETY_REQUIREMENT: SemanticColor.TECHNICAL,
 
-  // Testing family
-  TEST_CASE: "#F6E58D",
-  TEST_RESULT: "#F2D16B",
-  VERIFICATION_REPORT: "#BFE7C6",
-  VALIDATION_REPORT: "#A9D6E5",
+  SSR: SemanticColor.SOFTWARE,
+  SOFTWARE_REQUIREMENT: SemanticColor.SOFTWARE,
+  SOFTWARE_SAFETY_REQUIREMENT: SemanticColor.SOFTWARE,
 
-  // Documentation
-  SAFETY_MANUAL: "#AEE5DF",
+  HARDWARE_REQUIREMENT: SemanticColor.HARDWARE,
+  HARDWARE_SAFETY_REQUIREMENT: SemanticColor.HARDWARE,
 
-  // Change / process
-  CHANGE_REQUEST: "#E7C6E6",
-}
+  ASSUMPTION: SemanticColor.ASSUMPTION,
+  CONSTRAINT: SemanticColor.ASSUMPTION,
+
+  TEST_CASE: SemanticColor.EVIDENCE,
+  TEST_RESULT: SemanticColor.EVIDENCE,
+  PROOF_TEST: SemanticColor.EVIDENCE,
+  VERIFICATION_REPORT: SemanticColor.EVIDENCE,
+  VALIDATION_REPORT: SemanticColor.EVIDENCE,
+
+  SAFETY_MANUAL: SemanticColor.DOCUMENTATION,
+
+  CHANGE_REQUEST: SemanticColor.PROCESS,
+
+  DIAGNOSTIC_COVERAGE: SemanticColor.METRIC,
+};
 
 type Revision = {
   id: string
@@ -818,7 +824,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 onClick={() => {
                   setPendingConfirm(null)
                 }}
-                style={{ ...brutal.button, background: "#BFE7C6" }}
+                style={{ ...brutal.button, background: SemanticColor.SUCCESS }}
               >
                 {pendingConfirm.cancelLabel || "Keep editing"}
               </button>
@@ -831,7 +837,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   fn()
                 }}
 
-                style={{ ...brutal.button, background: "#F2B8B5" }}
+                style={{ ...brutal.button, background: SemanticColor.DANGER }}
               >
                 {pendingConfirm.confirmLabel || "Discard & proceed"}
               </button>
@@ -1551,7 +1557,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   conceptMap={conceptMap}
                 />
                 <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
-                  <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, background: "#BFE7C6" }}>
+                  <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, background: SemanticColor.SUCCESS }}>
                     Save revision
                   </button>
                   <button
@@ -1559,7 +1565,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     onClick={() => { setActiveRevisionId(null); setEditorValue("") }}
                     style={{
                       ...brutal.button,
-                      backgroundColor: "#F2B8B5"
+                      backgroundColor: SemanticColor.DANGER
                     }}>
                     Discard
                   </button>

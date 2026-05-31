@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react"
 import { brutal } from "../App"
+import { SemanticColor } from "../lib/SemanticColor"
 
 type WorkItem = {
   id: string
@@ -19,7 +20,7 @@ type WorkItem = {
 
 type SuggestionAction = "create" | "revise" | "update" | "discard" | "cancel" | "reject"
 
-type SuggestionImportance = "VERY HIGH" | "HIGH" | "MEDIUM" | "LOW"
+type SuggestionImportance = "Very high" | "High" | "Medium" | "Low"
 
 type PayloadConcept = {
   key: string
@@ -65,16 +66,16 @@ type EvaluatorSuggestion = {
 }
 
 const actionColor: Record<string, string> = {
-  "CREATE": "#22c55e",
-  "REVISE": "#3b82f6",
-  "DISCARD": "#ef4444",
+  "create": SemanticColor.SUCCESS,
+  "revise": SemanticColor.SUCCESS,
+  "discard": SemanticColor.DANGER,
 }
 
 const importanceColor: Record<SuggestionImportance, string> = {
-  "VERY HIGH": "#d32f2f",
-  "HIGH": "#f57c00",
-  "MEDIUM": "#fbc02d",
-  "LOW": "#7cb342",
+  "Very high": "#d32f2f",
+  "High": "#f57c00",
+  "Medium": "#fbc02d",
+  "Low": "#7cb342",
 }
 
 
@@ -392,8 +393,8 @@ export function LlmTools({
         )}
         {!!suggestions && (
           [...suggestions].sort((a, b) => {
-            const order: Record<SuggestionImportance, number> = { "VERY HIGH": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1 }
-            return (order[b.importance ?? "LOW"] ?? 0) - (order[a.importance ?? "LOW"] ?? 0)
+            const order: Record<SuggestionImportance, number> = { "Very high": 4, "High": 3, "Medium": 2, "Low": 1 }
+            return (order[b.importance ?? "Low"] ?? 0) - (order[a.importance ?? "Low"] ?? 0)
           }).map((suggestion, index) => {
             const suggestionKey = suggestion.text.slice(0, 64).replaceAll(" ", "-")
             const { actionLabel, graphDescription, hasPayloadData } = actionLabelForAction(suggestion.action, suggestion.payload)
@@ -471,14 +472,14 @@ export function LlmTools({
                         })
                       }
                     }}
-                    style={{ ...brutal.button, background: "#BFE7C6" } as React.CSSProperties}
+                    style={{ ...brutal.button, background: SemanticColor.SUCCESS } as React.CSSProperties}
                   >
                     Act on
                   </button>
                   <button
                     data-agent={`btn-discard-suggestion-${index}`}
                     onClick={() => discardSuggestion(index)}
-                    style={{ ...brutal.button, background: "#F2B8B5" }}
+                    style={{ ...brutal.button, background: SemanticColor.DANGER }}
                   >
                     Discard
                   </button>

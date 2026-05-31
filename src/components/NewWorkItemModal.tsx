@@ -1,6 +1,7 @@
 import { useState } from "react"
 import Modal from "./Modal"
 import { brutal } from "../App"
+import { SemanticColor } from "../lib/SemanticColor"
 
 export default function NewWorkItemModal({
   onCreate,
@@ -47,7 +48,7 @@ export default function NewWorkItemModal({
         <button
           data-agent="btn-cancel-new-work-item"
           onClick={onClose}
-          style={{ ...brutal.button, backgroundColor: "#F2B8B5" }}
+          style={{ ...brutal.button, backgroundColor: SemanticColor.DANGER }}
         >
           Cancel
         </button>

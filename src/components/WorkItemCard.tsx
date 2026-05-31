@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { brutal, type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type WorkItem } from "../App"
+import { SemanticColor } from "../lib/SemanticColor"
 
 const PHASES = [
   "ITEM_DEFINITION", "HARA", "FUNCTIONAL_SAFETY", "TECHNICAL_SAFETY",
   "SYSTEM_DESIGN", "SOFTWARE_DESIGN", "IMPLEMENTATION", "VERIFICATION",
-] as const
+  "VALIDATION", "PRODUCTION", "OPERATION", "DECOMMISSIONING",
+] as LifecyclePhase[]
 
 const ASIL_OPTIONS = ["QM", "ASIL_A", "ASIL_B", "ASIL_C", "ASIL_D"] as ASIL[]
 const SIL_OPTIONS = ["SIL_1", "SIL_2", "SIL_3", "SIL_4"] as SIL[]
@@ -112,11 +114,11 @@ export default function WorkItemCard({
           </p>
 
           <p style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-            {workItem.asil && <span style={{ ...brutal.tag, background: "#F2B8B5" }}>ASIL: {workItem.asil}</span>}
-            {workItem.sil && <span style={{ ...brutal.tag, background: "#A8E6CF" }}>SIL: {workItem.sil}</span>}
-            {workItem.pl && <span style={{ ...brutal.tag, background: "#F3D9A2" }}>PL: {workItem.pl}</span>}
+            {workItem.asil && <span style={{ ...brutal.tag, background: SemanticColor.RISK }}>ASIL: {workItem.asil}</span>}
+            {workItem.sil && <span style={{ ...brutal.tag, background: SemanticColor.FUNCTIONAL }}>SIL: {workItem.sil}</span>}
+            {workItem.pl && <span style={{ ...brutal.tag, background: SemanticColor.METRIC }}>PL: {workItem.pl}</span>}
             {(workItem.standards ?? []).map((s) => (
-              <span key={s} style={{ ...brutal.tag, background: "#DCE7F5" }}>{s.replace(/_/g, " ")}</span>
+              <span key={s} style={{ ...brutal.tag, background: SemanticColor.STRUCTURE }}>{s.replace(/_/g, " ")}</span>
             ))}
           </p>
 
@@ -260,7 +262,7 @@ export default function WorkItemCard({
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button data-agent="btn-save-changes" style={brutal.button} onClick={handleSave}>Save changes</button>
-            <button data-agent="btn-cancel-edit-work-item" onClick={handleCancel} style={{ ...brutal.button, backgroundColor: "#F2B8B5" }}>Cancel</button>
+            <button data-agent="btn-cancel-edit-work-item" onClick={handleCancel} style={{ ...brutal.button, backgroundColor: SemanticColor.DANGER }}>Cancel</button>
           </div>
         </>
       )}

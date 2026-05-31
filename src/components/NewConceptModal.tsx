@@ -1,6 +1,7 @@
 import { useState } from "react"
 import Modal from "./Modal"
 import { brutal } from "../App"
+import { SemanticColor } from "../lib/SemanticColor"
 
 type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 
@@ -61,6 +62,10 @@ export default function NewConceptModal({
           <option value="SOFTWARE_DESIGN">Software Design</option>
           <option value="IMPLEMENTATION">Implementation</option>
           <option value="VERIFICATION">Verification</option>
+          <option value="VALIDATION">Validation</option>
+          <option value="PRODUCTION">Production</option>
+          <option value="OPERATION">Operation</option>
+          <option value="DECOMMISSIONING">Decommissioning</option>
         </select>
       </div>
 
@@ -149,21 +154,27 @@ export default function NewConceptModal({
           <option value="HAZARD">Hazard</option>
           <option value="HARM">Harm</option>
           <option value="SAFETY_GOAL">Safety goal</option>
-          <option value="FSR">Functional safety requirement</option>
-          <option value="TSR">Technical safety requirement</option>
-          <option value="SSR">Software safety requirement</option>
+          <option value="FUNCTIONAL_SAFETY_REQUIREMENT">Functional safety requirement</option>
+          <option value="TECHNICAL_SAFETY_REQUIREMENT">Technical safety requirement</option>
           <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
           <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
+          <option value="HARDWARE_SAFETY_REQUIREMENT">Hardware safety requirement</option>
+          <option value="SOFTWARE_SAFETY_REQUIREMENT">Software safety requirement</option>
           <option value="ASSUMPTION">Assumption</option>
           <option value="CONSTRAINT">Constraint</option>
           <option value="TEST_CASE">Test case</option>
           <option value="TEST_RESULT">Test result</option>
+          <option value="PROOF_TEST">Proof test</option>
           <option value="VERIFICATION_REPORT">Verification report</option>
           <option value="VALIDATION_REPORT">Validation report</option>
           <option value="SAFETY_CASE">Safety case</option>
           <option value="SAFETY_MANUAL">Safety manual</option>
           <option value="CHANGE_REQUEST">Change request</option>
           <option value="ANOMALY">Anomaly</option>
+          <option value="FAILURE_RATE">Failure rate</option>
+          <option value="DIAGNOSTIC_COVERAGE">Diagnostic coverage</option>
+          <option value="COMMON_CAUSE_FAILURE">Common cause failure</option>
+          <option value="ARCHITECTURE">Architecture</option>
         </select>
       </div>
 
@@ -178,7 +189,7 @@ export default function NewConceptModal({
         <button
           data-agent="btn-cancel-new-concept"
           onClick={onClose}
-          style={{ ...brutal.button, backgroundColor: "#F2B8B5" }}
+          style={{ ...brutal.button, backgroundColor: SemanticColor.DANGER }}
         >
           Cancel
         </button>
