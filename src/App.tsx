@@ -141,7 +141,6 @@ export const brutal = {
   },
 
   select: {
-    all: "unset" as any,
     background: "white",
     border: "2px solid black",
     padding: "6px",
