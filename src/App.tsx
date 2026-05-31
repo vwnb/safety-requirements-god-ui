@@ -495,11 +495,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
       if (data.length > 0) {
         setSelectedConcept(data[0].id)
+        await loadRevisions(data[0].id)
       } else {
         setSelectedConcept("")
         setEditorValue("")
       }
-      await loadRevisions(data[0].id)
     })
   }
 
