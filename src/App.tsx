@@ -1167,111 +1167,113 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </section>
                 )}
 
-                <section data-agent="revisions-section">
-                  <div className="title">Concept revisions</div>
+                {!!selectedConcept && (
+                  <section data-agent="revisions-section">
+                    <div className="title">Concept revisions</div>
 
-                  {selectedConcept && revisionsByConcept[selectedConcept] === undefined && (
-                    <p>Loading revisions...</p>
-                  )}
-
-                  {selectedConcept && revisionsByConcept[selectedConcept] !== undefined &&
-                    revisionsByConcept[selectedConcept].length === 0 && (
-                      <p>No revisions for this concept. <button style={brutal.button} onClick={() => revise({
-                        conceptId: selectedConcept,
-                        markdown: ""
-                      } as Revision)}>Create initial revision</button></p>
+                    {revisionsByConcept[selectedConcept] === undefined && (
+                      <p>Loading revisions...</p>
                     )}
 
-                  {selectedConcept && revisionsByConcept[selectedConcept] !== undefined &&
-                    revisionsByConcept[selectedConcept].length > 0 && (
-                      <div className="list-input">
-                        {revisionsByConcept[selectedConcept].map((r) => {
-                          const isBase = r.id === baseId
-                          const isTarget = r.id === targetId
+                    {revisionsByConcept[selectedConcept] !== undefined &&
+                      revisionsByConcept[selectedConcept].length === 0 && (
+                        <p>No revisions for this concept. <button style={brutal.button} onClick={() => revise({
+                          conceptId: selectedConcept,
+                          markdown: ""
+                        } as Revision)}>Create initial revision</button></p>
+                      )}
 
-                          return (
-                            <div
-                              className="option option--narrow"
-                              data-agent={`revision-${r.id}`}
-                              key={r.id}
-                              style={{
-                                ...(isBase ? brutal.rowBase : {}),
-                                ...(isTarget ? brutal.rowTarget : {}),
-                              }}
-                            >
+                    {revisionsByConcept[selectedConcept] !== undefined &&
+                      revisionsByConcept[selectedConcept].length > 0 && (
+                        <div className="list-input">
+                          {revisionsByConcept[selectedConcept].map((r) => {
+                            const isBase = r.id === baseId
+                            const isTarget = r.id === targetId
+
+                            return (
                               <div
-                                data-agent="revision-id"
-                                className="list-id"
+                                className="option option--narrow"
+                                data-agent={`revision-${r.id}`}
+                                key={r.id}
+                                style={{
+                                  ...(isBase ? brutal.rowBase : {}),
+                                  ...(isTarget ? brutal.rowTarget : {}),
+                                }}
                               >
-                                {r.id.slice(0, 16)}
-                              </div>
-
-                              <div
-                                data-agent="revision-created-by"
-                                className="list-tooltip"
-                                style={{ fontSize: 11, opacity: 0.7 }}
-                              >
-                                {r.createdBy?.name || "unknown"}
-                              </div>
-
-                              <div
-                                data-agent="revision-markdown"
-                                className="list-tooltip"
-                              >
-                                {r.markdown.slice(0, 100)}...
-                              </div>
-
-                              <div style={brutal.actions}>
-                                <button
-                                  data-agent="btn-load-revision"
-                                  onClick={() => {
-                                    setActiveRevisionId(r.id)
-                                    setSelectedConcept(r.conceptId)
-                                    setEditorValue(r.markdown)
-                                  }}
-                                  style={brutal.button}
+                                <div
+                                  data-agent="revision-id"
+                                  className="list-id"
                                 >
-                                  Load
-                                </button>
+                                  {r.id.slice(0, 16)}
+                                </div>
 
                                 <div
-                                  style={{
-                                    border: "1px solid black",
-                                    margin: "0 1rem",
-                                    ...(isBase || isTarget
-                                      ? { borderColor: "white" }
-                                      : {}),
-                                  }}
-                                />
-
-                                <button
-                                  data-agent="btn-set-base"
-                                  onClick={() => setBaseId(r.id)}
-                                  style={{
-                                    ...brutal.button,
-                                    ...(isBase ? brutal.active : {}),
-                                  }}
+                                  data-agent="revision-created-by"
+                                  className="list-tooltip"
+                                  style={{ fontSize: 11, opacity: 0.7 }}
                                 >
-                                  Base
-                                </button>
+                                  {r.createdBy?.name || "unknown"}
+                                </div>
 
-                                <button
-                                  data-agent="btn-set-head"
-                                  onClick={() => setTargetId(r.id)}
-                                  style={{
-                                    ...brutal.button,
-                                    ...(isTarget ? brutal.active : {}),
-                                  }}
+                                <div
+                                  data-agent="revision-markdown"
+                                  className="list-tooltip"
                                 >
-                                  Head
-                                </button>
+                                  {r.markdown.slice(0, 100)}...
+                                </div>
+
+                                <div style={brutal.actions}>
+                                  <button
+                                    data-agent="btn-load-revision"
+                                    onClick={() => {
+                                      setActiveRevisionId(r.id)
+                                      setSelectedConcept(r.conceptId)
+                                      setEditorValue(r.markdown)
+                                    }}
+                                    style={brutal.button}
+                                  >
+                                    Load
+                                  </button>
+
+                                  <div
+                                    style={{
+                                      border: "1px solid black",
+                                      margin: "0 1rem",
+                                      ...(isBase || isTarget
+                                        ? { borderColor: "white" }
+                                        : {}),
+                                    }}
+                                  />
+
+                                  <button
+                                    data-agent="btn-set-base"
+                                    onClick={() => setBaseId(r.id)}
+                                    style={{
+                                      ...brutal.button,
+                                      ...(isBase ? brutal.active : {}),
+                                    }}
+                                  >
+                                    Base
+                                  </button>
+
+                                  <button
+                                    data-agent="btn-set-head"
+                                    onClick={() => setTargetId(r.id)}
+                                    style={{
+                                      ...brutal.button,
+                                      ...(isTarget ? brutal.active : {}),
+                                    }}
+                                  >
+                                    Head
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                </section>
+                            )
+                          })}
+                        </div>
+                      )}
+                  </section>
+                )}
 
                 {baseId && targetId && diffResult && diffResult.hunks.length > 0 && (
                   <section data-agent="diff-section">
