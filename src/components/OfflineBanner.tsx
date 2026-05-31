@@ -35,7 +35,7 @@ export function OfflineBanner() {
         fontWeight: "bold",
       }}
     >
-      You are offline — showing cached data
+      You are offline. Changes won't be saved.
     </div>
   )
 }

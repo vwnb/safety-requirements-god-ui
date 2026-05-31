@@ -788,7 +788,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 onClick={() => {
                   setPendingConfirm(null)
                 }}
-                style={{ ...brutal.button, background: "#BFE7C6" }}
+                style={{ ...brutal.button, background: "#F2B8B5" }}
               >
                 {pendingConfirm.cancelLabel || "Keep editing"}
               </button>
@@ -801,7 +801,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   fn()
                 }}
 
-                style={{ ...brutal.button, background: "#F2B8B5" }}
+                style={{ ...brutal.button, background: "#BFE7C6" }}
               >
                 {pendingConfirm.confirmLabel || "Discard & proceed"}
               </button>
