@@ -1047,46 +1047,59 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       </p>
                     ) :
                       (
-                        concepts.map((c) => (
-                          <button
-                            data-agent={`concept-${c.id}`}
-                            key={c.id}
-                            onClick={() => {
-                              const action = async () => {
-                                setNodeClickLoading(true)
-                                setSelectedConcept(c.id)
-                                try {
-                                  const revisions = await loadRevisions(c.id)
-                                  setActiveRevisionId(revisions?.[0]?.id || null)
-                                  setEditorValue(revisions?.[0]?.markdown || "")
-                                  scrollToEditConcept()
-                                } finally {
-                                  setNodeClickLoading(false)
+                        <div className="list-input" style={{ maxHeight: 300, overflow: "auto" }}>
+                          {concepts.map((c) => (
+                            <div
+                              className="option"
+                              data-agent={`concept-${c.id}`}
+                              key={c.id}
+                              onClick={() => {
+                                const action = async () => {
+                                  setNodeClickLoading(true)
+                                  setSelectedConcept(c.id)
+                                  try {
+                                    const revisions = await loadRevisions(c.id)
+                                    setActiveRevisionId(revisions?.[0]?.id || null)
+                                    setEditorValue(revisions?.[0]?.markdown || "")
+                                    scrollToEditConcept()
+                                  } finally {
+                                    setNodeClickLoading(false)
+                                  }
                                 }
-                              }
 
-                              if (activeRevisionId) {
-                                setPendingConfirm({
-                                  message: "You have an active revision in progress. Discard it and open this concept?",
-                                  onConfirm: action,
-                                })
-                              } else {
-                                action()
-                              }
-                            }}
-                            style={{
-                              ...brutal.button,
-                              ...(selectedConcept === c.id ? brutal.active : {}),
-                              display: "block",
-                              fontWeight: 300,
-                              width: "100%",
-                              marginBottom: 4,
-                              background: typeColor[c.type] || "#ccc",
-                            } as React.CSSProperties}
-                          >
-                            {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}: <br />{c.key} {c.title && `- ${c.title}`}
-                          </button>
-                        ))
+                                if (activeRevisionId) {
+                                  setPendingConfirm({
+                                    message: "You have an active revision in progress. Discard it and open this concept?",
+                                    onConfirm: action,
+                                  })
+                                } else {
+                                  action()
+                                }
+                              }}
+                              style={{
+                                background: selectedConcept === c.id ? "rgb(255, 90, 0)" : undefined,
+                                color: selectedConcept === c.id ? "#fff" : undefined,
+                              } as React.CSSProperties}
+                            >
+                              <span style={{
+                                display: "inline-block",
+                                padding: "1px 6px",
+                                borderRadius: 3,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                background: typeColor[c.type] || "#ccc",
+                                color: "#000",
+                                width: "fit-content",
+                                whiteSpace: "nowrap",
+                              }}>
+                                {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}
+                              </span>
+                              <div className="list-tooltip">
+                                {c.key} {c.title && `- ${c.title}`}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                 </section>
 
@@ -1246,7 +1259,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 <hr />
                 <section data-agent="import-concepts-section">
-                  <div className="title">Import concepts</div>
+                  <div className="title">Import concepts to work item</div>
                   {templates === undefined ? (
                     <p>
                       Loading templates...

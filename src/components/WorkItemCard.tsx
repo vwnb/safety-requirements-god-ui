@@ -92,13 +92,13 @@ export default function WorkItemCard({
   }
 
   return (
-    <div data-agent="work-item-card" style={{ marginTop: 20, marginBottom: 20 }}>
+    <div data-agent="work-item-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px solid black" }}>
       {!isEditing ? (
-        <>
+        <article>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <h3>
+            <h2>
               {workItem.key} — {workItem.name}
-            </h3>
+            </h2>
             <button
               data-agent="btn-edit-work-item"
               onClick={() => setIsEditing(true)}
@@ -109,36 +109,36 @@ export default function WorkItemCard({
           </div>
 
           {workItem.description && (
-            <div style={{ marginTop: 6, lineHeight: 1.5, color: "#222" }}>
+            <p style={{ marginTop: 6, lineHeight: 1.5, color: "#222" }}>
               {workItem.description}
-            </div>
+            </p>
           )}
 
-          <div style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
+          <p style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
             <span><span style={fieldLabel}>Created by</span> {workItem.createdBy?.name || "—"}</span>
             {workItem.phase && (
               <span><span style={fieldLabel}>Phase</span> {workItem.phase.replace(/_/g, " ")}</span>
             )}
-          </div>
+          </p>
 
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+          <p style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
             {workItem.asil && <span style={{ ...tagStyle, background: "#F2B8B5" }}>ASIL: {workItem.asil}</span>}
             {workItem.sil && <span style={{ ...tagStyle, background: "#A8E6CF" }}>SIL: {workItem.sil}</span>}
             {workItem.pl && <span style={{ ...tagStyle, background: "#F3D9A2" }}>PL: {workItem.pl}</span>}
             {(workItem.standards ?? []).map((s) => (
               <span key={s} style={{ ...tagStyle, background: "#DCE7F5" }}>{s.replace(/_/g, " ")}</span>
             ))}
-          </div>
+          </p>
 
-          <div style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
+          <p style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
             {workItem.applicationContext && (
               <span><span style={fieldLabel}>Application Context</span> {workItem.applicationContext}</span>
             )}
             {workItem.systemBoundary && (
               <span><span style={fieldLabel}>System Boundary</span> {workItem.systemBoundary}</span>
             )}
-          </div>
-        </>
+          </p>
+        </article>
       ) : (
         <>
           <div className="title" style={{ marginTop: 0 }}>Edit work item details</div>

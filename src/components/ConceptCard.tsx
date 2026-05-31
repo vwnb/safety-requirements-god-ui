@@ -97,9 +97,9 @@ export default function ConceptCard({
   const typeLabel = concept.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())
 
   return (
-    <div data-agent="concept-card" style={{ marginTop: 20, marginBottom: 20 }}>
+    <div data-agent="concept-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px solid black" }}>
       {!isEditing ? (
-        <>
+        <article>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
               <span style={{
@@ -113,9 +113,9 @@ export default function ConceptCard({
               }}>
                 {typeLabel}
               </span>
-              <h3>
+              <h2>
                 {concept.key} {concept.title && `— ${concept.title}`}
-              </h3>
+              </h2>
             </div>
             <button
               data-agent="btn-edit-concept"
@@ -126,22 +126,22 @@ export default function ConceptCard({
             </button>
           </div>
 
-          <div style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
+          <p style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
             <span><span style={fieldLabel}>Created by</span> {concept.createdBy?.name || "—"}</span>
             {concept.phase && (
               <span><span style={fieldLabel}>Phase</span> {concept.phase.replace(/_/g, " ")}</span>
             )}
-          </div>
+          </p>
 
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+          <p style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
             {concept.asil && <span style={{ ...tagStyle, background: "#F2B8B5" }}>ASIL: {concept.asil}</span>}
             {concept.sil && <span style={{ ...tagStyle, background: "#A8E6CF" }}>SIL: {concept.sil}</span>}
             {concept.pl && <span style={{ ...tagStyle, background: "#F3D9A2" }}>PL: {concept.pl}</span>}
             {(concept.standards ?? []).map((s) => (
               <span key={s} style={{ ...tagStyle, background: "#DCE7F5" }}>{s.replace(/_/g, " ")}</span>
             ))}
-          </div>
-        </>
+          </p>
+        </article>
       ) : (
         <>
           <div className="title" style={{ marginTop: 0, marginBottom: 12 }}>Edit concept details</div>
