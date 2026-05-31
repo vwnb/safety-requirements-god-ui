@@ -6,6 +6,8 @@ import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
 import GraphView from "./components/GraphView"
 import { LlmTools } from "./components/LlmTools"
+import NewWorkItemModal from "./components/NewWorkItemModal"
+import NewConceptModal from "./components/NewConceptModal"
 import { OfflineBanner } from "./components/OfflineBanner"
 import { useApiFetch } from "./lib/apiFetchContext"
 import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
@@ -335,14 +337,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [diffResult, setDiffResult] = useState<{ type: string; hunks: HunkData[] } | null>(null)
 
-  const [newConceptKey, setNewConceptKey] = useState("")
-  const [newConceptType, setNewConceptType] = useState("ITEM")
-  const [newConceptTitle, setNewConceptTitle] = useState("")
-  const [newConceptPhase, setNewConceptPhase] = useState("ITEM_DEFINITION")
-  const [newConceptAsil, setNewConceptAsil] = useState("")
-  const [newConceptSil, setNewConceptSil] = useState("")
-  const [newConceptPl, setNewConceptPl] = useState("")
-  const [newConceptStandards, setNewConceptStandards] = useState<Standard[]>([])
 
   const [editConceptType, setEditConceptType] = useState("ITEM")
   const [editConceptPhase, setEditConceptPhase] = useState("ITEM_DEFINITION")
@@ -353,8 +347,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [editConceptTitle, setEditConceptTitle] = useState("")
   const [editConceptKey, setEditConceptKey] = useState("")
 
-  const [newWorkItemKey, setNewWorkItemKey] = useState("")
-  const [newWorkItemTitle, setNewWorkItemTitle] = useState("")
+  const [showNewWorkItemModal, setShowNewWorkItemModal] = useState(false)
+  const [showNewConceptModal, setShowNewConceptModal] = useState(false)
 
   const [editWorkItemName, setEditWorkItemName] = useState("")
   const [editWorkItemDescription, setEditWorkItemDescription] = useState("")
@@ -609,51 +603,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
-  async function createConcept(concept?: Concept) {
-    if (!concept && !newConceptKey.trim()) return
-
-    return withLoading("Creating concept...", async () => {
-      const url = selectedWorkItem
-        ? `${API}/work-items/${selectedWorkItem}/concepts`
-        : `${API}/concepts`
-
-      let body;
-      if (concept) {
-        body = concept
-      } else {
-        body = {
-          key: newConceptKey,
-          type: newConceptType,
-          title: newConceptTitle,
-          phase: newConceptPhase,
-          asil: newConceptAsil || undefined,
-          sil: newConceptSil || undefined,
-          pl: newConceptPl || undefined,
-          standards: newConceptStandards.length > 0 ? newConceptStandards : undefined,
-          createdBy: { name: actorForApi }
-        }
-      }
-
-      const res = await apiFetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-
-      const created = await res.json()
-
-      setConcepts((prev) => [...(prev ?? []), created])
-      setSelectedConcept(created.id)
-      setNewConceptKey("")
-      setNewConceptTitle("")
-      setNewConceptPhase("")
-      setNewConceptAsil("")
-
-      await loadRevisions(created.id)
-      await refreshGraph(selectedWorkItem)
-      await refreshBaselines()
-    })
-  }
 
   async function loadWorkItemDetails(workItemId: string) {
     const res = await apiFetch(
@@ -723,16 +672,21 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
-  async function createWorkItem() {
-    if (!newWorkItemKey.trim() || !selectedProject) return
+  async function refreshBaselines() {
+    const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
+    setBaselines(data)
+  }
+
+  const handleNewWorkItemCreate = async (key: string, title: string) => {
+    if (!key.trim() || !selectedProject) return
 
     return withLoading("Creating work item...", async () => {
       const res = await apiFetch(`${API}/work-items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          key: newWorkItemKey,
-          name: newWorkItemTitle,
+          key,
+          name: title,
           projectId: selectedProject.id,
           user: actorForApi
         }),
@@ -744,14 +698,46 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
       setWorkItems((prev) => [...(prev ?? []), created])
       setSelectedWorkItem(created.id)
-      setNewWorkItemKey("")
-      setNewWorkItemTitle("")
+      setShowNewWorkItemModal(false)
     })
   }
 
-  async function refreshBaselines() {
-    const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
-    setBaselines(data)
+  const handleNewConceptCreate = async (key: string, title: string, type: string, phase: string, asil: string, sil: string, pl: string, standards: Standard[]) => {
+    if (!key.trim()) return
+
+    return withLoading("Creating concept...", async () => {
+      const url = selectedWorkItem
+        ? `${API}/work-items/${selectedWorkItem}/concepts`
+        : `${API}/concepts`
+
+      const body = {
+        key,
+        type,
+        title,
+        phase,
+        asil: asil || undefined,
+        sil: sil || undefined,
+        pl: pl || undefined,
+        standards: standards.length > 0 ? standards : undefined,
+        createdBy: { name: actorForApi }
+      }
+
+      const res = await apiFetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
+      const created = await res.json()
+
+      setConcepts((prev) => [...(prev ?? []), created])
+      setSelectedConcept(created.id)
+      setShowNewConceptModal(false)
+
+      await loadRevisions(created.id)
+      await refreshGraph(selectedWorkItem)
+      await refreshBaselines()
+    })
   }
 
   return (
@@ -837,6 +823,25 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           </div>
         </div>
       )}
+
+      {showNewWorkItemModal && (
+        <NewWorkItemModal
+          onCreate={(key, title) => {
+            handleNewWorkItemCreate(key, title)
+          }}
+          onClose={() => setShowNewWorkItemModal(false)}
+        />
+      )}
+
+      {showNewConceptModal && (
+        <NewConceptModal
+          onCreate={(key, title, type, phase, asil, sil, pl, standards) => {
+            handleNewConceptCreate(key, title, type, phase, asil, sil, pl, standards)
+          }}
+          onClose={() => setShowNewConceptModal(false)}
+        />
+      )}
+
       <header data-agent="top-header" className="top-header" style={!user && { padding: 80 } || {}}>
         <img src={logo} alt="Logo" className="logo" data-agent="logo" />
 
@@ -948,73 +953,46 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               <>
                 <hr />
 
-                <div className="cms-layout">
-                  <section data-agent="work-items-section">
-                    <div className="title">Work items</div>
-                    {workItems === null ? (
-                      <p>Loading work items...</p>
-                    ) :
-                      workItems.length === 0 ? (
-                        <p>
-                          No work items yet.
-                        </p>
-                      ) : (
-                        workItems.length > 0 && (
-                          <div style={{ marginBottom: 10 }}>
-                            <div data-agent="work-items-list" className="list-input">
-                              {workItems.map((workItem) => (
-                                <div
-                                  className="option"
-                                  data-agent={`work-item-${workItem.id}`}
-                                  key={workItem.id}
-                                  onClick={() => setSelectedWorkItem(workItem.id)}
-                                  style={{
-                                    ...(selectedWorkItem === workItem.id ? { background: "rgb(255, 90, 0)", color: "#fff" } : {}),
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  {workItem.key} — {workItem.name}
-                                </div>
-                              ))}
-                            </div>
+                <section data-agent="work-items-section">
+                  <div className="title">Work items</div>
+
+                  <button
+                    data-agent="btn-open-new-work-item-modal"
+                    onClick={() => setShowNewWorkItemModal(true)}
+                    style={brutal.button}
+                  >
+                    + Create new
+                  </button>
+                  {workItems === null ? (
+                    <p>Loading work items...</p>
+                  ) :
+                    workItems.length === 0 ? (
+                      <p>
+                        No work items yet.
+                      </p>
+                    ) : (
+                      workItems.length > 0 && (
+                        <div style={{ marginBottom: 10 }}>
+                          <div data-agent="work-items-list" className="list-input">
+                            {workItems.map((workItem) => (
+                              <div
+                                className="option"
+                                data-agent={`work-item-${workItem.id}`}
+                                key={workItem.id}
+                                onClick={() => setSelectedWorkItem(workItem.id)}
+                                style={{
+                                  ...(selectedWorkItem === workItem.id ? { background: "rgb(255, 90, 0)", color: "#fff" } : {}),
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {workItem.key} — {workItem.name}
+                              </div>
+                            ))}
                           </div>
-                        )
-                      )}
-                  </section>
-
-                  {!!selectedProject &&
-
-                    <section data-agent="new-work-item-section">
-                      <div className="title">New work item</div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Key</div>
-                        <input
-                          data-agent="input-new-work-item-key"
-                          placeholder="e.g. MYPROJ-001"
-                          value={newWorkItemKey}
-                          onChange={(e) => setNewWorkItemKey(e.target.value)}
-                          style={{ ...brutal.input, flex: 1 }}
-                        />
-                      </div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Title</div>
-                        <input
-                          data-agent="input-new-work-item-title"
-                          placeholder="e.g. Brake-by-wire system"
-                          value={newWorkItemTitle}
-                          onChange={(e) => setNewWorkItemTitle(e.target.value)}
-                          style={{ ...brutal.input, flex: 1 }}
-                        />
-                      </div>
-
-                      <button data-agent="btn-create-work-item" onClick={createWorkItem} style={brutal.button}>
-                        Create
-                      </button>
-                    </section>
-                  }
-                </div>
+                        </div>
+                      )
+                    )}
+                </section>
 
                 {!!selectedWorkItem && (
                   <section>
@@ -1168,229 +1146,66 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                 <hr />
 
-                <div className="cms-layout">
-                  <section data-agent="concepts-section">
-                    <div className="title">Concepts</div>
-
-                    {concepts === null ? (
-                      <p>Loading concepts...</p>
+                <section data-agent="concepts-section">
+                  <div className="title">Concepts</div>
+                  <button
+                    data-agent="btn-open-new-concept-modal"
+                    onClick={() => setShowNewConceptModal(true)}
+                    style={brutal.button}
+                  >
+                    + Create new
+                  </button>
+                  {concepts === null ? (
+                    <p>Loading concepts...</p>
+                  ) :
+                    concepts.length === 0 ? (
+                      <p>
+                        No concepts yet.
+                      </p>
                     ) :
-                      concepts.length === 0 ? (
-                        <p>
-                          No concepts yet.
-                        </p>
-                      ) :
-                        (
-                          concepts.map((c) => (
-                            <button
-                              data-agent={`concept-${c.id}`}
-                              key={c.id}
-                              onClick={() => {
-                                const action = async () => {
-                                  setNodeClickLoading(true)
-                                  setSelectedConcept(c.id)
-                                  try {
-                                    const revisions = await loadRevisions(c.id)
-                                    setActiveRevisionId(revisions?.[0]?.id || null)
-                                    setEditorValue(revisions?.[0]?.markdown || "")
-                                    scrollToEditConcept()
-                                  } finally {
-                                    setNodeClickLoading(false)
-                                  }
+                      (
+                        concepts.map((c) => (
+                          <button
+                            data-agent={`concept-${c.id}`}
+                            key={c.id}
+                            onClick={() => {
+                              const action = async () => {
+                                setNodeClickLoading(true)
+                                setSelectedConcept(c.id)
+                                try {
+                                  const revisions = await loadRevisions(c.id)
+                                  setActiveRevisionId(revisions?.[0]?.id || null)
+                                  setEditorValue(revisions?.[0]?.markdown || "")
+                                  scrollToEditConcept()
+                                } finally {
+                                  setNodeClickLoading(false)
                                 }
+                              }
 
-                                if (activeRevisionId) {
-                                  setPendingConfirm({
-                                    message: "You have an active revision in progress. Discard it and open this concept?",
-                                    onConfirm: action,
-                                  })
-                                } else {
-                                  action()
-                                }
-                              }}
-                              style={{
-                                ...brutal.button,
-                                ...(selectedConcept === c.id ? brutal.active : {}),
-                                display: "block",
-                                fontWeight: 300,
-                                width: "100%",
-                                marginBottom: 4,
-                                background: typeColor[c.type] || "#ccc",
-                              } as React.CSSProperties}
-                            >
-                              {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}: <br />{c.key} {c.title && `- ${c.title}`}
-                            </button>
-                          ))
-                        )}
-                  </section>
-
-                  {!!selectedWorkItem && (
-
-                    <section data-agent="new-concept-section">
-                      <div className="title">New concept</div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Key</div>
-                        <input
-                          data-agent="input-new-concept-key"
-                          placeholder="e.g. BRAKE_FAILURE"
-                          value={newConceptKey}
-                          onChange={(e) => setNewConceptKey(e.target.value)}
-                          style={{ ...brutal.input, flex: 1 }}
-                        />
-                      </div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Title</div>
-                        <input
-                          data-agent="input-new-concept-title"
-                          placeholder="optional"
-                          value={newConceptTitle}
-                          onChange={(e) => setNewConceptTitle(e.target.value)}
-                          style={{ ...brutal.input, flex: 1 }}
-                        />
-                      </div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Phase</div>
-                        <select
-                          data-agent="select-new-concept-phase"
-                          value={newConceptPhase}
-                          onChange={(e) => setNewConceptPhase(e.target.value)}
-                          style={{ ...brutal.select, flex: 1 }}
-                        >
-                          <option value="">-- Select Phase --</option>
-                          <option value="ITEM_DEFINITION">Item Definition</option>
-                          <option value="HARA">HARA</option>
-                          <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-                          <option value="TECHNICAL_SAFETY">Technical Safety</option>
-                          <option value="SYSTEM_DESIGN">System Design</option>
-                          <option value="SOFTWARE_DESIGN">Software Design</option>
-                          <option value="IMPLEMENTATION">Implementation</option>
-                          <option value="VERIFICATION">Verification</option>
-                        </select>
-                      </div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>ASIL</div>
-                        <select
-                          data-agent="select-new-concept-asil"
-                          value={newConceptAsil}
-                          onChange={(e) => setNewConceptAsil(e.target.value)}
-                          style={{ ...brutal.select, flex: 1 }}
-                        >
-                          <option value="">-- Select ASIL --</option>
-                          <option value="QM">QM</option>
-                          <option value="ASIL_A">ASIL_A</option>
-                          <option value="ASIL_B">ASIL_B</option>
-                          <option value="ASIL_C">ASIL_C</option>
-                          <option value="ASIL_D">ASIL_D</option>
-                        </select>
-                      </div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>SIL</div>
-                        <select
-                          data-agent="select-new-concept-sil"
-                          value={newConceptSil}
-                          onChange={(e) => setNewConceptSil(e.target.value)}
-                          style={{ ...brutal.select, flex: 1 }}
-                        >
-                          <option value="">-- Select SIL --</option>
-                          <option value="SIL1">SIL 1</option>
-                          <option value="SIL2">SIL 2</option>
-                          <option value="SIL3">SIL 3</option>
-                          <option value="SIL4">SIL 4</option>
-                        </select>
-                      </div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>PL</div>
-                        <select
-                          data-agent="select-new-concept-pl"
-                          value={newConceptPl}
-                          onChange={(e) => setNewConceptPl(e.target.value)}
-                          style={{ ...brutal.select, flex: 1 }}
-                        >
-                          <option value="">-- Select PL --</option>
-                          <option value="PL_a">PL a</option>
-                          <option value="PL_b">PL b</option>
-                          <option value="PL_c">PL c</option>
-                          <option value="PL_d">PL d</option>
-                          <option value="PL_e">PL e</option>
-                        </select>
-                      </div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Standards</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
-                          {(["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]).map((s) => (
-                            <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                              <input
-                                type="checkbox"
-                                checked={newConceptStandards.includes(s)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setNewConceptStandards([...newConceptStandards, s])
-                                  } else {
-                                    setNewConceptStandards(newConceptStandards.filter((x) => x !== s))
-                                  }
-                                }}
-                              />
-                              {s.replace("_", " ")}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div style={brutal.formRow}>
-                        <div style={brutal.label}>Type</div>
-                        <select
-                          data-agent="select-new-concept-type"
-                          value={newConceptType}
-                          onChange={(e) => setNewConceptType(e.target.value)}
-                          style={{ ...brutal.select, flex: 1 }}
-                        >
-                          <option value="">-- Select Type --</option>
-                          <option value="ITEM">Item</option>
-                          <option value="HAZARD">Hazard</option>
-                          <option value="HARM">Harm</option>
-                          <option value="SAFETY_GOAL">Safety goal</option>
-                          <option value="FSR">Functional safety requirement</option>
-                          <option value="TSR">Technical safety requirement</option>
-                          <option value="SSR">Software safety requirement</option>
-                          <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
-                          <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
-                          <option value="ASSUMPTION">Assumption</option>
-                          <option value="CONSTRAINT">Constraint</option>
-                          <option value="TEST_CASE">Test case</option>
-                          <option value="TEST_RESULT">Test result</option>
-                          <option value="VERIFICATION_REPORT">Verification report</option>
-                          <option value="VALIDATION_REPORT">Validation report</option>
-                          <option value="SAFETY_CASE">Safety case</option>
-                          <option value="SAFETY_MANUAL">Safety manual</option>
-                          <option value="CHANGE_REQUEST">Change request</option>
-                          <option value="ANOMALY">Anomaly</option>
-                        </select>
-
-                      </div>
-
-                      <button data-agent="btn-create-concept" onClick={() => {
-                        if (activeRevisionId) {
-                          setPendingConfirm({
-                            message: "You have an active revision in progress. Discard it and create a new concept?",
-                            onConfirm: () => { createConcept() },
-                          })
-                        } else {
-                          createConcept()
-                        }
-                      }} style={brutal.button}>
-                        Create
-                      </button>
-
-                    </section>
-                  )}
-                </div>
+                              if (activeRevisionId) {
+                                setPendingConfirm({
+                                  message: "You have an active revision in progress. Discard it and open this concept?",
+                                  onConfirm: action,
+                                })
+                              } else {
+                                action()
+                              }
+                            }}
+                            style={{
+                              ...brutal.button,
+                              ...(selectedConcept === c.id ? brutal.active : {}),
+                              display: "block",
+                              fontWeight: 300,
+                              width: "100%",
+                              marginBottom: 4,
+                              background: typeColor[c.type] || "#ccc",
+                            } as React.CSSProperties}
+                          >
+                            {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}: <br />{c.key} {c.title && `- ${c.title}`}
+                          </button>
+                        ))
+                      )}
+                </section>
 
                 <section data-agent="editor-section">
                   {activeConcept && (
