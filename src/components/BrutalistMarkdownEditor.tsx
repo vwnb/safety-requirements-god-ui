@@ -25,7 +25,7 @@ export function BrutalistMarkdownEditor({
   const html = useMemo(() => marked.parse(value || ""), [value])
 
   return (
-    <div>
+    <>
       <div
         data-agent="markdown-editor"
         style={{
@@ -97,6 +97,6 @@ export function BrutalistMarkdownEditor({
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
