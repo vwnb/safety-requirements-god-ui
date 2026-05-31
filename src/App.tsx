@@ -1,7 +1,7 @@
 import logo from "./assets/logo.png"
 import { useAuth0 } from "@auth0/auth0-react"
 import { useCallback, useEffect, useState } from "react"
-import { parseDiff, type HunkData } from "react-diff-view"
+import { parseDiff, Diff, Hunk, type HunkData, type DiffType } from "react-diff-view"
 import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
 import GraphView from "./components/GraphView"
@@ -334,9 +334,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [baseId, setBaseId] = useState<string | null>(null)
   const [targetId, setTargetId] = useState<string | null>(null)
 
-  const [{ }, setDiff] = useState<{ hunks: HunkData[] }>({
-    hunks: [],
-  })
+  const [diffResult, setDiffResult] = useState<{ type: string; hunks: HunkData[] } | null>(null)
 
   const [newConceptKey, setNewConceptKey] = useState("")
   const [newConceptType, setNewConceptType] = useState("ITEM")
@@ -529,7 +527,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
     const [diff] = parseDiff(diffText, { nearbySequences: "zip" })
 
-    setDiff({ hunks: diff?.hunks || [] })
+    setDiffResult({ type: diff?.type || "unified", hunks: diff?.hunks || [] })
   }, [baseId, targetId, revisionsByConcept])
 
   async function revise(revision?: Revision) {
@@ -1627,6 +1625,30 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       </div>
                     )}
                 </section>
+
+                {baseId && targetId && diffResult && diffResult.hunks.length > 0 && (
+                  <section data-agent="diff-section">
+                    <div className="title">Diff ({baseId} → {targetId})</div>
+                    <div style={{
+                      border: "2px solid black",
+                      background: "white",
+                      fontFamily: "monospace",
+                      fontSize: 12,
+                      overflowX: "auto",
+                      marginBottom: 16,
+                    }}>
+                      <Diff diffType={diffResult.type as DiffType} viewType="unified" hunks={diffResult.hunks}>
+                        {hunks => hunks.map((hunk, i) => (
+                          <Hunk key={i} hunk={hunk} />
+                        ))}
+                      </Diff>
+                    </div>
+                  </section>
+                )}
+
+                {baseId && targetId && diffResult && diffResult.hunks.length === 0 && (
+                  <p>No difference between {baseId} and {targetId}.</p>
+                )}
 
                 <hr />
                 <section data-agent="import-concepts-section">
