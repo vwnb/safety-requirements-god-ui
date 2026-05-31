@@ -18,7 +18,7 @@ type WorkItem = {
   systemBoundary?: string
 }
 
-type SuggestionAction = "create" | "revise" | "update" | "discard" | "cancel" | "reject"
+type SuggestionAction = "Create" | "Revise" | "Update" | "Discard" | "Cancel" | "Reject"
 
 type SuggestionImportance = "Very high" | "High" | "Medium" | "Low"
 
@@ -66,9 +66,9 @@ type EvaluatorSuggestion = {
 }
 
 const actionColor: Record<string, string> = {
-  "create": SemanticColor.SUCCESS,
-  "revise": SemanticColor.SUCCESS,
-  "discard": SemanticColor.DANGER,
+  "Create": SemanticColor.SUCCESS,
+  "Revise": SemanticColor.SUCCESS,
+  "Discard": SemanticColor.DANGER,
 }
 
 const importanceColor: Record<SuggestionImportance, string> = {
@@ -145,7 +145,7 @@ export function LlmTools({
     const { action, payload } = suggestion
 
     switch (action) {
-      case 'create': {
+      case 'Create': {
         if (!selectedWorkItem) return
 
         onSetLoading(true)
@@ -210,8 +210,8 @@ export function LlmTools({
         return
       }
 
-      case 'revise':
-      case 'update': {
+      case 'Revise':
+      case 'Update': {
         if (!selectedWorkItem) return
 
         onSetLoading(true)
@@ -252,9 +252,9 @@ export function LlmTools({
         return
       }
 
-      case 'discard':
-      case 'cancel':
-      case 'reject': {
+      case 'Discard':
+      case 'Cancel':
+      case 'Reject': {
         onSetActiveRevisionId(null)
         onSetEditorValue("")
         setSuggestions((prev) =>
@@ -284,25 +284,25 @@ export function LlmTools({
     let graphDescription = ""
 
     switch (action) {
-      case 'create':
-        actionLabel = "CREATE"
+      case 'Create':
+        actionLabel = "Create"
         graphDescription = [
           payloadConcepts.length > 0 && `${payloadConcepts.length} concept(s)`,
           payloadRelations.length > 0 && `${payloadRelations.length} relation(s)`,
           payloadRevisions.length > 0 && `${payloadRevisions.length} revision(s)`,
         ].filter(Boolean).join(", ") || "No graph data"
         break
-      case 'revise':
-      case 'update':
-        actionLabel = "REVISE"
+      case 'Revise':
+      case 'Update':
+        actionLabel = "Revise"
         graphDescription = payload.conceptKey
           ? `concept "${payload.conceptKey}" — update its revision content`
           : "No graph data"
         break
-      case 'discard':
-      case 'cancel':
-      case 'reject':
-        actionLabel = "DISCARD"
+      case 'Discard':
+      case 'Cancel':
+      case 'Reject':
+        actionLabel = "Discard"
         graphDescription = "No graph changes"
         break
       default:
@@ -321,11 +321,11 @@ export function LlmTools({
     const payloadRevisions = payload.revisions || []
     const hasPayloadData = payloadConcepts.length > 0 || payloadRelations.length > 0 || payloadRevisions.length > 0 || !!payload.conceptKey || !!payload.markdown
 
-    if (["discard", "cancel", "reject"].includes(action)) {
+    if (["Discard", "Cancel", "Reject"].includes(action)) {
       return { confirmMessage: "No updates will be performed. Discard this suggestion?", confirmLabel: "Discard" }
-    } else if (["revise", "update"].includes(action) && payload.conceptKey) {
+    } else if (["Revise", "Update"].includes(action) && payload.conceptKey) {
       return { confirmMessage: `Revision will be created for concept "${payload.conceptKey}". Continue?`, confirmLabel: "Continue" }
-    } else if (action === "create") {
+    } else if (action === "Create") {
       const parts: string[] = []
       if (payloadConcepts.length > 0) parts.push(`${payloadConcepts.length} concept(s)`)
       if (payloadRelations.length > 0) parts.push(`${payloadRelations.length} relation(s)`)
