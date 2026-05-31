@@ -1086,7 +1086,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   ) :
                     concepts.length === 0 ? (
                       <p>
-                        No concepts yet.
+                        No concepts under the selected work item.
                       </p>
                     ) :
                       (
