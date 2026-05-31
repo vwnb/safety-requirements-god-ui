@@ -1142,7 +1142,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       )}
                 </section>
 
-                {activeConcept && (
+                {selectedConcept && (
                   <section data-agent="editor-section">
                     <ConceptCard
                       concept={activeConcept}
