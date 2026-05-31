@@ -90,10 +90,10 @@ export default function NewConceptModal({
           style={{ ...brutal.select, flex: 1 }}
         >
           <option value="">-- Select SIL --</option>
-          <option value="SIL1">SIL 1</option>
-          <option value="SIL2">SIL 2</option>
-          <option value="SIL3">SIL 3</option>
-          <option value="SIL4">SIL 4</option>
+          <option value="SIL_1">SIL 1</option>
+          <option value="SIL_2">SIL 2</option>
+          <option value="SIL_3">SIL 3</option>
+          <option value="SIL_4">SIL 4</option>
         </select>
       </div>
 
@@ -106,11 +106,11 @@ export default function NewConceptModal({
           style={{ ...brutal.select, flex: 1 }}
         >
           <option value="">-- Select PL --</option>
-          <option value="PL_a">PL a</option>
-          <option value="PL_b">PL b</option>
-          <option value="PL_c">PL c</option>
-          <option value="PL_d">PL d</option>
-          <option value="PL_e">PL e</option>
+          <option value="PL_A">PL A</option>
+          <option value="PL_B">PL B</option>
+          <option value="PL_C">PL C</option>
+          <option value="PL_D">PL D</option>
+          <option value="PL_E">PL E</option>
         </select>
       </div>
 

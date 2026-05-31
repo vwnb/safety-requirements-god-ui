@@ -22,9 +22,9 @@ type Project = { id: string, key: string }
 
 export type LifecyclePhase = "ITEM_DEFINITION" | "HARA" | "FUNCTIONAL_SAFETY" | "TECHNICAL_SAFETY" | "SYSTEM_DESIGN" | "SOFTWARE_DESIGN" | "IMPLEMENTATION" | "VERIFICATION" | "VALIDATION" | "PRODUCTION" | "OPERATION" | "DECOMMISSIONING"
 
-export type ASIL = "QM" | "A" | "B" | "C" | "D"
-export type SIL = "SIL1" | "SIL2" | "SIL3" | "SIL4"
-export type PL = "PL_a" | "PL_b" | "PL_c" | "PL_d" | "PL_e"
+export type ASIL = "QM" | "ASIL_A" | "ASIL_B" | "ASIL_C" | "ASIL_D"
+export type SIL = "SIL_1" | "SIL_2" | "SIL_3" | "SIL_4"
+export type PL = "PL_A" | "PL_B" | "PL_C" | "PL_D" | "PL_E"
 export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 
 export type Concept = {

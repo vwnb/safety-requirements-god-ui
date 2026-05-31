@@ -7,8 +7,8 @@ const PHASES = [
 ] as LifecyclePhase[]
 
 const ASIL_OPTIONS = ["QM", "ASIL_A", "ASIL_B", "ASIL_C", "ASIL_D"] as ASIL[]
-const SIL_OPTIONS = ["SIL1", "SIL2", "SIL3", "SIL4"] as SIL[]
-const PL_OPTIONS = ["PL_a", "PL_b", "PL_c", "PL_d", "PL_e"] as PL[]
+const SIL_OPTIONS = ["SIL_1", "SIL_2", "SIL_3", "SIL_4"] as SIL[]
+const PL_OPTIONS = ["PL_A", "PL_B", "PL_C", "PL_D", "PL_E"] as PL[]
 const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]
 
 const TYPES = [
@@ -207,7 +207,7 @@ export default function ConceptCard({
             >
               <option value="">-- Select SIL --</option>
               {SIL_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s.replace("SIL", "SIL ")}</option>
+                <option key={s} value={s}>{s.replace("_", " ")}</option>
               ))}
             </select>
           </div>
