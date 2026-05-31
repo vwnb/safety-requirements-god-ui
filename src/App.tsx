@@ -1171,11 +1171,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <section data-agent="revisions-section">
                   <div className="title">Concept revisions</div>
 
-                  {revisionsByConcept[selectedConcept] === undefined && (
+                  {selectedConcept && revisionsByConcept[selectedConcept] === undefined && (
                     <p>Loading revisions...</p>
                   )}
 
-                  {revisionsByConcept[selectedConcept] !== undefined &&
+                  {selectedConcept && revisionsByConcept[selectedConcept] !== undefined &&
                     revisionsByConcept[selectedConcept].length === 0 && (
                       <p>No revisions for this concept. <button style={brutal.button} onClick={() => revise({
                         conceptId: selectedConcept,
@@ -1183,7 +1183,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       } as Revision)}>Create initial revision</button></p>
                     )}
 
-                  {revisionsByConcept[selectedConcept] !== undefined &&
+                  {selectedConcept && revisionsByConcept[selectedConcept] !== undefined &&
                     revisionsByConcept[selectedConcept].length > 0 && (
                       <div className="list-input">
                         {revisionsByConcept[selectedConcept].map((r) => {
