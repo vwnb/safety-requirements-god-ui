@@ -1570,7 +1570,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                           return (
                             <div
-                              className="option2"
+                              className="option option--narrow"
                               data-agent={`revision-${r.id}`}
                               key={r.id}
                               style={{
@@ -1809,7 +1809,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
                               return (
                                 <div
-                                  className="option2"
+                                  className="option option--narrow"
                                   data-agent={`baseline-revision-${r.id}`}
                                   key={r.id}
                                   onClick={() => toggleRevision(r.id)}

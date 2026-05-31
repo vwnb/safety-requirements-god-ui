@@ -228,7 +228,7 @@ header>* {
   width: 300px;
 }
 
-.option2>.list-id {
+.option--narrow>.list-id {
   width: 120px;
 }
 
@@ -262,12 +262,10 @@ button:hover,
   color: #000 !important;
 }
 
-.option,
-.option2 {
+.option {
   border-bottom: 1px solid black;
   padding: 6px;
   font-family: var(--font-mono);
-  ;
   align-items: center;
   display: flex;
   cursor: pointer;
@@ -321,8 +319,7 @@ footer {
     grid-template-areas: "list" "new";
   }
 
-  .option,
-  .option2 {
+  .option {
     display: block;
   }
 
