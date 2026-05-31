@@ -33,7 +33,7 @@ type Concept = {
   sil?: SIL
   pl?: PL
   standards?: Standard[]
-  createdBy: string
+  createdBy: { name: string }
 }
 
 export const backgroundImage = background;
@@ -79,7 +79,7 @@ type Revision = {
   id: string
   conceptId: string
   markdown: string
-  createdBy: string
+  createdBy: { name: string }
   createdAt: string
 }
 
@@ -88,7 +88,7 @@ type WorkItem = {
   key: string
   name: string
   description?: string
-  createdBy: string
+  createdBy: { name: string }
   createdAt: string
   phase?: LifecyclePhase
   asil?: ASIL
@@ -631,7 +631,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           sil: newConceptSil || undefined,
           pl: newConceptPl || undefined,
           standards: newConceptStandards.length > 0 ? newConceptStandards : undefined,
-          createdBy: actorForApi
+          createdBy: { name: actorForApi }
         }
       }
 
@@ -1031,6 +1031,15 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                         </div>
                       </div>
                       <div style={brutal.formRow}>
+                        <div style={brutal.label}>Created by</div>
+                        <div
+                          data-agent="input-work-item-created-by"
+                          style={{ ...brutal.input, ...brutal.disabled }}
+                        >
+                          {selectedWorkItemData?.createdBy?.name || ""}
+                        </div>
+                      </div>
+                      <div style={brutal.formRow}>
                         <div style={brutal.label}>Name</div>
                         <input
                           data-agent="input-work-item-name"
@@ -1398,6 +1407,15 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                         />
                       </div>
                       <div style={brutal.formRow}>
+                        <div style={brutal.label}>Created by</div>
+                        <div
+                          data-agent="input-edit-concept-created-by"
+                          style={{ ...brutal.input, ...brutal.disabled }}
+                        >
+                          {activeConcept?.createdBy?.name || ""}
+                        </div>
+                      </div>
+                      <div style={brutal.formRow}>
                         <div style={brutal.label}>Title</div>
                         <input
                           data-agent="input-edit-concept-title"
@@ -1565,6 +1583,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                 className="list-id"
                               >
                                 {r.id.slice(0, 16)}
+                              </div>
+
+                              <div
+                                data-agent="revision-created-by"
+                                className="list-tooltip"
+                                style={{ fontSize: 11, opacity: 0.7 }}
+                              >
+                                {r.createdBy?.name || "unknown"}
                               </div>
 
                               <div
@@ -1870,29 +1896,54 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </div>
             </div>
           )}
-          {activeRevisionId && (
-            <div data-agent="revise-panel" className="revise-panel">
-              <div className="title">Revise concept</div>
-              <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
-                Revision: {activeRevisionId}
+          {activeRevisionId && (() => {
+            const allRevisions = Object.values(revisionsByConcept).flat()
+            const activeRev = allRevisions.find(r => r.id === activeRevisionId)
+            const conceptRevisions = allRevisions.filter(r => r.conceptId === selectedConcept)
+            const conceptRevisionIds = new Set(conceptRevisions.map(r => r.id))
+            const conceptRelations = (graph?.relations ?? []).filter(
+              (rel: any) => conceptRevisionIds.has(rel.fromId) || conceptRevisionIds.has(rel.toId)
+            )
+            const conceptMap = new Map<string, { id: string; key: string }>((graph?.concepts ?? []).map((c: any) => [c.id, { id: c.id, key: c.key }]))
+
+            return (
+              <div data-agent="revise-panel" className="revise-panel">
+                <div className="title">Revise concept</div>
+                <div data-agent="editor-info" style={{ fontFamily: "monospace", marginBottom: 8 }}>
+                  Revision: {activeRevisionId}
+                </div>
+                {activeRev?.createdBy?.name && (
+                  <div data-agent="revision-created-by" style={{ ...brutal.formRow, marginBottom: 8 }}>
+                    <div style={brutal.label}>Created by</div>
+                    <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+                      {activeRev.createdBy.name}
+                    </div>
+                  </div>
+                )}
+                <BrutalistMarkdownEditor
+                  value={editorValue}
+                  onChange={setEditorValue}
+                  relations={conceptRelations}
+                  allRevisions={allRevisions}
+                  conceptMap={conceptMap}
+                />
+                <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
+                  <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, background: "#BFE7C6" }}>
+                    Save revision
+                  </button>
+                  <button
+                    data-agent="btn-cancel-revision"
+                    onClick={() => { setActiveRevisionId(null); setEditorValue("") }}
+                    style={{
+                      ...brutal.button,
+                      backgroundColor: "#F2B8B5"
+                    }}>
+                    Discard
+                  </button>
+                </div>
               </div>
-              <BrutalistMarkdownEditor value={editorValue} onChange={setEditorValue} />
-              <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
-                <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, background: "#BFE7C6" }}>
-                  Save revision
-                </button>
-                <button
-                  data-agent="btn-cancel-revision"
-                  onClick={() => { setActiveRevisionId(null); setEditorValue("") }}
-                  style={{
-                    ...brutal.button,
-                    backgroundColor: "#F2B8B5"
-                  }}>
-                  Discard
-                </button>
-              </div>
-            </div>
-          )}
+            )
+          })()}
           <GraphView
             loading={!!user && graph === null && !!selectedWorkItem}
             revisions={user ? (graph?.revisions ?? []).filter((r: Revision) => {

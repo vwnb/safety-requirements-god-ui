@@ -5,7 +5,7 @@ type WorkItem = {
   key: string
   name: string
   description?: string
-  createdBy: string
+  createdBy: { name: string }
   createdAt: string
   phase?: string
   asil?: string
@@ -189,7 +189,7 @@ export function LlmTools({
             sil: c.sil || undefined,
             pl: c.pl || undefined,
             standards: c.standards || undefined,
-            createdBy: actorForApi,
+            createdBy: { name: actorForApi },
           }))
 
           const revisions = (payload.revisions ?? []).map((r: PayloadRevision) => ({
