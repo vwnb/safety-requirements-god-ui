@@ -1814,8 +1814,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                   key={r.id}
                                   onClick={() => toggleRevision(r.id)}
                                   style={{
-                                    background: checked ? "black" : "white",
-                                    color: checked ? "white" : "black",
+                                    background: checked ? "rgb(255, 90, 0)" : "white",
+                                    color: checked ? "#fff" : "black",
                                   }}
                                 >
                                   <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>

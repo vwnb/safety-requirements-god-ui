@@ -82,7 +82,7 @@ export function BrutalistMarkdownEditor({
                 <div
                   key={rel.id}
                   className="option2"
-                  style={{ fontSize: 11, padding: "4px 8px", marginBottom: 2 }}
+                  style={{ fontSize: 11, padding: "4px 8px", marginBottom: 2, cursor: "default" }}
                 >
                   <span style={{ fontWeight: "bold" }}>{rel.type}</span>
                   : {fromConcept?.key || rel.fromId.slice(0, 8)} → {toConcept?.key || rel.toId.slice(0, 8)}
