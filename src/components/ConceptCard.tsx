@@ -90,18 +90,17 @@ export default function ConceptCard({
     <div data-agent="concept-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px solid black" }}>
       {!isEditing ? (
         <article>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-              <span style={{
-                ...brutal.tag,
-                background: typeColor[concept.type] || "#ccc",
-              }}>
-                {typeLabel}
-              </span>
-              <h2>
-                {concept.key} {concept.title && `— ${concept.title}`}
-              </h2>
-            </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flex: 1 }}>
+            <span style={{
+              ...brutal.tag,
+              background: typeColor[concept.type] || "#ccc",
+            }}>
+              {typeLabel}
+            </span>
+            <h2>
+              {concept.key} {concept.title && `— ${concept.title}`}
+            </h2>
+
             <button
               data-agent="btn-edit-concept"
               onClick={() => setIsEditing(true)}
