@@ -8,7 +8,7 @@ export function InfoButton({ title, content }: { title: string, content: string 
   return (
     <>
       <span
-        style={{ cursor: "pointer", marginLeft: "8px", fontSize: "1.2em", verticalAlign: "middle" }}
+        style={{ cursor: "pointer", marginLeft: "8px", verticalAlign: "middle" }}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true) }}
         title={`More info about ${title}`}
       >

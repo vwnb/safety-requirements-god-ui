@@ -100,13 +100,13 @@ export default function ConceptCard({
       {!isEditing ? (
         <article>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flex: 1 }}>
-            <span style={{
-              ...brutal.tag,
-              background: typeColor[concept.type] || "#ccc",
-            }}>
-              {typeLabel}
-            </span>
             <h2>
+              <span style={{
+                ...brutal.tag,
+                background: typeColor[concept.type] || "#ccc",
+              }}>
+                {typeLabel}
+              </span>
               {concept.key} {concept.title && `— ${concept.title}`}
             </h2>
 

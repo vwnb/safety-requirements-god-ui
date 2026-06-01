@@ -218,8 +218,7 @@ export const brutal = {
     fontSize: 11,
     fontWeight: 600,
     fontFamily: "monospace",
-    marginRight: 4,
-    marginBottom: 2,
+    marginRight: 8,
     lineHeight: 1.4,
   },
 }
@@ -1497,7 +1496,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   <div className="title" style={{ display: "flex", alignItems: "center" }}>
                     Import work item templates
                     <InfoButton
-                      title="Use templates to jumpstart new work items"
+                      title="Work item templates"
                       content="Use the search box to filter templates by phase, standards, tags, required concepts, relations, or any other manifest field. Templates can be applied as a starting point for a new work item by importing the template's concepts and relationships into the current work item."
                     />
                   </div>
