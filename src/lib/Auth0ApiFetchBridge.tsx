@@ -53,6 +53,9 @@ export function Auth0ApiFetchBridge({
         }
       }
 
+      const suppressToastStatus = headers.get("x-suppress-error-toast")
+      headers.delete("x-suppress-error-toast")
+
       let response: Response
 
       try {
@@ -75,6 +78,10 @@ export function Auth0ApiFetchBridge({
 
       if (response.ok) {
         return response
+      }
+
+      if (suppressToastStatus === "true" || suppressToastStatus === String(response.status)) {
+        throw new ApiError(response.status, response.statusText)
       }
 
       switch (response.status) {

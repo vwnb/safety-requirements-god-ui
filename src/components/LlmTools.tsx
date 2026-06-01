@@ -112,11 +112,15 @@ export function LlmTools({
   const API = import.meta.env.VITE_API_URL || ""
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
+  const [latestReportNotFound, setLatestReportNotFound] = useState(false)
 
   useEffect(() => {
     setSuggestions(null)
+    setLatestReportNotFound(false)
     if (selectedWorkItem) {
-      apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/latest`)
+      apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/latest`, {
+        headers: { "x-suppress-error-toast": "404" }
+      })
         .then(res => {
           if (res.ok) {
             return res.json()
@@ -129,10 +133,14 @@ export function LlmTools({
           }
         })
         .catch(err => {
-          console.error(err)
+          if (err?.status === 404) {
+            setLatestReportNotFound(true)
+          } else {
+            console.error(err)
+          }
         })
     }
-  }, [selectedWorkItem])
+  }, [selectedWorkItem, API, apiFetch])
 
   const suggestWithLLM = async (workItemId: string) => {
     if (!selectedWorkItem) return
@@ -154,6 +162,7 @@ export function LlmTools({
 
       const suggestionsData = await res.json()
       setSuggestions(suggestionsData.suggestions as EvaluatorSuggestion[])
+      setLatestReportNotFound(false)
     } catch (err) {
       console.error(err)
     } finally {
@@ -391,6 +400,11 @@ export function LlmTools({
       </button>
 
       <article>
+        {latestReportNotFound && (
+          <div style={{ ...brutal.box, marginTop: 16 }}>
+            <p>No completeness report has been generated yet. Evaluate the work item to see LLM suggestions.</p>
+          </div>
+        )}
         {!!suggestions && selectedWorkItemData && (
           <>
             <h1>Completeness Report: {selectedWorkItemData.name}</h1>
