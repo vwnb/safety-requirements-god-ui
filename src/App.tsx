@@ -28,6 +28,28 @@ export type ASIL = "QM" | "ASIL_A" | "ASIL_B" | "ASIL_C" | "ASIL_D"
 export type SIL = "SIL_1" | "SIL_2" | "SIL_3" | "SIL_4"
 export type PL = "PL_A" | "PL_B" | "PL_C" | "PL_D" | "PL_E"
 export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
+export type ConceptType = string
+export type RelationType = string
+
+export type TemplateManifestComposability = {
+  mergeKeys: ConceptType[]
+  conflicts: string[]
+}
+
+export interface TemplateManifest {
+  id: string
+  workItemId: string
+  name: string
+  description: string
+  tags: string[]
+  asilRange: ASIL[]
+  silRange: SIL[]
+  plRange: PL[]
+  phases: LifecyclePhase[]
+  requiredConcepts: ConceptType[]
+  relationPatterns: RelationType[]
+  composability: TemplateManifestComposability
+}
 
 export type Concept = {
   id: string
@@ -229,7 +251,7 @@ function Auth0UserBar({
               alignItems: "center",
             }}
           >
-            {user?.email || user?.name || user?.sub || "Signed in"}
+            {user?.name + " (" + user?.email + ")" || "Signed in"}
           </div>
           <button
             data-agent="btn-logout"
@@ -336,7 +358,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
   const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
 
-  const [templates, setTemplates] = useState<WorkItem[]>()
+  const [templates, setTemplates] = useState<(WorkItem & { templateManifest?: TemplateManifest })[]>()
+  const [filterText, setFilterText] = useState("")
 
   const [concepts, setConcepts] = useState<Concept[] | null>(null)
   const [conceptsInitialized, setConceptsInitialized] = useState(false)
@@ -672,18 +695,18 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       await apiFetch(`${API}/work-items/${selectedWorkItemData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: editWorkItemName,
-        description: editWorkItemDescription,
-        phase: editWorkItemPhase || null,
-        asil: editWorkItemAsil || null,
-        sil: editWorkItemSil || null,
-        pl: editWorkItemPl || null,
-        standards: editWorkItemStandards.length > 0 ? editWorkItemStandards : null,
-        applicationContext: editWorkItemApplicationContext,
-        systemBoundary: editWorkItemSystemBoundary,
-        user: actorForApi
-      }),
+        body: JSON.stringify({
+          name: editWorkItemName,
+          description: editWorkItemDescription,
+          phase: editWorkItemPhase || null,
+          asil: editWorkItemAsil || null,
+          sil: editWorkItemSil || null,
+          pl: editWorkItemPl || null,
+          standards: editWorkItemStandards.length > 0 ? editWorkItemStandards : null,
+          applicationContext: editWorkItemApplicationContext,
+          systemBoundary: editWorkItemSystemBoundary,
+          user: actorForApi
+        }),
       })
 
       await loadWorkItemDetails(selectedWorkItemData.id)
@@ -723,6 +746,28 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       await refreshGraph(selectedWorkItem)
     })
   }
+
+  const filteredTemplates = templates?.filter((wi) => {
+    const search = filterText.trim().toLowerCase()
+    const manifest = wi.templateManifest
+    return !search || [
+      wi.key,
+      wi.name,
+      wi.description || "",
+      ...(wi.standards ?? []),
+      ...(manifest?.tags ?? []),
+      ...(manifest?.asilRange ?? []),
+      ...(manifest?.silRange ?? []),
+      ...(manifest?.plRange ?? []),
+      ...(manifest?.phases ?? []),
+      ...(manifest?.requiredConcepts ?? []),
+      ...(manifest?.relationPatterns ?? []),
+      ...(manifest?.composability?.conflicts ?? []),
+      ...(manifest?.composability?.mergeKeys ?? []),
+    ]
+      .map((value) => value?.toString().toLowerCase() ?? "")
+      .some((value) => value.includes(search))
+  }) ?? []
 
   async function refreshBaselines() {
     const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
@@ -1319,43 +1364,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 )}
 
                 <hr />
-                <section data-agent="import-concepts-section">
-                  <div className="title">Import concepts to work item</div>
-                  {templates === undefined ? (
-                    <p>
-                      Loading templates...
-                    </p>
-                  ) :
-                    templates.length === 0 ? (
-                      <p>
-                        No templates yet.
-                      </p>
-                    ) : (
-                      <div className="list-input">
-                        {templates.map((wi) => (
-                          <div className="option" data-agent={`template-${wi.id}`} key={wi.id} onClick={() => {
-                            const action = () => { importConceptsFromTemplate(wi.id) }
-
-                            if (activeRevisionId) {
-                              setPendingConfirm({
-                                message: "You have an active revision in progress. Discard it and import concepts from template?",
-                                onConfirm: action,
-                              })
-                            } else {
-                              action()
-                            }
-                          }}>
-                            <div className="list-id">{wi.key} - {wi.name}</div>
-                            <div className="list-tooltip">
-                              {wi.description ? `${wi.description}` : "No description :("}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                </section>
-
-                <hr />
 
                 <section data-agent="baselines-section">
                   <div className="title" style={{ display: "flex", alignItems: "center" }}>
@@ -1483,6 +1491,133 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     )}
                   </section>
                 )}
+
+                <hr />
+                <section data-agent="import-concepts-section">
+                  <div className="title" style={{ display: "flex", alignItems: "center" }}>
+                    Import work item templates
+                    <InfoButton
+                      title="Use templates to jumpstart new work items"
+                      content="Use the search box to filter templates by phase, standards, tags, required concepts, relations, or any other manifest field. Templates can be applied as a starting point for a new work item by importing the template's concepts and relationships into the current work item."
+                    />
+                  </div>
+                  {templates === undefined ? (
+                    <p>
+                      Loading templates...
+                    </p>
+                  ) : templates.length === 0 ? (
+                    <p>
+                      No templates yet.
+                    </p>
+                  ) : (
+                    <>
+                      <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
+                        <input
+                          aria-label="Search templates"
+                          placeholder="Search templates, tags, concepts, phases, standards..."
+                          style={brutal.input}
+                          value={filterText}
+                          onChange={(e) => setFilterText(e.target.value)}
+                        />
+                      </div>
+
+                      {filteredTemplates.length === 0 ? (
+                        <p>No matching templates.</p>
+                      ) : (
+                        <div className="list-input template-list">
+                          {filteredTemplates.map((wi) => {
+                            const manifest = wi.templateManifest
+                            return (
+                              <div
+                                className="option"
+                                data-agent={`template-${wi.id}`}
+                                key={wi.id}
+                                onClick={() => {
+                                  const action = () => { importConceptsFromTemplate(wi.id) }
+                                  if (activeRevisionId) {
+                                    setPendingConfirm({
+                                      message: "You have an active revision in progress. Discard it and import concepts from template?",
+                                      onConfirm: action,
+                                    })
+                                  } else {
+                                    action()
+                                  }
+                                }}
+                                style={{ textAlign: "left", padding: 12 }}
+                              >
+                                <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 6, width: 300 }}>
+                                  <div className="template-info">
+                                    <div className="list-id">{wi.key} - {wi.name}</div>
+                                    <div className="list-tooltip" style={{ marginTop: 6 }}>{wi.description ?? "No description :("}</div>
+                                  </div>
+                                  {manifest && manifest.tags && manifest.tags.length > 0 && (
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                      {(manifest.tags ?? []).map((tag) => (
+                                        <span key={tag} style={{ ...brutal.tag, backgroundColor: SemanticColor.ARGUMENT }}>{tag}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                {manifest && (
+                                  <div>
+                                    <div style={{ display: "grid", gap: 8 }}>
+                                      {wi.standards && wi.standards.length > 0 && (
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                                          <strong>Standards:</strong>
+                                          {wi.standards.map((standard) => (
+                                            <span key={standard} style={{ ...brutal.tag, backgroundColor: SemanticColor.DOCUMENTATION }}>{standard}</span>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                                        <strong>Phases:</strong>
+                                        {(manifest.phases ?? []).map((phase) => (
+                                          <span key={phase} style={{ ...brutal.tag, backgroundColor: SemanticColor.STRUCTURE }}>{phase}</span>
+                                        ))}
+                                      </div>
+                                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                                        <strong>Concepts:</strong>
+                                        {(manifest.requiredConcepts ?? []).map((concept) => (
+                                          <span key={concept} style={{ ...brutal.tag, backgroundColor: SemanticColor.FUNCTIONAL }}>{concept}</span>
+                                        ))}
+                                      </div>
+                                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                                        <strong>Relations:</strong>
+                                        {(manifest.relationPatterns ?? []).map((relation) => (
+                                          <span key={relation} style={{ ...brutal.tag, backgroundColor: SemanticColor.PROCESS }}>{relation}</span>
+                                        ))}
+                                      </div>
+                                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                                        <strong>Conflicts:</strong>
+                                        {(manifest.composability.conflicts ?? []).length > 0 ? (
+                                          manifest.composability.conflicts.map((conflict) => (
+                                            <span key={conflict} style={{ ...brutal.tag, backgroundColor: SemanticColor.DANGER }}>{conflict}</span>
+                                          ))
+                                        ) : (
+                                          <span style={{ ...brutal.tag, backgroundColor: SemanticColor.SUCCESS }}>None</span>
+                                        )}
+                                      </div>
+                                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                                        <strong>Merge keys:</strong>
+                                        {(manifest.composability.mergeKeys ?? []).length > 0 ? (
+                                          manifest.composability.mergeKeys.map((key) => (
+                                            <span key={key} style={{ ...brutal.tag, backgroundColor: SemanticColor.DOCUMENTATION }}>{key}</span>
+                                          ))
+                                        ) : (
+                                          <span style={{ ...brutal.tag, backgroundColor: SemanticColor.SUCCESS }}>None</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </section>
 
                 {!!selectedWorkItem && (
                   <>

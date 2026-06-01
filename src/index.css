@@ -235,17 +235,30 @@ header>* {
 .list-id {
   flex-shrink: 0;
   font-style: italic;
-  width: 300px;
-}
-
-.option--narrow>.list-id {
   width: 120px;
+  font-weight: 600;
 }
 
 .list-tooltip {
   font-size: 11px;
   white-space: wrap;
   padding: 0 5px;
+}
+
+.template-list {
+  max-height: 500px;
+}
+
+.template-list .option {
+  align-items: normal;
+}
+
+.template-list .template-info {
+  width: 150px;
+}
+
+.template-list .list-id {
+  width: auto;
 }
 
 .graph-node {
@@ -320,6 +333,10 @@ footer {
 
   .react-flow {
     touch-action: none;
+  }
+
+  .template-list .template-info {
+    width: 300px;
   }
 }
 
