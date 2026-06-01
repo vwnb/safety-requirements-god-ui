@@ -1358,7 +1358,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 <hr />
 
                 <section data-agent="baselines-section">
-                  <div className="title">Baselines</div>
+                  <div className="title" style={{ display: "flex", alignItems: "center" }}>
+                    Baselines
+                    <InfoButton
+                      title="What is a baseline?"
+                      content="A baseline is a fixed snapshot of selected revisions at a given point in time. In functional safety documentation it records an auditable version of requirements and concepts, supporting traceability, change control, and certification evidence."
+                    />
+                  </div>
 
                   {baselines === undefined ? (
                     <p>
