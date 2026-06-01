@@ -355,26 +355,6 @@ export function LlmTools({
     <section data-agent="llm-suggestions-section">
       <div className="title">👺 Evaluate work item with LLM</div>
 
-      <label
-        style={{
-          fontFamily: "monospace",
-          fontSize: 13,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 12,
-          cursor: "pointer",
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={evaluateDemoMode}
-          onChange={(e) => setEvaluateDemoMode(e.target.checked)}
-          style={{ cursor: "pointer" }}
-        />
-        Demo report mode
-      </label>
-
       <button
         data-agent="btn-llm-suggestions"
         onClick={() => {
