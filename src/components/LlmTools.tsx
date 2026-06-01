@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { brutal } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 
@@ -113,6 +113,10 @@ export function LlmTools({
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [evaluateDemoMode, setEvaluateDemoMode] = useState(false)
+
+  useEffect(() => {
+    setSuggestions(null)
+  }, [selectedWorkItem])
 
   const suggestWithLLM = async (workItemId: string) => {
     if (!selectedWorkItem) return
