@@ -144,7 +144,10 @@ export function LlmTools({
   const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion) => {
     const { action, payload } = suggestion
 
-    switch (action) {
+    const normalizedAction =
+      action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
+
+    switch (normalizedAction) {
       case 'Create': {
         if (!selectedWorkItem) return
 
@@ -283,7 +286,9 @@ export function LlmTools({
     let actionLabel = ""
     let graphDescription = ""
 
-    switch (action) {
+    const normalizedAction = action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
+
+    switch (normalizedAction) {
       case 'Create':
         actionLabel = "Create"
         graphDescription = [
@@ -306,7 +311,7 @@ export function LlmTools({
         graphDescription = "No graph changes"
         break
       default:
-        actionLabel = action.toUpperCase()
+        actionLabel = action
         graphDescription = hasPayloadData ? "Graph changes available" : "No graph data"
         break
     }
