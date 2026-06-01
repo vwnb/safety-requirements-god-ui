@@ -243,6 +243,7 @@ header>* {
   font-size: 11px;
   white-space: wrap;
   padding: 0 5px;
+  flex-grow: 1;
 }
 
 .template-list {
@@ -251,10 +252,11 @@ header>* {
 
 .template-list .option {
   align-items: normal;
+  flex: 1 1 0px;
 }
 
 .template-list .template-info {
-  width: 150px;
+  width: 300px;
 }
 
 .template-list .list-id {
@@ -287,12 +289,16 @@ button:hover,
 
 .option {
   border-bottom: 1px solid black;
-  padding: 6px;
+  padding: 0.5em;
   font-family: var(--font-mono);
   align-items: center;
   display: flex;
   cursor: pointer;
-  gap: 6px;
+  gap: 1em;
+}
+
+.template-list .option > * {
+  flex: 1 1 0px;
 }
 
 footer {
@@ -333,10 +339,6 @@ footer {
 
   .react-flow {
     touch-action: none;
-  }
-
-  .template-list .template-info {
-    width: 300px;
   }
 }
 
