@@ -946,10 +946,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <>
               <div className="title" style={{ display: "flex", alignItems: "center" }}>
                 User
-                <InfoButton
-                  title="User action traceability"
-                  content="Traceability to individual users ensures accountability throughout the safety lifecycle by linking each safety decision, architectural change, and requirement to its responsible engineer. This creates a clear audit trail demonstrating that decisions were made by qualified personnel."
-                />
               </div>
               <Auth0UserBar onActorResolved={onActorResolved} />
             </>
