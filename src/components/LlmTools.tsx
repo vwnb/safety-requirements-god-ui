@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { brutal } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
+import { InfoButton } from "./InfoButton"
 
 type WorkItem = {
   id: string
@@ -378,7 +379,13 @@ export function LlmTools({
 
   return (
     <section data-agent="llm-suggestions-section">
-      <div className="title">👺 Evaluate work item with LLM</div>
+      <div className="title" style={{ display: "flex", alignItems: "center" }}>
+        Evaluate work item with LLM
+        <InfoButton
+          title="Evaluate Work Item with LLM"
+          content="LLM evaluation gives you a quick safety review of a work item. It helps spot missing links, overlooked hazards, and gaps in safety requirements."
+        />
+      </div>
 
       <button
         data-agent="btn-llm-suggestions"
@@ -401,8 +408,8 @@ export function LlmTools({
 
       <article>
         {latestReportNotFound && (
-          <div style={{ ...brutal.box, marginTop: 16 }}>
-            <p>No completeness report has been generated yet. Evaluate the work item to see LLM suggestions.</p>
+          <div>
+            No completeness report has been generated yet. Evaluate the work item to see LLM suggestions.
           </div>
         )}
         {!!suggestions && selectedWorkItemData && (

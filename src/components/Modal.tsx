@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 
 export default function Modal({
   title,
@@ -22,7 +23,7 @@ export default function Modal({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [onClose])
 
-  return (
+  const modalContent = (
     <div
       data-agent="modal-overlay"
       style={{
@@ -56,4 +57,6 @@ export default function Modal({
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }

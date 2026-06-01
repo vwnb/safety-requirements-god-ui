@@ -16,6 +16,7 @@ import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
 import { runOnboardingTour } from "./lib/demoRunner"
 import { SemanticColor } from "./lib/SemanticColor"
+import { InfoButton } from "./components/InfoButton"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -899,7 +900,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         <section style={{ flex: 1 }} data-agent="user-section">
           {auth0Enabled ? (
             <>
-              <div className="title">User</div>
+              <div className="title" style={{ display: "flex", alignItems: "center" }}>
+                User
+                <InfoButton
+                  title="User action traceability"
+                  content="Traceability to individual users ensures accountability throughout the safety lifecycle by linking each safety decision, architectural change, and requirement to its responsible engineer. This creates a clear audit trail demonstrating that decisions were made by qualified personnel."
+                />
+              </div>
               <Auth0UserBar onActorResolved={onActorResolved} />
             </>
           ) : (
@@ -949,7 +956,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <aside>
             <div className="cms-layout">
               <section style={{ flex: 1 }} data-agent="project-section">
-                <div className="title">Projects</div>
+                <div className="title" style={{ display: "flex", alignItems: "center" }}>
+                  Projects
+                  <InfoButton
+                    title="Project structure"
+                    content="In functional safety, a project is organized into work items that typically align with system boundaries or subsystems. Each work item encompasses interconnected safety concepts, including hazards, safety goals, and technical requirements."
+                  />
+                </div>
 
                 <select
                   value={selectedProject?.id ?? ""}
