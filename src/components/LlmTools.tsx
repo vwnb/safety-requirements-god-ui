@@ -112,10 +112,26 @@ export function LlmTools({
   const API = import.meta.env.VITE_API_URL || ""
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
-  const [evaluateDemoMode, setEvaluateDemoMode] = useState(false)
 
   useEffect(() => {
     setSuggestions(null)
+    if (selectedWorkItem) {
+      apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/latest`)
+        .then(res => {
+          if (res.ok) {
+            return res.json()
+          }
+          throw new Error("Failed to load latest suggestions")
+        })
+        .then(data => {
+          if (data && data.suggestions) {
+            setSuggestions(data.suggestions as EvaluatorSuggestion[])
+          }
+        })
+        .catch(err => {
+          console.error(err)
+        })
+    }
   }, [selectedWorkItem])
 
   const suggestWithLLM = async (workItemId: string) => {
@@ -129,7 +145,7 @@ export function LlmTools({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          demo: evaluateDemoMode,
+          demo: false,
           user: actorForApi,
         }),
       })
