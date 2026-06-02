@@ -407,20 +407,38 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [baselines, setBaselines] = useState<any[]>()
   const [selectedBaseline, setSelectedBaseline] = useState<any | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loadingCount, setLoadingCount] = useState(0)
+  const loading = loadingCount > 0
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
+
+  const pushLoading = (message?: string) => {
+    setLoadingCount((c) => c + 1)
+    if (message) setLoadingMessage(message)
+  }
+
+  const popLoading = () => {
+    setLoadingCount((c) => {
+      const next = Math.max(0, c - 1)
+      if (next === 0) setLoadingMessage("")
+      return next
+    })
+  }
+
+  const handleSetLoading = (flag: boolean) => {
+    if (flag) pushLoading()
+    else popLoading()
+  }
 
   const [nodeClickLoading, setNodeClickLoading] = useState(false)
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string } | null>(null)
 
   async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
-    setLoading(true)
-    setLoadingMessage(message)
+    pushLoading(message)
 
     try {
       return await fn()
     } finally {
-      setLoading(false)
+      popLoading()
     }
   }
 
@@ -470,7 +488,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       ])
 
       setTimeout(() => {
-        setLoading(false)
+        setLoadingCount(0)
         setLoadingMessage("")
         runOnboardingTour()
       }, 3000)
@@ -1628,7 +1646,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onLoadConcepts={loadConcepts}
                       onRefreshGraph={refreshGraph}
                       onSetPendingConfirm={setPendingConfirm}
-                      onSetLoading={setLoading}
+                      onSetLoading={handleSetLoading}
                       onSetLoadingMessage={setLoadingMessage}
                     />
                   </>
