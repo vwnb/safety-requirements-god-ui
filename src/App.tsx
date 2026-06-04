@@ -980,23 +980,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         <aside>
           <hr />
           <article style={{ padding: 80, maxWidth: 1100 }}>
-            <h1>
-              IEC 61508 -derived standardisation for functional safety across automotive,
-              robotics, components and industrial machinery
-            </h1>
+            <h1>Discover safety with WCGW Safety Suite</h1>
 
             <p>
-              Our platform enables manufacturers and safety consultants to design for
-              compliance from the start — reducing rework, accelerating certification
-              readiness, and improving traceability across the entire safety process.
-              Built around IEC 61508 and its derived standards ISO 26262 and
-              ISO 13849, the platform covers hazard analysis, safety requirements,
-              validation evidence, lifecycle documentation and traceability within a
-              single structured environment.
-            </p>
-
-            <p>
-              Teams can proactively identify risks, maintain audit-ready documentation,
+              WCGW Safety Suite lets you create functional safety documentation that doesn't slow you down.
+              It allows manufacturers and safety engineers to design compliant systems from the ground up.
+              covering
+              hazard analysis, safety requirements, validation evidence, and full traceability
+              under ISO 26262, IEC 61508, and ISO 13849. Teams can proactively identify risks, maintain audit-ready documentation,
               and align engineering decisions with functional safety obligations long
               before production or assessment begins.
             </p>
