@@ -266,13 +266,15 @@ function Auth0UserBar({
             >
               License
             </button>
-            <button
-              data-agent="btn-admin-licenses"
-              onClick={onOpenAdminLicenses}
-              style={brutal.button}
-            >
-              Admin: Licenses
-            </button>
+            {user?.["isAdmin"] && (
+              <button
+                data-agent="btn-admin-licenses"
+                onClick={onOpenAdminLicenses}
+                style={brutal.button}
+              >
+                Admin: Licenses
+              </button>
+            )}
             <button
               data-agent="btn-logout"
               type="button"
