@@ -983,11 +983,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <h1>Discover safety with WCGW Safety Suite</h1>
 
             <p>
-              WCGW Safety Suite lets you create functional safety documentation that doesn't slow you down.
-              It allows manufacturers and safety engineers to design compliant systems from the ground up. It covers hazard analysis, safety requirements, validation evidence, and full traceability
-              under ISO 26262, IEC 61508, and ISO 13849. Teams can proactively identify risks, maintain audit-ready documentation,
-              and align engineering decisions with functional safety obligations long
-              before production or assessment begins.
+              WCGW Safety Suite provides structured requirements management and lifecycle traceability 
+              for safety-critical systems. Aimed at manufacturing and safety engineering teams, it supports comprehensive documentation across ISO 26262, IEC 61508, 
+              and ISO 13849 frameworks, enabling rigorous capture of hazard analysis, safety goals, functional requirements, 
+              technical specifications, and validation evidence. The platform maintains artifact relationships throughout 
+              the development lifecycle, supporting change management, baseline creation, and AI-assisted creation of audit-ready 
+              documentation in preparing for certification and compliance.
             </p>
           </article>
           <hr />
