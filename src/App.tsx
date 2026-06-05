@@ -17,6 +17,8 @@ import background from "./assets/background.jpg"
 import { runOnboardingTour } from "./lib/demoRunner"
 import { SemanticColor } from "./lib/SemanticColor"
 import { InfoButton } from "./components/InfoButton"
+import { LicenseModal } from "./components/LicenseModal"
+import { AdminLicenses } from "./components/AdminLicenses"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -225,8 +227,12 @@ export const brutal = {
 
 function Auth0UserBar({
   onActorResolved,
+  onOpenLicense,
+  onOpenAdminLicenses,
 }: {
   onActorResolved: (sub: string) => void
+  onOpenLicense: () => void
+  onOpenAdminLicenses: () => void
 }) {
   const { isAuthenticated, user, loginWithRedirect, logout, isLoading } = useAuth0()
 
@@ -252,18 +258,34 @@ function Auth0UserBar({
           >
             {user?.name + " (" + user?.email + ")" || "Signed in"}
           </div>
-          <button
-            data-agent="btn-logout"
-            type="button"
-            style={brutal.button}
-            onClick={() =>
-              logout({
-                logoutParams: { returnTo: window.location.origin },
-              })
-            }
-          >
-            Log out
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              data-agent="btn-license"
+              onClick={onOpenLicense}
+              style={brutal.button}
+            >
+              License
+            </button>
+            <button
+              data-agent="btn-admin-licenses"
+              onClick={onOpenAdminLicenses}
+              style={brutal.button}
+            >
+              Admin: Licenses
+            </button>
+            <button
+              data-agent="btn-logout"
+              type="button"
+              style={brutal.button}
+              onClick={() =>
+                logout({
+                  logoutParams: { returnTo: window.location.origin },
+                })
+              }
+            >
+              Log out
+            </button>
+          </div>
         </>
       ) : (
         <button data-agent="btn-login" type="button" style={brutal.button} onClick={() => loginWithRedirect()}>
@@ -392,6 +414,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [showNewWorkItemModal, setShowNewWorkItemModal] = useState(false)
   const [showNewConceptModal, setShowNewConceptModal] = useState(false)
+  const [showLicenseModal, setShowLicenseModal] = useState(false)
+  const [showAdminLicenses, setShowAdminLicenses] = useState(false)
 
   const [editWorkItemName, setEditWorkItemName] = useState("")
   const [editWorkItemDescription, setEditWorkItemDescription] = useState("")
@@ -956,6 +980,20 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         />
       )}
 
+      {showLicenseModal && (
+        <LicenseModal
+          apiFetch={apiFetch}
+          onClose={() => setShowLicenseModal(false)}
+        />
+      )}
+
+      {showAdminLicenses && (
+        <AdminLicenses
+          apiFetch={apiFetch}
+          onClose={() => setShowAdminLicenses(false)}
+        />
+      )}
+
       <header data-agent="top-header" className="top-header" style={!user && { padding: 80 } || {}}>
         <img src={logo} alt="Logo" className="logo" data-agent="logo" />
 
@@ -965,7 +1003,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               <div className="title" style={{ display: "flex", alignItems: "center" }}>
                 User
               </div>
-              <Auth0UserBar onActorResolved={onActorResolved} />
+              <Auth0UserBar
+                onActorResolved={onActorResolved}
+                onOpenLicense={() => setShowLicenseModal(true)}
+                onOpenAdminLicenses={() => setShowAdminLicenses(true)}
+              />
             </>
           ) : (
             <>
