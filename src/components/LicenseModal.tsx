@@ -8,15 +8,12 @@ type LicenseInfo = {
   userId: string
   expiresAt: string
   llmLimit: number
-  llmCallsUsed: number
+  llmUsed: number
   active: boolean
 }
 
 type RemainingCalls = {
   remaining: number
-  limit: number
-  used: number
-  expiresAt: string
 }
 
 export function LicenseModal({
@@ -79,8 +76,8 @@ export function LicenseModal({
       )
     : 0
 
-  const usagePercent = remaining
-    ? Math.round((remaining.used / remaining.limit) * 100)
+  const usagePercent = license
+    ? Math.round((license.llmUsed / license.llmLimit) * 100)
     : 0
 
   return (
@@ -156,7 +153,7 @@ export function LicenseModal({
                     color:
                       daysUntilExpiry <= 7
                         ? SemanticColor.DANGER
-                        : SemanticColor.SUCCESS,
+                        : "black",
                   }}
                 >
                   ({daysUntilExpiry} day{daysUntilExpiry !== 1 ? "s" : ""} remaining)
@@ -168,22 +165,16 @@ export function LicenseModal({
           <div style={brutal.formRow}>
             <div style={brutal.label}>LLM Calls</div>
             <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
-              {remaining ? (
-                <>
-                  {remaining.used} / {remaining.limit} used
-                  {remaining.remaining > 0 && (
-                    <span style={{ marginLeft: 8, color: SemanticColor.SUCCESS }}>
-                      ({remaining.remaining} remaining)
-                    </span>
-                  )}
-                  {remaining.remaining <= 0 && (
-                    <span style={{ marginLeft: 8, color: SemanticColor.DANGER }}>
-                      (limit reached)
-                    </span>
-                  )}
-                </>
-              ) : (
-                `${license.llmCallsUsed} / ${license.llmLimit} used`
+              {license.llmUsed} / {license.llmLimit} used
+              {remaining && remaining.remaining > 0 && (
+                <span style={{ marginLeft: 8, color: "black" }}>
+                  ({remaining.remaining} remaining)
+                </span>
+              )}
+              {remaining && remaining.remaining <= 0 && (
+                <span style={{ marginLeft: 8, color: SemanticColor.DANGER }}>
+                  (limit reached)
+                </span>
               )}
             </div>
           </div>
