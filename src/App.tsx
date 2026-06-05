@@ -984,9 +984,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
             <p>
               WCGW Safety Suite lets you create functional safety documentation that doesn't slow you down.
-              It allows manufacturers and safety engineers to design compliant systems from the ground up.
-              covering
-              hazard analysis, safety requirements, validation evidence, and full traceability
+              It allows manufacturers and safety engineers to design compliant systems from the ground up. It covers hazard analysis, safety requirements, validation evidence, and full traceability
               under ISO 26262, IEC 61508, and ISO 13849. Teams can proactively identify risks, maintain audit-ready documentation,
               and align engineering decisions with functional safety obligations long
               before production or assessment begins.
