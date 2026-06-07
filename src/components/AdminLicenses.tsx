@@ -9,7 +9,7 @@ type License = {
   userEmail?: string
   expiresAt: string
   llmLimit: number
-  llmCallsUsed: number
+  llmUsed: number
   active: boolean
 }
 
@@ -307,7 +307,7 @@ export function AdminLicenses({
                     <div style={brutal.formRow}>
                       <div style={{ ...brutal.label, width: 120 }}>LLM Calls</div>
                       <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
-                        {license.llmCallsUsed} / {license.llmLimit} used
+                        {license.llmUsed} / {license.llmLimit} used
                       </div>
                     </div>
                   </div>
