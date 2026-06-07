@@ -1,7 +1,6 @@
 import { useState } from "react"
 import Modal from "./Modal"
 import { brutal } from "../App"
-import { SemanticColor } from "../lib/SemanticColor"
 
 const API = import.meta.env.VITE_API_URL || ""
 
