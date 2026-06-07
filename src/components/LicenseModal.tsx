@@ -3,6 +3,12 @@ import Modal from "./Modal"
 import { brutal } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 
+type User = {
+  id: string
+  email: string
+  name: string
+}
+
 type LicenseInfo = {
   id: string
   userId: string
@@ -10,6 +16,10 @@ type LicenseInfo = {
   llmLimit: number
   llmUsed: number
   active: boolean
+  grantedAt: string
+  grantedById: string
+  user: User
+  grantedBy: User
 }
 
 type RemainingCalls = {
@@ -85,8 +95,8 @@ export function LicenseModal({
       {loading && <p>Loading license information...</p>}
 
       {error && (
-        <div style={{ ...brutal.box, borderColor: SemanticColor.DANGER }}>
-          <p style={{ color: SemanticColor.DANGER }}>{error}</p>
+        <div style={{ ...brutal.box, border: "2px solid black" }}>
+          <p style={{ color: "black" }}>{error}</p>
         </div>
       )}
 
@@ -110,12 +120,13 @@ export function LicenseModal({
 
       {!loading && !error && license && (
         <div>
+          {/* Header: status + license ID */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: 8,
-              marginBottom: 16,
+              marginBottom: 14,
             }}
           >
             <div
@@ -126,11 +137,28 @@ export function LicenseModal({
             >
               {isExpired ? "Expired" : "Active"}
             </div>
-            <span style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.7 }}>
-              {license.id}
+            <span style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.6 }}>
+              ID: {license.id}
             </span>
           </div>
 
+          {/* User info card */}
+          <div
+            style={{
+              marginBottom: 14,
+              padding: "8px 12px",
+              background: "rgba(0,0,0,0.04)",
+              borderRadius: 4,
+              border: "1px solid rgba(0,0,0,0.15)",
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{license.user.name}</div>
+            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
+              {license.user.email}
+            </div>
+          </div>
+
+          {/* Detail rows */}
           <div className="license-form-row" style={brutal.formRow}>
             <div style={brutal.label}>User ID</div>
             <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, wordBreak: "break-all" }}>
@@ -163,6 +191,31 @@ export function LicenseModal({
             </div>
           </div>
 
+          {license.grantedAt && (
+            <div className="license-form-row" style={brutal.formRow}>
+              <div style={brutal.label}>Granted</div>
+              <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+                {new Date(license.grantedAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </div>
+            </div>
+          )}
+
+          {license.grantedBy && (
+            <div className="license-form-row" style={brutal.formRow}>
+              <div style={brutal.label}>Granted By</div>
+              <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+                {license.grantedBy.name}{" "}
+                <span style={{ fontSize: 11, opacity: 0.7 }}>
+                  ({license.grantedBy.email})
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="license-form-row" style={brutal.formRow}>
             <div style={brutal.label}>LLM Calls</div>
             <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, whiteSpace: "normal" }}>
@@ -180,6 +233,7 @@ export function LicenseModal({
             </div>
           </div>
 
+          {/* Usage bar */}
           {remaining && (
             <div style={{ marginTop: 16 }}>
               <div

@@ -47,8 +47,8 @@ export function CreateProjectModal({
   return (
     <Modal title="Create Project" onClose={onClose}>
       {error && (
-        <div style={{ ...brutal.box, borderColor: SemanticColor.DANGER, marginBottom: 12 }}>
-          <p style={{ color: SemanticColor.DANGER, margin: 0 }}>{error}</p>
+        <div style={{ ...brutal.box, border: "2px solid black", marginBottom: 12 }}>
+          <p style={{ color: "black", margin: 0 }}>{error}</p>
         </div>
       )}
       <div style={brutal.formRow}>

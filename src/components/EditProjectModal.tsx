@@ -49,8 +49,8 @@ export function EditProjectModal({
   return (
     <Modal title="Edit Project" onClose={onClose}>
       {error && (
-        <div style={{ ...brutal.box, border: "2px solid red", marginBottom: 12 }}>
-          <p style={{ color: "red", margin: 0 }}>{error}</p>
+        <div style={{ ...brutal.box, border: "2px solid black", marginBottom: 12 }}>
+          <p style={{ color: "black", margin: 0 }}>{error}</p>
         </div>
       )}
       <div style={brutal.formRow}>

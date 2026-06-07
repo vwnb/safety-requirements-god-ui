@@ -2,21 +2,40 @@ import { useCallback, useEffect, useState } from "react"
 import { brutal } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 
+type User = {
+  id: string
+  email: string
+  name: string
+}
+
 type License = {
   id: string
   userId: string
-  userName?: string
-  userEmail?: string
   expiresAt: string
   llmLimit: number
   llmUsed: number
   active: boolean
+  grantedAt: string
+  grantedById: string
+  user: User
+  grantedBy: User
 }
 
 type LicenseFormData = {
   userId: string
   expiresAt: string
   llmLimit: number
+}
+
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="license-form-row" style={brutal.formRow}>
+      <div style={{ ...brutal.label, width: 100, flexShrink: 0, wordBreak: "break-word" }}>{label}</div>
+      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, minWidth: 0, wordBreak: "break-all" }}>
+        {children}
+      </div>
+    </div>
+  )
 }
 
 export function AdminLicenses({
@@ -163,8 +182,8 @@ export function AdminLicenses({
         </div>
 
         {error && (
-          <div style={{ ...brutal.box, borderColor: SemanticColor.DANGER }}>
-            <p style={{ color: SemanticColor.DANGER }}>{error}</p>
+          <div style={{ ...brutal.box, border: "2px solid black" }}>
+            <p style={{ color: "black" }}>{error}</p>
           </div>
         )}
 
@@ -252,80 +271,129 @@ export function AdminLicenses({
           <div>
             {licenses.map((license) => {
               const isExpired = new Date(license.expiresAt) < new Date()
+              const grantedAt = new Date(license.grantedAt)
+              const usagePercent = Math.round((license.llmUsed / license.llmLimit) * 100)
 
               return (
                 <div
                   key={license.id}
                   style={{
                     ...brutal.box,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: 12,
+                    marginBottom: 12,
                   }}
                 >
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Header row: status badge + license ID */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 10,
+                    }}
+                  >
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        marginBottom: 8,
+                        ...brutal.tag,
+                        flexShrink: 0,
+                        background: isExpired
+                          ? SemanticColor.DANGER
+                          : SemanticColor.SUCCESS,
                       }}
                     >
-                      <div
+                      {isExpired ? "Expired" : "Active"}
+                    </div>
+                    <span style={{ fontSize: 11, opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      ID: {license.id}
+                    </span>
+                  </div>
+
+                  {/* User info - prominent */}
+                  <div style={{ marginBottom: 10, padding: "6px 10px", background: "rgba(0,0,0,0.04)", borderRadius: 4, border: "1px solid rgba(0,0,0,0.15)" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>{license.user.name}</span>
+                        <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 8 }}>
+                          {license.user.email}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => revokeLicense(license.userId)}
+                        disabled={submitting}
                         style={{
-                          ...brutal.tag,
+                          ...brutal.button,
+                          background: SemanticColor.DANGER,
+                          fontSize: 11,
+                          padding: "3px 10px",
                           flexShrink: 0,
-                          background: isExpired
-                            ? SemanticColor.DANGER
-                            : SemanticColor.SUCCESS,
+                          ...(submitting ? brutal.disabled : {}),
                         }}
                       >
-                        {isExpired ? "Expired" : "Active"}
-                      </div>
-                      <span style={{ fontSize: 11, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {license.id}
-                      </span>
-                    </div>
-
-                    <div className="license-form-row" style={brutal.formRow}>
-                      <div style={{ ...brutal.label, wordBreak: "break-word" }}>User</div>
-                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, wordBreak: "break-all", minWidth: 0 }}>
-                        {license.userName
-                          ? `${license.userName} (${license.userId})`
-                          : license.userId}
-                      </div>
-                    </div>
-
-                    <div className="license-form-row" style={brutal.formRow}>
-                      <div style={{ ...brutal.label, width: 120, flexShrink: 0, wordBreak: "break-word" }}>Expires</div>
-                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, minWidth: 0 }}>
-                        {new Date(license.expiresAt).toLocaleDateString()}
-                      </div>
-                    </div>
-
-                    <div className="license-form-row" style={brutal.formRow}>
-                      <div style={{ ...brutal.label, width: 120, flexShrink: 0, wordBreak: "break-word" }}>LLM Calls</div>
-                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, minWidth: 0 }}>
-                        {license.llmUsed} / {license.llmLimit} used
-                      </div>
+                        Revoke
+                      </button>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => revokeLicense(license.userId)}
-                    disabled={submitting}
-                    style={{
-                      ...brutal.button,
-                      background: SemanticColor.DANGER,
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                      ...(submitting ? brutal.disabled : {}),
-                    }}
-                  >
-                    Revoke
-                  </button>
+                  {/* Detail rows */}
+                  <DetailRow label="User ID">{license.userId}</DetailRow>
+                  <DetailRow label="Expires">
+                    {new Date(license.expiresAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                    {!isExpired && (
+                      <span style={{ marginLeft: 8, whiteSpace: "nowrap", fontSize: 11, opacity: 0.7 }}>
+                        (in {Math.ceil((new Date(license.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days)
+                      </span>
+                    )}
+                  </DetailRow>
+                  <DetailRow label="Granted">
+                    {grantedAt.toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </DetailRow>
+                  <DetailRow label="Granted By">
+                    {license.grantedBy.name}{" "}
+                    <span style={{ fontSize: 11, opacity: 0.7 }}>({license.grantedBy.email})</span>
+                  </DetailRow>
+
+                  {/* LLM usage with progress bar */}
+                  <div className="license-form-row" style={brutal.formRow}>
+                    <div style={{ ...brutal.label, width: 100, flexShrink: 0, wordBreak: "break-word" }}>LLM Calls</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: 12 }}>
+                        <span>{license.llmUsed} / {license.llmLimit} used</span>
+                        <span style={{ opacity: 0.7 }}>{usagePercent}%</span>
+                      </div>
+                      <div
+                        style={{
+                          width: "100%",
+                          height: 10,
+                          border: "2px solid black",
+                          background: "white",
+                          borderRadius: 2,
+                          overflow: "hidden",
+                          marginTop: 4,
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${Math.min(usagePercent, 100)}%`,
+                            background:
+                              usagePercent >= 90
+                                ? SemanticColor.DANGER
+                                : usagePercent >= 75
+                                ? SemanticColor.ARGUMENT
+                                : SemanticColor.SUCCESS,
+                            transition: "width 0.3s ease",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )
             })}
