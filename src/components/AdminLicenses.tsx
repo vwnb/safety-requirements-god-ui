@@ -139,8 +139,8 @@ export function AdminLicenses({
           borderLeftWidth: 6,
           borderRadius: 8,
           fontFamily: "monospace",
-          padding: "2rem",
-          maxWidth: 700,
+          padding: "min(2rem, 5vw)",
+          maxWidth: "min(700px, calc(100vw - 40px))",
           width: "100%",
           maxHeight: "90vh",
           overflowY: "auto",
@@ -186,7 +186,7 @@ export function AdminLicenses({
               Grant / Replace License
             </div>
 
-            <div style={brutal.formRow}>
+            <div className="license-form-row" style={brutal.formRow}>
               <div style={brutal.label}>User ID</div>
               <input
                 value={formData.userId}
@@ -198,7 +198,7 @@ export function AdminLicenses({
               />
             </div>
 
-            <div style={brutal.formRow}>
+            <div className="license-form-row" style={brutal.formRow}>
               <div style={brutal.label}>Expires At</div>
               <input
                 type="date"
@@ -210,7 +210,7 @@ export function AdminLicenses({
               />
             </div>
 
-            <div style={brutal.formRow}>
+            <div className="license-form-row" style={brutal.formRow}>
               <div style={brutal.label}>LLM Call Limit</div>
               <input
                 type="number"
@@ -264,7 +264,7 @@ export function AdminLicenses({
                     gap: 12,
                   }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
                         display: "flex",
@@ -276,6 +276,7 @@ export function AdminLicenses({
                       <div
                         style={{
                           ...brutal.tag,
+                          flexShrink: 0,
                           background: isExpired
                             ? SemanticColor.DANGER
                             : SemanticColor.SUCCESS,
@@ -283,30 +284,30 @@ export function AdminLicenses({
                       >
                         {isExpired ? "Expired" : "Active"}
                       </div>
-                      <span style={{ fontSize: 11, opacity: 0.7 }}>
-                        {license.id.slice(0, 12)}...
+                      <span style={{ fontSize: 11, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {license.id}
                       </span>
                     </div>
 
-                    <div style={brutal.formRow}>
-                      <div style={brutal.label}>User</div>
-                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+                    <div className="license-form-row" style={brutal.formRow}>
+                      <div style={{ ...brutal.label, wordBreak: "break-word" }}>User</div>
+                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, wordBreak: "break-all", minWidth: 0 }}>
                         {license.userName
                           ? `${license.userName} (${license.userId})`
                           : license.userId}
                       </div>
                     </div>
 
-                    <div style={brutal.formRow}>
-                      <div style={{ ...brutal.label, width: 120 }}>Expires</div>
-                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+                    <div className="license-form-row" style={brutal.formRow}>
+                      <div style={{ ...brutal.label, width: 120, flexShrink: 0, wordBreak: "break-word" }}>Expires</div>
+                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, minWidth: 0 }}>
                         {new Date(license.expiresAt).toLocaleDateString()}
                       </div>
                     </div>
 
-                    <div style={brutal.formRow}>
-                      <div style={{ ...brutal.label, width: 120 }}>LLM Calls</div>
-                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+                    <div className="license-form-row" style={brutal.formRow}>
+                      <div style={{ ...brutal.label, width: 120, flexShrink: 0, wordBreak: "break-word" }}>LLM Calls</div>
+                      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, minWidth: 0 }}>
                         {license.llmUsed} / {license.llmLimit} used
                       </div>
                     </div>
@@ -319,6 +320,7 @@ export function AdminLicenses({
                       ...brutal.button,
                       background: SemanticColor.DANGER,
                       whiteSpace: "nowrap",
+                      flexShrink: 0,
                       ...(submitting ? brutal.disabled : {}),
                     }}
                   >

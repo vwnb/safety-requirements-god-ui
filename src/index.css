@@ -367,6 +367,24 @@ footer {
   }
 }
 
+.license-form-row {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .license-form-row {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .license-form-row > [style*="width: 150px"],
+  .license-form-row > [style*="min-width: 120px"] {
+    width: 100% !important;
+    margin-right: 0 !important;
+    margin-bottom: 4px;
+  }
+}
+
 .revise-panel {
   display: flex;
   flex-direction: column;

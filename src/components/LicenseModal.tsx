@@ -131,14 +131,14 @@ export function LicenseModal({
             </span>
           </div>
 
-          <div style={brutal.formRow}>
+          <div className="license-form-row" style={brutal.formRow}>
             <div style={brutal.label}>User ID</div>
-            <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+            <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, wordBreak: "break-all" }}>
               {license.userId}
             </div>
           </div>
 
-          <div style={brutal.formRow}>
+          <div className="license-form-row" style={brutal.formRow}>
             <div style={brutal.label}>Expires</div>
             <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
               {new Date(license.expiresAt).toLocaleDateString("en-US", {
@@ -150,6 +150,7 @@ export function LicenseModal({
                 <span
                   style={{
                     marginLeft: 8,
+                    whiteSpace: "nowrap",
                     color:
                       daysUntilExpiry <= 7
                         ? SemanticColor.DANGER
@@ -162,17 +163,17 @@ export function LicenseModal({
             </div>
           </div>
 
-          <div style={brutal.formRow}>
+          <div className="license-form-row" style={brutal.formRow}>
             <div style={brutal.label}>LLM Calls</div>
-            <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
-              {license.llmUsed} / {license.llmLimit} used
+            <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, whiteSpace: "normal" }}>
+              <span>{license.llmUsed} / {license.llmLimit} used</span>
               {remaining && remaining.remaining > 0 && (
-                <span style={{ marginLeft: 8, color: "black" }}>
+                <span style={{ marginLeft: 8, whiteSpace: "nowrap", color: "black" }}>
                   ({remaining.remaining} remaining)
                 </span>
               )}
               {remaining && remaining.remaining <= 0 && (
-                <span style={{ marginLeft: 8, color: SemanticColor.DANGER }}>
+                <span style={{ marginLeft: 8, whiteSpace: "nowrap", color: SemanticColor.DANGER }}>
                   (limit reached)
                 </span>
               )}
