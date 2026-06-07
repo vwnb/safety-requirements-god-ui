@@ -226,10 +226,12 @@ export const brutal = {
 }
 
 function Auth0UserBar({
+  isAdmin,
   onActorResolved,
   onOpenLicense,
   onOpenAdminLicenses,
 }: {
+  isAdmin: boolean
   onActorResolved: (sub: string) => void
   onOpenLicense: () => void
   onOpenAdminLicenses: () => void
@@ -266,7 +268,7 @@ function Auth0UserBar({
             >
               License
             </button>
-            {user?.["isAdmin"] && (
+            {isAdmin && (
               <button
                 data-agent="btn-admin-licenses"
                 onClick={onOpenAdminLicenses}
@@ -369,6 +371,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   useEffect(() => {
     async function welcomeUser(): Promise<void> {
       await refreshProjects()
+
+      try {
+        const meRes = await apiFetch(`${API}/me`)
+        if (meRes.ok) {
+          const meData = await meRes.json()
+          setIsAdmin(meData.isAdmin ?? false)
+        }
+      } catch {
+        // Non-admin or unauthenticated — default to false
+      }
     }
     if (!user) return
 
@@ -418,6 +430,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [showNewConceptModal, setShowNewConceptModal] = useState(false)
   const [showLicenseModal, setShowLicenseModal] = useState(false)
   const [showAdminLicenses, setShowAdminLicenses] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const [editWorkItemName, setEditWorkItemName] = useState("")
   const [editWorkItemDescription, setEditWorkItemDescription] = useState("")
@@ -1006,6 +1019,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 User
               </div>
               <Auth0UserBar
+                isAdmin={isAdmin}
                 onActorResolved={onActorResolved}
                 onOpenLicense={() => setShowLicenseModal(true)}
                 onOpenAdminLicenses={() => setShowAdminLicenses(true)}
