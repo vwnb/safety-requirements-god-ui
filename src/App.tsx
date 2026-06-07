@@ -19,6 +19,8 @@ import { SemanticColor } from "./lib/SemanticColor"
 import { InfoButton } from "./components/InfoButton"
 import { LicenseModal } from "./components/LicenseModal"
 import { AdminLicenses } from "./components/AdminLicenses"
+import { CreateProjectModal } from "./components/CreateProjectModal"
+import { EditProjectModal } from "./components/EditProjectModal"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -430,6 +432,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [showNewConceptModal, setShowNewConceptModal] = useState(false)
   const [showLicenseModal, setShowLicenseModal] = useState(false)
   const [showAdminLicenses, setShowAdminLicenses] = useState(false)
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
   const [editWorkItemName, setEditWorkItemName] = useState("")
@@ -482,14 +486,32 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   useEffect(() => {
-    async function loadWorkItems() {
-      if (!selectedProject) {
-        return;
-      }
+    if (!selectedProject || !user) return;
+    const projectId = selectedProject.id
 
+    // Reset all state tied to previous project
+    setWorkItems(null)
+    setWorkItemsInitialized(false)
+    setSelectedWorkItem("")
+    setSelectedWorkItemData(null)
+    setConcepts(null)
+    setConceptsInitialized(false)
+    setSelectedConcept("")
+    setActiveConcept(null)
+    setEditorValue("")
+    setActiveRevisionId(null)
+    setRevisionsByConcept({})
+    setBaseId(null)
+    setTargetId(null)
+    setDiffResult(null)
+    setBaselines(undefined)
+    setSelectedBaseline(null)
+    setGraph(null)
+
+    async function loadWorkItems() {
       try {
         const [wiRes, templatesRes] = await Promise.all([
-          apiFetch(`${API}/projects/${selectedProject.id}/work-items`),
+          apiFetch(`${API}/projects/${projectId}/work-items`),
           apiFetch(`${API}/templates`),
         ])
 
@@ -502,17 +524,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
         if (wiData.length > 0) {
           setSelectedWorkItem(wiData[0].id)
-        } else {
-          await loadConcepts()
         }
       } catch {
-        await loadConcepts()
+        setWorkItems([])
+        setWorkItemsInitialized(true)
       }
     }
 
-    if (user) {
-      loadWorkItems()
-    }
+    loadWorkItems()
   }, [selectedProject])
 
   useEffect(() => {
@@ -1009,6 +1028,25 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         />
       )}
 
+      {showCreateProjectModal && (
+        <CreateProjectModal
+          apiFetch={apiFetch}
+          onCreated={refreshProjects}
+          onClose={() => setShowCreateProjectModal(false)}
+        />
+      )}
+
+      {showEditProjectModal && selectedProject && (
+        <EditProjectModal
+          apiFetch={apiFetch}
+          projectId={selectedProject.id}
+          currentKey={selectedProject.key}
+          onUpdated={refreshProjects}
+          onClose={() => setShowEditProjectModal(false)}
+        />
+      )}
+
+
       <header data-agent="top-header" className="top-header" style={!user && { padding: 80 } || {}}>
         <img src={logo} alt="Logo" className="logo" data-agent="logo" />
 
@@ -1062,41 +1100,75 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <aside>
             <div className="cms-layout">
               <section style={{ flex: 1 }} data-agent="project-section">
-                <div className="title" style={{ display: "flex", alignItems: "center" }}>
-                  Projects
-                  <InfoButton
-                    title="Project structure"
-                    content="In functional safety, a project is organized into work items that typically align with system boundaries or subsystems. Each work item encompasses interconnected safety concepts, including hazards, safety goals, and technical requirements."
-                  />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                  <div className="title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    Projects
+                    <InfoButton
+                      title="Project structure"
+                      content="In functional safety, a project is organized into work items that typically align with system boundaries or subsystems. Each work item encompasses interconnected safety concepts, including hazards, safety goals, and technical requirements."
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    <button
+                      data-agent="btn-create-project"
+                      onClick={() => setShowCreateProjectModal(true)}
+                      style={{ ...brutal.button, fontSize: 10, padding: "4px 8px" }}
+                    >
+                      + New
+                    </button>
+                    {selectedProject && (
+                      <>
+                        <button
+                          data-agent="btn-edit-project"
+                          onClick={() => setShowEditProjectModal(true)}
+                          style={{ ...brutal.button, fontSize: 10, padding: "4px 8px" }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          data-agent="btn-leave-project"
+                          onClick={async () => {
+                            const ok = confirm(`Leave project "${selectedProject.key}"?`)
+                            if (!ok) return
+                            await withLoading("Leaving project...", async () => {
+                              const res = await apiFetch(
+                                `${API}/projects/${encodeURIComponent(selectedProject.key)}/users`,
+                                { method: "DELETE" }
+                              )
+                              if (!res.ok) throw new Error("Failed to leave project")
+                              await refreshProjects()
+                            })
+                          }}
+                          style={{ ...brutal.button, background: SemanticColor.DANGER, fontSize: 10, padding: "4px 8px" }}
+                        >
+                          Leave
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                <select
-                  value={selectedProject?.id ?? ""}
-                  onChange={(e) => {
-                    const project = projects.find(
-                      (p) => p.id === e.target.value
-                    )
-
-                    if (project) {
-                      setSelectedProject(project)
-                    }
-                  }}
-                  style={brutal.select}
-                  data-agent="select-project"
-                >
-                  <option value="">
-                    Select project
-                  </option>
-
-                  {projects.map((project: Project) => (
-                    <option
-                      key={project.id}
-                      value={project.id}
-                    >
-                      {project.key}
-                    </option>
-                  ))}
-                </select>
+                {projects.length === 0 ? (
+                  <p style={{ opacity: 0.7 }}>No projects. Create or join one.</p>
+                ) : (
+                  <div className="list-input" style={{ maxHeight: 160, overflow: "auto" }}>
+                    {projects.map((p: Project) => (
+                      <div
+                        key={p.id}
+                        className="option"
+                        onClick={() => setSelectedProject(p)}
+                        style={{
+                          background: selectedProject?.id === p.id ? "rgb(255, 90, 0)" : undefined,
+                          color: selectedProject?.id === p.id ? "#fff" : undefined,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div className="list-id">{p.key}</div>
+                        <div className="list-tooltip">{p.id}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
               <section style={{ flex: 1 }} data-agent="join-project-section">
                 <div className="title">Join project</div>
