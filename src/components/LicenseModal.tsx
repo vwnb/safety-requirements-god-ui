@@ -143,20 +143,22 @@ export function LicenseModal({
           </div>
 
           {/* User info card */}
-          <div
-            style={{
-              marginBottom: 14,
-              padding: "8px 12px",
-              background: "rgba(0,0,0,0.04)",
-              borderRadius: 4,
-              border: "1px solid rgba(0,0,0,0.15)",
-            }}
-          >
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{license.user.name}</div>
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
-              {license.user.email}
+          {license.user && (
+            <div
+              style={{
+                marginBottom: 14,
+                padding: "8px 12px",
+                background: "rgba(0,0,0,0.04)",
+                borderRadius: 4,
+                border: "1px solid rgba(0,0,0,0.15)",
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{license.user.name}</div>
+              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
+                {license.user.email}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Detail rows */}
           <div className="license-form-row" style={brutal.formRow}>
