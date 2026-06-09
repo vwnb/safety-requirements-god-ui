@@ -137,7 +137,7 @@ export function LicenseModal({
             >
               {isExpired ? "Expired" : "Active"}
             </div>
-            <span style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.6 }}>
+            <span style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
               ID: {license.id}
             </span>
           </div>
@@ -161,16 +161,16 @@ export function LicenseModal({
           )}
 
           {/* Detail rows */}
-          <div className="license-form-row" style={brutal.formRow}>
-            <div style={brutal.label}>User ID</div>
-            <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, wordBreak: "break-all" }}>
+          <div className="license-form-row">
+            <div className="license-label">User ID</div>
+            <div className="license-value" style={{ wordBreak: "break-all" }}>
               {license.userId}
             </div>
           </div>
 
-          <div className="license-form-row" style={brutal.formRow}>
-            <div style={brutal.label}>Expires</div>
-            <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+          <div className="license-form-row">
+            <div className="license-label">Expires</div>
+            <div className="license-value">
               {new Date(license.expiresAt).toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "long",
@@ -180,12 +180,12 @@ export function LicenseModal({
                 <span
                   style={{
                     marginLeft: 8,
-                    whiteSpace: "nowrap",
                     color:
                       daysUntilExpiry <= 7
                         ? SemanticColor.DANGER
                         : "black",
                   }}
+                  className="license-nowrap-hint"
                 >
                   ({daysUntilExpiry} day{daysUntilExpiry !== 1 ? "s" : ""} remaining)
                 </span>
@@ -194,9 +194,9 @@ export function LicenseModal({
           </div>
 
           {license.grantedAt && (
-            <div className="license-form-row" style={brutal.formRow}>
-              <div style={brutal.label}>Granted</div>
-              <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+            <div className="license-form-row">
+              <div className="license-label">Granted</div>
+              <div className="license-value">
                 {new Date(license.grantedAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
@@ -207,9 +207,9 @@ export function LicenseModal({
           )}
 
           {license.grantedBy && (
-            <div className="license-form-row" style={brutal.formRow}>
-              <div style={brutal.label}>Granted By</div>
-              <div style={{ ...brutal.input, ...brutal.disabled, flex: 1 }}>
+            <div className="license-form-row">
+              <div className="license-label">Granted By</div>
+              <div className="license-value">
                 {license.grantedBy.name}{" "}
                 <span style={{ fontSize: 11, opacity: 0.7 }}>
                   ({license.grantedBy.email})
@@ -218,17 +218,17 @@ export function LicenseModal({
             </div>
           )}
 
-          <div className="license-form-row" style={brutal.formRow}>
-            <div style={brutal.label}>LLM Calls</div>
-            <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, whiteSpace: "normal" }}>
+          <div className="license-form-row">
+            <div className="license-label">LLM Calls</div>
+            <div className="license-value" style={{ whiteSpace: "normal" }}>
               <span>{license.llmUsed} / {license.llmLimit} used</span>
               {remaining && remaining.remaining > 0 && (
-                <span style={{ marginLeft: 8, whiteSpace: "nowrap", color: "black" }}>
+                <span style={{ marginLeft: 8 }} className="license-nowrap-hint">
                   ({remaining.remaining} remaining)
                 </span>
               )}
               {remaining && remaining.remaining <= 0 && (
-                <span style={{ marginLeft: 8, whiteSpace: "nowrap", color: SemanticColor.DANGER }}>
+                <span style={{ marginLeft: 8, color: SemanticColor.DANGER }} className="license-nowrap-hint">
                   (limit reached)
                 </span>
               )}

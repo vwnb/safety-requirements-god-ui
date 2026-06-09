@@ -368,7 +368,30 @@ footer {
 }
 
 .license-form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
   flex-wrap: wrap;
+}
+
+.license-label {
+  width: 150px;
+  margin-right: 10px;
+  color: black;
+  font-family: 'IBM Plex Mono', monospace;
+  flex-shrink: 0;
+}
+
+.license-value {
+  flex: 1;
+  min-width: 0;
+  background: white;
+  border: 2px solid black;
+  padding: 6px;
+  font-family: monospace;
+  opacity: 0.6;
+  cursor: not-allowed;
+  word-break: break-all;
 }
 
 @media (max-width: 480px) {
@@ -377,11 +400,20 @@ footer {
     align-items: stretch !important;
   }
 
-  .license-form-row > [style*="width: 150px"],
-  .license-form-row > [style*="min-width: 120px"] {
+  .license-label {
     width: 100% !important;
     margin-right: 0 !important;
     margin-bottom: 4px;
+  }
+
+  .license-value {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .license-nowrap-hint {
+    white-space: normal !important;
+    display: inline !important;
   }
 }
 

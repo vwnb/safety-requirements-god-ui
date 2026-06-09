@@ -29,9 +29,9 @@ type LicenseFormData = {
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="license-form-row" style={brutal.formRow}>
-      <div style={{ ...brutal.label, width: 100, flexShrink: 0, wordBreak: "break-word" }}>{label}</div>
-      <div style={{ ...brutal.input, ...brutal.disabled, flex: 1, minWidth: 0, wordBreak: "break-all" }}>
+    <div className="license-form-row">
+      <div className="license-label" style={{ width: 100 }}>{label}</div>
+      <div className="license-value">
         {children}
       </div>
     </div>
@@ -205,8 +205,8 @@ export function AdminLicenses({
               Grant / Replace License
             </div>
 
-            <div className="license-form-row" style={brutal.formRow}>
-              <div style={brutal.label}>User ID</div>
+            <div className="license-form-row">
+              <div className="license-label">User ID</div>
               <input
                 value={formData.userId}
                 onChange={(e) =>
@@ -217,8 +217,8 @@ export function AdminLicenses({
               />
             </div>
 
-            <div className="license-form-row" style={brutal.formRow}>
-              <div style={brutal.label}>Expires At</div>
+            <div className="license-form-row">
+              <div className="license-label">Expires At</div>
               <input
                 type="date"
                 value={formData.expiresAt}
@@ -229,8 +229,8 @@ export function AdminLicenses({
               />
             </div>
 
-            <div className="license-form-row" style={brutal.formRow}>
-              <div style={brutal.label}>LLM Call Limit</div>
+            <div className="license-form-row">
+              <div className="license-label">LLM Call Limit</div>
               <input
                 type="number"
                 min={1}
@@ -308,9 +308,9 @@ export function AdminLicenses({
                   </div>
 
                   {/* User info - prominent */}
-                  <div style={{ marginBottom: 10, padding: "6px 10px", background: "rgba(0,0,0,0.04)", borderRadius: 4, border: "1px solid rgba(0,0,0,0.15)" }}>
-                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-                      <div>
+                  <div className="license-user-card" style={{ marginBottom: 10, padding: "6px 10px", background: "rgba(0,0,0,0.04)", borderRadius: 4, border: "1px solid rgba(0,0,0,0.15)" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                      <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
                         <span style={{ fontWeight: 600 }}>{license.user.name}</span>
                         <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 8 }}>
                           {license.user.email}
@@ -342,7 +342,7 @@ export function AdminLicenses({
                       day: "numeric",
                     })}
                     {!isExpired && (
-                      <span style={{ marginLeft: 8, whiteSpace: "nowrap", fontSize: 11, opacity: 0.7 }}>
+                      <span style={{ marginLeft: 8, fontSize: 11, opacity: 0.7 }} className="license-nowrap-hint">
                         (in {Math.ceil((new Date(license.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days)
                       </span>
                     )}
@@ -360,9 +360,9 @@ export function AdminLicenses({
                   </DetailRow>
 
                   {/* LLM usage with progress bar */}
-                  <div className="license-form-row" style={brutal.formRow}>
-                    <div style={{ ...brutal.label, width: 100, flexShrink: 0, wordBreak: "break-word" }}>LLM Calls</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="license-form-row">
+                    <div className="license-label" style={{ width: 100 }}>LLM Calls</div>
+                    <div className="license-value" style={{ opacity: 1, cursor: "default", border: "none", background: "transparent", padding: 0, wordBreak: "break-word" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: 12 }}>
                         <span>{license.llmUsed} / {license.llmLimit} used</span>
                         <span style={{ opacity: 0.7 }}>{usagePercent}%</span>
