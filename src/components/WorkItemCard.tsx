@@ -63,8 +63,8 @@ export default function WorkItemCard({
   onEditStandards: (v: Standard[]) => void
   onEditApplicationContext: (v: string) => void
   onEditSystemBoundary: (v: string) => void
-  onSave: () => void
-  onPendingConfirm: (confirm: { message: string; onConfirm: () => void } | null) => void
+  onSave: (onSuccess: () => void) => void
+  onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
@@ -76,8 +76,9 @@ export default function WorkItemCard({
   if (!workItem) return null
 
   const handleSave = () => {
-    onSave()
-    setIsEditing(false)
+    onSave(() => {
+      setIsEditing(false)
+    })
   }
 
   const handleCancel = () => {
@@ -86,6 +87,7 @@ export default function WorkItemCard({
       onConfirm: () => {
         setIsEditing(false)
       },
+      clearRevisionOnConfirm: false
     })
   }
 

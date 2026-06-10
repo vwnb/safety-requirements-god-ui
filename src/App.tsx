@@ -527,7 +527,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }, [activeRevisionId, selectedConcept, activeConcept, isEditingConceptFields, selectedWorkItem, selectedWorkItemData, isEditingWorkItemFields])
 
   const [nodeClickLoading, setNodeClickLoading] = useState(false)
-  const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string } | null>(null)
+  const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string; clearRevisionOnConfirm?: boolean } | null>(null)
 
   async function withLoading<T>(message: string, fn: () => Promise<T>): Promise<T> {
     pushLoading(message)
@@ -695,7 +695,27 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setDiffResult({ type: diff?.type || "unified", hunks: diff?.hunks || [] })
   }, [baseId, targetId, revisionsByConcept])
 
-  async function revise(revision?: Revision) {
+  async function revise(revision?: Revision, force = false) {
+    if (!force) {
+      const otherUsersEditing = collab.presences.filter(
+        (p) => p.status === "editing_revision" && p.contextId === selectedConcept && p.userId !== actorForApi
+      )
+
+      if (otherUsersEditing.length > 0) {
+        setPendingConfirm({
+          message: `User(s) ${otherUsersEditing.map((p) => p.userName || p.userId).join(", ")} are currently editing a revision for this concept. Are you sure you want to save and potentially overwrite their changes?`,
+          onConfirm: () => {
+            setPendingConfirm(null)
+            revise(revision, true)
+          },
+          clearRevisionOnConfirm: false,
+          confirmLabel: "Save Anyway",
+          cancelLabel: "Cancel"
+        })
+        return
+      }
+    }
+
     return withLoading("Saving revision...", async () => {
       let body;
       if (revision) {
@@ -751,8 +771,28 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
-  async function saveConcept() {
+  async function saveConcept(onSuccess?: () => void, force = false) {
     if (!selectedConcept) return
+
+    if (!force) {
+      const otherUsersEditing = collab.presences.filter(
+        (p) => p.status === "editing_concept" && p.contextId === selectedConcept && p.userId !== actorForApi
+      )
+
+      if (otherUsersEditing.length > 0) {
+        setPendingConfirm({
+          message: `User(s) ${otherUsersEditing.map((p) => p.userName || p.userId).join(", ")} are currently editing this concept. Are you sure you want to save and potentially overwrite their changes?`,
+          onConfirm: () => {
+            setPendingConfirm(null)
+            saveConcept(onSuccess, true)
+          },
+          clearRevisionOnConfirm: false,
+          confirmLabel: "Save Anyway",
+          cancelLabel: "Cancel"
+        })
+        return
+      }
+    }
 
     return withLoading("Saving concept...", async () => {
       await apiFetch(`${API}/concepts/${selectedConcept}`, {
@@ -803,6 +843,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       )
 
       await refreshGraph(selectedWorkItem)
+      if (onSuccess) onSuccess()
     })
   }
 
@@ -817,8 +858,28 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setSelectedWorkItemData(data)
   }
 
-  async function saveWorkItem() {
+  async function saveWorkItem(onSuccess?: () => void, force = false) {
     if (!selectedWorkItemData) return
+
+    if (!force) {
+      const otherUsersEditing = collab.presences.filter(
+        (p) => p.status === "editing_work_item" && p.contextId === selectedWorkItemData.id && p.userId !== actorForApi
+      )
+
+      if (otherUsersEditing.length > 0) {
+        setPendingConfirm({
+          message: `User(s) ${otherUsersEditing.map((p) => p.userName || p.userId).join(", ")} are currently editing this work item. Are you sure you want to save and potentially overwrite their changes?`,
+          onConfirm: () => {
+            setPendingConfirm(null)
+            saveWorkItem(onSuccess, true)
+          },
+          clearRevisionOnConfirm: false,
+          confirmLabel: "Save Anyway",
+          cancelLabel: "Cancel"
+        })
+        return
+      }
+    }
 
     return withLoading("Saving work item...", async () => {
       await apiFetch(`${API}/work-items/${selectedWorkItemData.id}`, {
@@ -848,6 +909,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             : wi
         )
       )
+      if (onSuccess) onSuccess()
     })
   }
 
@@ -1005,20 +1067,22 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 onClick={() => {
                   setPendingConfirm(null)
                 }}
-                style={{ ...brutal.button, background: SemanticColor.SUCCESS }}
+                style={{ ...brutal.button }}
               >
                 {pendingConfirm.cancelLabel || "Keep editing"}
               </button>
               <button
                 onClick={() => {
                   const fn = pendingConfirm.onConfirm
-                  setActiveRevisionId(null)
-                  setEditorValue("")
+                  if (pendingConfirm.clearRevisionOnConfirm !== false) {
+                    setActiveRevisionId(null)
+                    setEditorValue("")
+                  }
                   setPendingConfirm(null)
                   fn()
                 }}
 
-                style={{ ...brutal.button, background: SemanticColor.DANGER }}
+                style={{ ...brutal.button, background: SemanticColor.SUCCESS }}
               >
                 {pendingConfirm.confirmLabel || "Discard & proceed"}
               </button>

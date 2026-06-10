@@ -73,8 +73,8 @@ export default function ConceptCard({
   onEditSil: (v: string) => void
   onEditPl: (v: string) => void
   onEditStandards: (v: Standard[]) => void
-  onSave: () => void
-  onPendingConfirm: (confirm: { message: string; onConfirm: () => void } | null) => void
+  onSave: (onSuccess: () => void) => void
+  onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
@@ -87,8 +87,9 @@ export default function ConceptCard({
   }
 
   const handleSave = () => {
-    onSave()
-    setEditingState(false)
+    onSave(() => {
+      setEditingState(false)
+    })
   }
 
   const handleCancel = () => {
@@ -97,6 +98,7 @@ export default function ConceptCard({
       onConfirm: () => {
         setEditingState(false)
       },
+      clearRevisionOnConfirm: false
     })
   }
 
