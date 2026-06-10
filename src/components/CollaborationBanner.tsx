@@ -26,7 +26,24 @@ export function CollaborationBanner({
   roomId: string | null
   currentUserId: string
 }) {
-  const otherUsers = presences.filter(p => p.userId !== currentUserId).length
+  const safePresences = presences.filter((p) => Boolean(p?.userId))
+
+  const otherUsers = safePresences.filter(
+    (p) => p.userId !== currentUserId,
+  ).length
+
+  const sortedPresences = [...safePresences].sort((a, b) => {
+    if (a.userId === currentUserId) return -1
+    if (b.userId === currentUserId) return 1
+    return 0
+  })
+
+  console.log("[Banner]", {
+  connected,
+  roomId,
+  currentUserId,
+  presences,
+})
 
   return (
     <div
@@ -48,7 +65,6 @@ export function CollaborationBanner({
         zIndex: 1000,
       }}
     >
-      {/* Connection indicator */}
       <span
         style={{
           display: "inline-block",
@@ -65,7 +81,6 @@ export function CollaborationBanner({
         {roomId && ` (${roomId})`}
       </span>
 
-      {/* Presence count */}
       {connected && (
         <span style={{ opacity: 0.7 }}>
           {otherUsers === 0
@@ -74,8 +89,7 @@ export function CollaborationBanner({
         </span>
       )}
 
-      {/* Active user list */}
-      {connected && presences.length > 0 && (
+      {connected && sortedPresences.length > 0 && (
         <div
           style={{
             display: "flex",
@@ -84,11 +98,7 @@ export function CollaborationBanner({
             alignItems: "center",
           }}
         >
-          {[...presences].sort((a, b) => {
-            if (a.userId === currentUserId) return -1;
-            if (b.userId === currentUserId) return 1;
-            return 0;
-          }).map((p) => (
+          {sortedPresences.map((p) => (
             <div
               key={p.userId}
               style={{
@@ -97,17 +107,24 @@ export function CollaborationBanner({
                 gap: 4,
                 padding: "2px 8px",
                 border: "1px solid rgba(255,255,255,0.3)",
-                background: "rgba(255,255,255,0.1)",
+                background:
+                  p.userId === currentUserId
+                    ? "rgba(34,197,94,0.25)"
+                    : "rgba(255,255,255,0.1)",
                 borderRadius: 3,
               }}
-              title={`${p.userName || p.userId}${p.userEmail ? ` (${p.userEmail})` : ""}`}
+              title={`${p.userName || p.userId}${
+                p.userEmail ? ` (${p.userEmail})` : ""
+              }`}
             >
               <span style={{ fontWeight: 600 }}>
                 {p.userId === currentUserId ? "You" : p.userName || p.userId}
               </span>
+
               <span style={{ fontSize: 10, opacity: 0.7 }}>
                 {statusLabel(p.status)}
               </span>
+
               {p.contextId || p.contextName ? (
                 <span style={{ fontSize: 10, opacity: 0.5 }}>
                   {p.contextName || p.contextId}
