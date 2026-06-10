@@ -81,7 +81,6 @@ main>* {
   ul {
     font-family: var(--font-serif);
     font-weight: 300;
-    line-height: 1em;
   }
 
   h1 {
@@ -112,7 +111,6 @@ article {
   ul {
     font-family: var(--font-serif);
     font-weight: 300;
-    line-height: 1em;
   }
 
   h1 {
