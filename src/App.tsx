@@ -1078,7 +1078,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   fn()
                 }}
 
-                style={{ ...brutal.button, background: SemanticColor.SUCCESS }}
+                style={{ ...brutal.button, background: SemanticColor.DANGER }}
               >
                 {pendingConfirm.confirmLabel || "Discard & proceed"}
               </button>
