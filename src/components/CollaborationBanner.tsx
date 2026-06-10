@@ -35,7 +35,7 @@ export function CollaborationBanner({
         display: "flex",
         alignItems: "center",
         gap: 12,
-        padding: "6px 12px",
+        padding: "1em",
         background: "black",
         color: "white",
         fontFamily: "monospace",
