@@ -21,8 +21,7 @@ export function useCollaboration() {
     roomId: null,
   })
 
-  // Track current activity so we can emit status changes
-  const activityRef = useRef<{ status: UserStatus; contextId?: string } | null>(null)
+  const activityRef = useRef<{ status: UserStatus; contextId?: string, contextName?: string } | null>(null)
 
   const sendMessage = useCallback((msg: object) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -31,7 +30,6 @@ export function useCollaboration() {
   }, [])
 
   const connect = useCallback((roomId: string, userId: string, userName?: string, userEmail?: string) => {
-    // Close any existing connection
     if (wsRef.current) {
       wsRef.current.close()
       wsRef.current = null
@@ -51,16 +49,15 @@ export function useCollaboration() {
         console.log("[Collaboration] WebSocket connected")
         setState((prev) => ({ ...prev, connected: true, error: null, roomId }))
 
-        // Join the room
         sendMessage({ type: "join", roomId, userId, userName, userEmail })
 
-        // Re-send current activity if any
         const act = activityRef.current
         if (act && act.status) {
           sendMessage({
             type: "status",
             status: act.status,
             ...(act.contextId ? { contextId: act.contextId } : {}),
+            ...(act.contextName ? { contextName: act.contextName } : {}),
           } as object)
         }
       }
@@ -134,13 +131,14 @@ export function useCollaboration() {
     })
   }, [])
 
-  const updateStatus = useCallback((status: UserStatus, contextId?: string) => {
-    activityRef.current = { status, contextId }
+  const updateStatus = useCallback((status: UserStatus, contextId?: string, contextName?: string) => {
+    activityRef.current = { status, contextId, contextName }
     if (status) {
       sendMessage({
         type: "status",
         status,
         ...(contextId ? { contextId } : {}),
+        ...(contextName ? { contextName } : {}),
       } as object)
     }
   }, [sendMessage])

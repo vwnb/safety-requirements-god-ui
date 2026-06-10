@@ -493,14 +493,15 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   // Update status when editing changes
   useEffect(() => {
+    const conceptName = activeConcept?.title || activeConcept?.key || undefined
     if (activeRevisionId && selectedConcept) {
-      collab.updateStatus("editing_revision", selectedConcept)
+      collab.updateStatus("editing_revision", selectedConcept, conceptName)
     } else if (selectedConcept) {
-      collab.updateStatus("editing_concept", selectedConcept)
+      collab.updateStatus("editing_concept", selectedConcept, conceptName)
     } else {
       collab.updateStatus("browsing_graph")
     }
-  }, [activeRevisionId, selectedConcept])
+  }, [activeRevisionId, selectedConcept, activeConcept])
 
   const [nodeClickLoading, setNodeClickLoading] = useState(false)
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string } | null>(null)

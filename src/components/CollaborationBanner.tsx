@@ -103,11 +103,11 @@ export function CollaborationBanner({
               <span style={{ fontSize: 10, opacity: 0.7 }}>
                 {statusLabel(p.status)}
               </span>
-              {p.contextId && (
+              {p.contextId || p.contextName ? (
                 <span style={{ fontSize: 10, opacity: 0.5 }}>
                   {p.contextName || p.contextId}
                 </span>
-              )}
+              ) : null}
             </div>
           ))}
         </div>

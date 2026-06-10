@@ -11,10 +11,10 @@ export type UserPresence = {
 export type CollaborationMessage =
   // Client → Server
   | { type: "join"; roomId: string; userId: string; userName?: string; userEmail?: string }
-  | { type: "status"; status: "browsing_graph" | "editing_revision" | "editing_concept"; contextId?: string }
+  | { type: "status"; status: "browsing_graph" | "editing_revision" | "editing_concept"; contextId?: string; contextName?: string }
   | { type: "event_ended" }
   // Server → Client
   | { type: "presence"; presences: UserPresence[] }
-  | { type: "event_ended"; userId: string; status: string; contextId?: string }
+  | { type: "event_ended"; userId: string; status: string; contextId?: string; contextName?: string }
 
 export type UserStatus = UserPresence["status"]
