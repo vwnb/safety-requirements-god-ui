@@ -21,6 +21,8 @@ import { LicenseModal } from "./components/LicenseModal"
 import { AdminLicenses } from "./components/AdminLicenses"
 import { CreateProjectModal } from "./components/CreateProjectModal"
 import { EditProjectModal } from "./components/EditProjectModal"
+import { useCollaboration } from "./lib/useCollaboration"
+import { CollaborationBanner } from "./components/CollaborationBanner"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -471,6 +473,34 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     if (flag) pushLoading()
     else popLoading()
   }
+
+  // Collaboration
+  const collab = useCollaboration()
+
+  // Connect to collaboration room when a project is selected
+  useEffect(() => {
+    if (selectedProject && user) {
+      const userId = actorForApi
+      const userName = user?.name || actorForApi
+      const userEmail = user?.email
+      const projectKey = selectedProject.key || selectedProject.id
+      collab.connect(projectKey, userId, userName, userEmail)
+    }
+    return () => {
+      collab.disconnect()
+    }
+  }, [selectedProject, user])
+
+  // Update status when editing changes
+  useEffect(() => {
+    if (activeRevisionId && selectedConcept) {
+      collab.updateStatus("editing_revision", selectedConcept)
+    } else if (selectedConcept) {
+      collab.updateStatus("editing_concept", selectedConcept)
+    } else {
+      collab.updateStatus("browsing_graph")
+    }
+  }, [activeRevisionId, selectedConcept])
 
   const [nodeClickLoading, setNodeClickLoading] = useState(false)
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string } | null>(null)
@@ -1190,6 +1220,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </button>
               </section>
             </div>
+
+            <CollaborationBanner
+              connected={collab.connected}
+              presences={collab.presences}
+              roomId={collab.roomId}
+            />
 
             {!!selectedProject && (
               <>
