@@ -54,6 +54,7 @@ export default function ConceptCard({
   onEditStandards,
   onSave,
   onPendingConfirm,
+  onEditingChange,
 }: {
   concept: Concept | null
   editKey: string
@@ -74,21 +75,27 @@ export default function ConceptCard({
   onEditStandards: (v: Standard[]) => void
   onSave: () => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void } | null) => void
+  onEditingChange?: (isEditing: boolean) => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
 
   if (!concept) return null
 
+  const setEditingState = (state: boolean) => {
+    setIsEditing(state)
+    onEditingChange?.(state)
+  }
+
   const handleSave = () => {
     onSave()
-    setIsEditing(false)
+    setEditingState(false)
   }
 
   const handleCancel = () => {
     onPendingConfirm({
       message: "Discard changes?",
       onConfirm: () => {
-        setIsEditing(false)
+        setEditingState(false)
       },
     })
   }
@@ -112,7 +119,7 @@ export default function ConceptCard({
 
             <button
               data-agent="btn-edit-concept"
-              onClick={() => setIsEditing(true)}
+              onClick={() => setEditingState(true)}
               style={brutal.button}
             >
               Edit

@@ -396,6 +396,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   workItemsInitialized
   const [selectedWorkItem, setSelectedWorkItem] = useState<string>("")
   const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
+  const [isEditingWorkItemFields, setIsEditingWorkItemFields] = useState(false)
 
   const [templates, setTemplates] = useState<(WorkItem & { templateManifest?: TemplateManifest })[]>()
   const [filterText, setFilterText] = useState("")
@@ -405,6 +406,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   conceptsInitialized
   const [selectedConcept, setSelectedConcept] = useState<string>("")
   const [activeConcept, setActiveConcept] = useState<Concept | null>(null)
+  const [isEditingConceptFields, setIsEditingConceptFields] = useState(false)
 
   const [revisionsByConcept, setRevisionsByConcept] =
     useState<Record<string, Revision[]>>({})
@@ -493,15 +495,36 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   // Update status when editing changes
   useEffect(() => {
-    const conceptName = activeConcept?.title || activeConcept?.key || undefined
-    if (activeRevisionId && selectedConcept) {
-      collab.updateStatus("editing_revision", selectedConcept, conceptName)
-    } else if (selectedConcept) {
+    let conceptName = undefined
+    if (activeConcept) {
+      if (activeConcept.title) {
+        const shortTitle = activeConcept.title.length > 20 ? activeConcept.title.slice(0, 20) + "…" : activeConcept.title
+        conceptName = `${activeConcept.key} - ${shortTitle}`
+      } else {
+        conceptName = activeConcept.key
+      }
+    }
+
+    let workItemName = undefined
+    if (selectedWorkItemData) {
+      if (selectedWorkItemData.name) {
+        const shortTitle = selectedWorkItemData.name.length > 20 ? selectedWorkItemData.name.slice(0, 20) + "…" : selectedWorkItemData.name
+        workItemName = `${selectedWorkItemData.key} - ${shortTitle}`
+      } else {
+        workItemName = selectedWorkItemData.key
+      }
+    }
+
+    if (selectedWorkItem && isEditingWorkItemFields) {
+      collab.updateStatus("editing_work_item", selectedWorkItem, workItemName)
+    } else if (selectedConcept && isEditingConceptFields) {
       collab.updateStatus("editing_concept", selectedConcept, conceptName)
+    } else if (activeRevisionId && selectedConcept) {
+      collab.updateStatus("editing_revision", selectedConcept, conceptName)
     } else {
       collab.updateStatus("browsing_graph")
     }
-  }, [activeRevisionId, selectedConcept, activeConcept])
+  }, [activeRevisionId, selectedConcept, activeConcept, isEditingConceptFields, selectedWorkItem, selectedWorkItemData, isEditingWorkItemFields])
 
   const [nodeClickLoading, setNodeClickLoading] = useState(false)
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string } | null>(null)
@@ -1298,6 +1321,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onEditSystemBoundary={setEditWorkItemSystemBoundary}
                       onSave={saveWorkItem}
                       onPendingConfirm={setPendingConfirm}
+                      onEditingChange={setIsEditingWorkItemFields}
                     />
                   </section>
                 )}
@@ -1397,6 +1421,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onEditStandards={setEditConceptStandards}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
+                      onEditingChange={setIsEditingConceptFields}
                     />
                   </section>
                 )}

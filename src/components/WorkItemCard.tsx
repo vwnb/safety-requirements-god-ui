@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { brutal, type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type WorkItem } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 
@@ -42,6 +42,7 @@ export default function WorkItemCard({
   onEditSystemBoundary,
   onSave,
   onPendingConfirm,
+  onEditingChange,
 }: {
   workItem: WorkItem | null
   editName: string
@@ -64,8 +65,13 @@ export default function WorkItemCard({
   onEditSystemBoundary: (v: string) => void
   onSave: () => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void } | null) => void
+  onEditingChange?: (isEditing: boolean) => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
+
+  useEffect(() => {
+    onEditingChange?.(isEditing)
+  }, [isEditing, onEditingChange])
 
   if (!workItem) return null
 

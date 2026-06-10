@@ -9,6 +9,8 @@ function statusLabel(status: UserPresence["status"]): string {
       return "✏️ Editing revision"
     case "editing_concept":
       return "📝 Editing concept"
+    case "editing_work_item":
+      return "📋 Editing work item"
     default:
       return "👤 Idle"
   }

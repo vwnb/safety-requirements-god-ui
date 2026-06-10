@@ -2,7 +2,7 @@ export type UserPresence = {
   userId: string
   userName?: string
   userEmail?: string
-  status: "browsing_graph" | "editing_revision" | "editing_concept" | null
+  status: "browsing_graph" | "editing_revision" | "editing_concept" | "editing_work_item" | null
   contextId?: string | null
   contextName?: string | null
   joinedAt: string
@@ -11,7 +11,7 @@ export type UserPresence = {
 export type CollaborationMessage =
   // Client → Server
   | { type: "join"; roomId: string; userId: string; userName?: string; userEmail?: string }
-  | { type: "status"; status: "browsing_graph" | "editing_revision" | "editing_concept"; contextId?: string; contextName?: string }
+  | { type: "status"; status: "browsing_graph" | "editing_revision" | "editing_concept" | "editing_work_item"; contextId?: string; contextName?: string }
   | { type: "event_ended" }
   // Server → Client
   | { type: "presence"; presences: UserPresence[] }
