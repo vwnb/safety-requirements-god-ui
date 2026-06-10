@@ -4,6 +4,7 @@ export type UserPresence = {
   userEmail?: string
   status: "browsing_graph" | "editing_revision" | "editing_concept" | null
   contextId?: string | null
+  contextName?: string | null
   joinedAt: string
 }
 

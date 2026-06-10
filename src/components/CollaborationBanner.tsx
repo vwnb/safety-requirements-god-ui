@@ -18,10 +18,12 @@ export function CollaborationBanner({
   connected,
   presences,
   roomId,
+  currentUserId,
 }: {
   connected: boolean
   presences: UserPresence[]
   roomId: string | null
+  currentUserId: string
 }) {
   const otherUsers = presences.length
 
@@ -33,12 +35,16 @@ export function CollaborationBanner({
         alignItems: "center",
         gap: 12,
         padding: "6px 12px",
-        border: "2px solid black",
+        borderTop: "2px solid black",
         background: connected ? SemanticColor.SUCCESS : "#f0f0f0",
         fontFamily: "monospace",
         fontSize: 12,
-        marginBottom: 8,
         flexWrap: "wrap",
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
       }}
     >
       {/* Connection indicator */}
@@ -92,14 +98,14 @@ export function CollaborationBanner({
               title={`${p.userName || p.userId}${p.userEmail ? ` (${p.userEmail})` : ""}`}
             >
               <span style={{ fontWeight: 600 }}>
-                {p.userName || p.userId.slice(0, 8)}
+                {p.userId === currentUserId ? "You" : p.userName || p.userId}
               </span>
               <span style={{ fontSize: 10, opacity: 0.7 }}>
                 {statusLabel(p.status)}
               </span>
               {p.contextId && (
                 <span style={{ fontSize: 10, opacity: 0.5 }}>
-                  #{p.contextId.slice(0, 8)}
+                  {p.contextName || p.contextId}
                 </span>
               )}
             </div>

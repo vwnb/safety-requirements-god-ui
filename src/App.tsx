@@ -945,6 +945,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   return (
     <>
       <OfflineBanner />
+      {collab && <CollaborationBanner
+        connected={collab.connected}
+        presences={collab.presences}
+        roomId={collab.roomId}
+        currentUserId={actorForApi}
+      />}
       {pendingConfirm && (
         <div
           data-agent="confirm-overlay"
@@ -1109,11 +1115,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <h1>Discover safety with WCGW Safety Suite</h1>
 
             <p>
-              WCGW Safety Suite provides structured requirements management and lifecycle traceability 
-              for safety-critical systems. Aimed at manufacturing and safety engineering teams, it supports comprehensive documentation across ISO 26262, IEC 61508, 
-              and ISO 13849 frameworks, enabling rigorous capture of hazard analysis, safety goals, functional requirements, 
-              technical specifications, and validation evidence. The platform maintains artifact relationships throughout 
-              the development lifecycle, supporting change management, baseline creation, and AI-assisted creation of audit-ready 
+              WCGW Safety Suite provides structured requirements management and lifecycle traceability
+              for safety-critical systems. Aimed at manufacturing and safety engineering teams, it supports comprehensive documentation across ISO 26262, IEC 61508,
+              and ISO 13849 frameworks, enabling rigorous capture of hazard analysis, safety goals, functional requirements,
+              technical specifications, and validation evidence. The platform maintains artifact relationships throughout
+              the development lifecycle, supporting change management, baseline creation, and AI-assisted creation of audit-ready
               documentation in preparing for certification and compliance.
             </p>
           </article>
@@ -1220,12 +1226,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 </button>
               </section>
             </div>
-
-            <CollaborationBanner
-              connected={collab.connected}
-              presences={collab.presences}
-              roomId={collab.roomId}
-            />
 
             {!!selectedProject && (
               <>
