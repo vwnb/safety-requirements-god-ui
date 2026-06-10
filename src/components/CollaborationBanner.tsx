@@ -1,4 +1,3 @@
-import { SemanticColor } from "../lib/SemanticColor"
 import type { UserPresence } from "../types/collaboration"
 
 function statusLabel(status: UserPresence["status"]): string {
@@ -27,7 +26,7 @@ export function CollaborationBanner({
   roomId: string | null
   currentUserId: string
 }) {
-  const otherUsers = presences.length
+  const otherUsers = presences.filter(p => p.userId !== currentUserId).length
 
   return (
     <div
@@ -37,8 +36,8 @@ export function CollaborationBanner({
         alignItems: "center",
         gap: 12,
         padding: "6px 12px",
-        borderTop: "2px solid black",
-        background: connected ? SemanticColor.SUCCESS : "#f0f0f0",
+        background: "black",
+        color: "white",
         fontFamily: "monospace",
         fontSize: 12,
         flexWrap: "wrap",
@@ -85,7 +84,11 @@ export function CollaborationBanner({
             alignItems: "center",
           }}
         >
-          {presences.map((p) => (
+          {[...presences].sort((a, b) => {
+            if (a.userId === currentUserId) return -1;
+            if (b.userId === currentUserId) return 1;
+            return 0;
+          }).map((p) => (
             <div
               key={p.userId}
               style={{
@@ -93,8 +96,8 @@ export function CollaborationBanner({
                 alignItems: "center",
                 gap: 4,
                 padding: "2px 8px",
-                border: "1px solid rgba(0,0,0,0.3)",
-                background: "rgba(255,255,255,0.6)",
+                border: "1px solid rgba(255,255,255,0.3)",
+                background: "rgba(255,255,255,0.1)",
                 borderRadius: 3,
               }}
               title={`${p.userName || p.userId}${p.userEmail ? ` (${p.userEmail})` : ""}`}
