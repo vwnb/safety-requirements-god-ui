@@ -430,6 +430,8 @@ export function LlmTools({
                 key={suggestionKey}
                 style={{
                   ...brutal.box,
+                  border: "2px dashed black",
+                  background: "rgba(255,255,255,0.5)"
                 }}
               >
                 <>

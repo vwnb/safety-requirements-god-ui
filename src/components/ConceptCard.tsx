@@ -105,9 +105,9 @@ export default function ConceptCard({
   const typeLabel = concept.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())
 
   return (
-    <div data-agent="concept-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px solid black" }}>
+    <div data-agent="concept-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px dashed black", background: "rgba(255,255,255,0.5)" }}>
       {!isEditing ? (
-        <article>
+        <article> 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flex: 1 }}>
             <h2>
               <span style={{

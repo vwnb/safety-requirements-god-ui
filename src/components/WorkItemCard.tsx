@@ -92,7 +92,7 @@ export default function WorkItemCard({
   }
 
   return (
-    <div data-agent="work-item-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px solid black" }}>
+    <div data-agent="work-item-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px dashed black", background: "rgba(255,255,255,0.5)" }}>
       {!isEditing ? (
         <article>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>

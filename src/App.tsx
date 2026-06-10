@@ -476,10 +476,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     else popLoading()
   }
 
-  // Collaboration
   const collab = useCollaboration()
 
-  // Connect to collaboration room when a project is selected
   useEffect(() => {
     if (selectedProject && user) {
       const userId = actorForApi
@@ -493,7 +491,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }
   }, [selectedProject, user])
 
-  // Update status when editing changes
   useEffect(() => {
     let conceptName = undefined
     if (activeConcept) {
@@ -543,7 +540,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     if (!selectedProject || !user) return;
     const projectId = selectedProject.id
 
-    // Reset all state tied to previous project
     setWorkItems(null)
     setWorkItemsInitialized(false)
     setSelectedWorkItem("")
