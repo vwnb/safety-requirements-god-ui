@@ -1031,7 +1031,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   return (
     <>
       <OfflineBanner />
-      {collab && <CollaborationBanner
+      {!!user && !!collab && <CollaborationBanner
         connected={collab.connected}
         presences={collab.presences}
         roomId={collab.roomId}
