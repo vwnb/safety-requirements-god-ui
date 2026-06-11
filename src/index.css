@@ -279,6 +279,15 @@ header>* {
   background: rgb(233, 237, 233) !important
 }
 
+.user-cursor-circle {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  cursor: default;
+}
+
+.user-cursor-circle:hover {
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
 button:hover,
 .list-input>.option:hover {
   background-color: #eee !important;

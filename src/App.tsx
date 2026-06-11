@@ -2019,6 +2019,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               }
             } : undefined}
             API={API}
+            presences={collab.presences}
+            currentUserId={actorForApi}
+            onViewportChange={(viewport) => {
+              collab.sendViewportCoordinates({ x: viewport.x, y: viewport.y })
+            }}
           />
         </main>
       )}

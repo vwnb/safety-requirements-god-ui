@@ -6,4 +6,6 @@ export type UserPresence = {
   contextId?: string | null
   contextName?: string | null
   joinedAt: string
+  viewportX?: number | null
+  viewportY?: number | null
 }

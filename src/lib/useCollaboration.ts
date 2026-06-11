@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import PartySocket from "partysocket"
-import type { UserPresence, UserStatus } from "../types/collaboration"
+import type { UserPresence, UserStatus, ViewportCoordinates } from "../types/collaboration"
 
 const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST
 
@@ -10,6 +10,8 @@ export type CollaborationState = {
   error: string | null
   roomId: string | null
 }
+
+export type { ViewportCoordinates }
 
 export function useCollaboration() {
   const socketRef = useRef<PartySocket | null>(null)
@@ -125,6 +127,17 @@ export function useCollaboration() {
     sendMessage({ type: "event_ended" })
   }, [sendMessage])
 
+  const sendViewportCoordinates = useCallback(
+    (coords: ViewportCoordinates) => {
+      sendMessage({
+        type: "viewport",
+        viewportX: coords.x,
+        viewportY: coords.y,
+      })
+    },
+    [sendMessage],
+  )
+
   useEffect(() => {
     return () => {
       socketRef.current?.close()
@@ -138,5 +151,6 @@ export function useCollaboration() {
     disconnect,
     updateStatus,
     notifyEventEnded,
+    sendViewportCoordinates,
   }
 }

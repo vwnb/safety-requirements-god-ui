@@ -7,7 +7,7 @@ import ReactFlow, {
   Position,
   BackgroundVariant
 } from "reactflow"
-import type { FitViewOptions } from "reactflow"
+import type { FitViewOptions, Viewport } from "reactflow"
 import type { Node, Edge } from "reactflow"
 import "reactflow/dist/style.css"
 import dagre from "dagre"
@@ -15,6 +15,7 @@ import RelationTypePicker from "./RelationTypePicker"
 import { useApiFetch } from "../lib/apiFetchContext"
 import { typeColor } from "../App"
 import background from "../assets/background.jpg";
+import type { UserPresence } from "../types/collaboration";
 
 type Revision = {
   id: string
@@ -143,6 +144,9 @@ export default function GraphView({
   onNodeClick,
   API,
   loading,
+  presences,
+  currentUserId,
+  onViewportChange,
 }: {
   concepts: Concept[]
   revisions: Revision[]
@@ -151,6 +155,9 @@ export default function GraphView({
   onNodeClick?: (conceptId: string) => void
   API: string
   loading?: boolean
+  presences: UserPresence[]
+  currentUserId: string
+  onViewportChange: (viewport: Viewport) => void
 }) {
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
@@ -159,6 +166,20 @@ export default function GraphView({
   } | null>(null)
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
   const [graphLoading, setGraphLoading] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const localViewportRef = useRef<Viewport>({ x: 0, y: 0, zoom: 1 })
+
+  // Convert graph-space coordinates to local screen coords within the container
+  const graphToScreen = useCallback((graphX: number, graphY: number) => {
+    const container = containerRef.current
+    if (!container) return { x: 0, y: 0 }
+    const vp = localViewportRef.current
+    // React Flow transform: screenX = graphX * zoom + viewport.x
+    return {
+      x: graphX * vp.zoom + vp.x,
+      y: graphY * vp.zoom + vp.y,
+    }
+  }, [])
 
   const deleteRelation = useCallback(
     async (relationId: string) => {
@@ -279,6 +300,7 @@ export default function GraphView({
   return (
     <>
       <div
+        ref={containerRef}
         data-agent="graph-view-container"
         className={loading ? "graph-background-fade-in" : ""}
         style={{
@@ -324,6 +346,17 @@ export default function GraphView({
           fitView
           fitViewOptions={fitViewOptions}
           nodeExtent={[[0, 0], [3000, 3000]]}
+          onMoveEnd={(_, viewport) => {
+            localViewportRef.current = viewport
+            // Convert viewport center to graph-space coordinates
+            const container = containerRef.current
+            if (container) {
+              const rect = container.getBoundingClientRect()
+              const centerX = (rect.width / 2 - viewport.x) / viewport.zoom
+              const centerY = (rect.height / 2 - viewport.y) / viewport.zoom
+              onViewportChange({ x: centerX, y: centerY, zoom: viewport.zoom })
+            }
+          }}
           onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
           onEdgeMouseLeave={() => setHoveredEdgeId(null)}
           onNodeClick={(_, node) => {
@@ -349,6 +382,41 @@ export default function GraphView({
           <Controls />
           <Background variant={BackgroundVariant.Cross} />
         </ReactFlow>
+
+        {/* User circles - rendered as absolutely positioned elements within the sticky container */}
+        {presences
+          .filter((p) => p.viewportX != null && p.viewportY != null && p.userId !== currentUserId)
+          .map((p) => {
+            const pos = graphToScreen(p.viewportX!, p.viewportY!)
+            return (
+              <div
+                key={p.userId}
+                className="user-cursor-circle"
+                title={p.userName || p.userId}
+                style={{
+                  position: "absolute" as const,
+                  left: `${pos.x}px`,
+                  top: `${pos.y}px`,
+                  transform: "translate(-50%, -50%)",
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "white",
+                  border: "2px solid black",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                  fontWeight: "bold",
+                  zIndex: 5,
+                  pointerEvents: "none",
+                }}
+              >
+                {(p.userName || p.userId).slice(0, 2).toUpperCase()}
+              </div>
+            )
+          })}
       </div>
 
       {pendingConnection && (

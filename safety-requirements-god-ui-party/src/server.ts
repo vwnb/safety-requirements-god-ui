@@ -48,6 +48,16 @@ export default class Server implements Party.Server {
       this.broadcastPresence()
     }
 
+    if (data.type === "viewport") {
+      this.presences.set(conn.id, {
+        ...presence,
+        viewportX: data.viewportX,
+        viewportY: data.viewportY,
+      })
+
+      this.broadcastPresence()
+    }
+
     if (data.type === "event_ended") {
       this.presences.set(conn.id, {
         ...presence,

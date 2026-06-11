@@ -6,6 +6,13 @@ export type UserPresence = {
   contextId?: string | null
   contextName?: string | null
   joinedAt: string
+  viewportX?: number | null
+  viewportY?: number | null
+}
+
+export type ViewportCoordinates = {
+  x: number
+  y: number
 }
 
 export type CollaborationMessage =
