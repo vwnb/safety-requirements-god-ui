@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState, useEffect } from "react"
 import ReactFlow, {
   Background,
   Controls,
@@ -132,6 +132,8 @@ function ConceptNode({ data, id }: any) {
   )
 }
 
+const cursorSize = 40
+
 const nodeTypes = {
   concept: ConceptNode,
 }
@@ -167,18 +169,20 @@ export default function GraphView({
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
   const [graphLoading, setGraphLoading] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const localViewportRef = useRef<Viewport>({ x: 0, y: 0, zoom: 1 })
+  const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 })
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
 
-  // Convert graph-space coordinates to local screen coords within the container
-  const graphToScreen = useCallback((graphX: number, graphY: number) => {
-    const container = containerRef.current
-    if (!container) return { x: 0, y: 0 }
-    const vp = localViewportRef.current
-    // React Flow transform: screenX = graphX * zoom + viewport.x
-    return {
-      x: graphX * vp.zoom + vp.x,
-      y: graphY * vp.zoom + vp.y,
+  // Track container size for clamping cursor positions
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        setContainerSize({ width: rect.width, height: rect.height })
+      }
     }
+    updateSize()
+    window.addEventListener("resize", updateSize)
+    return () => window.removeEventListener("resize", updateSize)
   }, [])
 
   const deleteRelation = useCallback(
@@ -288,6 +292,24 @@ export default function GraphView({
     return layoutGraph(nodes, edges)
   }, [nodes, edges])
 
+  // Convert graph-space coordinates to screen-space within container
+  const graphToScreen = useCallback((graphX: number, graphY: number): { x: number; y: number } => {
+    const { x, y, zoom } = viewport
+    return {
+      x: graphX * zoom + x,
+      y: graphY * zoom + y,
+    }
+  }, [viewport])
+
+  // Clamp screen coordinates to container bounds
+  const clampToContainer = useCallback((screenX: number, screenY: number): { x: number; y: number } => {
+    const halfCursor = cursorSize / 2
+    return {
+      x: Math.max(halfCursor, Math.min(containerSize.width - halfCursor, screenX)),
+      y: Math.max(halfCursor, Math.min(containerSize.height - halfCursor, screenY)),
+    }
+  }, [containerSize.width, containerSize.height])
+
   // Graph key to force re-initialization when data changes (e.g., template import)
   const graphKey = `${layoutedNodes.length}-${layoutedEdges.length}`
 
@@ -346,8 +368,9 @@ export default function GraphView({
           fitView
           fitViewOptions={fitViewOptions}
           nodeExtent={[[0, 0], [3000, 3000]]}
+          onMove={(_, newViewport) => setViewport(newViewport)}
           onMoveEnd={(_, viewport) => {
-            localViewportRef.current = viewport
+            setViewport(viewport)
             // Convert viewport center to graph-space coordinates
             const container = containerRef.current
             if (container) {
@@ -383,11 +406,12 @@ export default function GraphView({
           <Background variant={BackgroundVariant.Cross} />
         </ReactFlow>
 
-        {/* User circles - rendered as absolutely positioned elements within the sticky container */}
+        {/* User circles - absolutely positioned elements that move with graph viewport, fixed size */}
         {presences
           .filter((p) => p.viewportX != null && p.viewportY != null && p.userId !== currentUserId)
           .map((p) => {
-            const pos = graphToScreen(p.viewportX!, p.viewportY!)
+            const { x: rawX, y: rawY } = graphToScreen(p.viewportX!, p.viewportY!)
+            const { x: screenX, y: screenY } = clampToContainer(rawX, rawY)
             return (
               <div
                 key={p.userId}
@@ -395,11 +419,11 @@ export default function GraphView({
                 title={p.userName || p.userId}
                 style={{
                   position: "absolute" as const,
-                  left: `${pos.x}px`,
-                  top: `${pos.y}px`,
+                  left: `${screenX}px`,
+                  top: `${screenY}px`,
                   transform: "translate(-50%, -50%)",
-                  width: 40,
-                  height: 40,
+                  width: cursorSize,
+                  height: cursorSize,
                   borderRadius: "50%",
                   background: "white",
                   border: "2px solid black",
