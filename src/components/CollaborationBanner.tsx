@@ -26,7 +26,10 @@ export function CollaborationBanner({
   roomId: string | null
   currentUserId: string
 }) {
-  const safePresences = presences.filter((p) => Boolean(p?.userId))
+  // Deduplicate by userId (keep the last entry for each user - most recent status)
+  const safePresences = presences
+    .filter((p) => Boolean(p?.userId))
+    .filter((p, index, arr) => arr.findLastIndex((x) => x.userId === p.userId) === index)
 
   const otherUsers = safePresences.filter(
     (p) => p.userId !== currentUserId,
