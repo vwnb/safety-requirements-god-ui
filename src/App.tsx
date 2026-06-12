@@ -483,7 +483,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       const userId = actorForApi
       const userName = user?.name || actorForApi
       const userEmail = user?.email
-      const projectKey = selectedProject.key || selectedProject.id
+      const projectKey = selectedProject?.key || selectedProject?.id
       collab.connect(projectKey, userId, userName, userEmail)
     }
     return () => {
@@ -518,6 +518,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       collab.updateStatus("editing_concept", selectedConcept, conceptName)
     } else if (activeRevisionId && selectedConcept) {
       collab.updateStatus("editing_revision", selectedConcept, conceptName)
+    } else if (selectedWorkItem) {
+      collab.updateStatus("browsing_graph", selectedWorkItem, selectedWorkItemData ? `${selectedWorkItemData.key} - ${selectedWorkItemData.name}` : selectedWorkItem)
     } else {
       collab.updateStatus("browsing_graph")
     }
@@ -2021,6 +2023,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             API={API}
             presences={collab.presences}
             currentUserId={actorForApi}
+            workItemId={selectedWorkItem}
             onViewportChange={(viewport) => {
               collab.sendViewportCoordinates({ x: viewport.x, y: viewport.y })
             }}

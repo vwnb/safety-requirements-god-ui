@@ -149,6 +149,7 @@ export default function GraphView({
   presences,
   currentUserId,
   onViewportChange,
+  workItemId,
 }: {
   concepts: Concept[]
   revisions: Revision[]
@@ -160,6 +161,7 @@ export default function GraphView({
   presences: UserPresence[]
   currentUserId: string
   onViewportChange: (viewport: Viewport) => void
+  workItemId?: string
 }) {
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
@@ -408,7 +410,24 @@ export default function GraphView({
 
         {/* User circles - absolutely positioned elements that move with graph viewport, fixed size */}
         {presences
-          .filter((p) => p.viewportX != null && p.viewportY != null && p.userId !== currentUserId)
+          .filter((p) => {
+            // Only show cursor for users in the same work item
+            // - browsing_graph users must have matching workItemId context
+            // - editing users on concepts/revisions/work_items in this work item
+            if (p.userId === currentUserId) return false
+            if (p.viewportX == null || p.viewportY == null) return false
+            if (!workItemId) return false
+
+            // If browsing graph, check context matches
+            if (p.status === "browsing_graph") {
+              return p.contextId === workItemId
+            }
+            // For editing statuses, check if context matches current work item
+            if (p.status === "editing_concept" || p.status === "editing_revision" || p.status === "editing_work_item") {
+              return p.contextId === workItemId
+            }
+            return false
+          })
           .map((p) => {
             const { x: rawX, y: rawY } = graphToScreen(p.viewportX!, p.viewportY!)
             const { x: screenX, y: screenY } = clampToContainer(rawX, rawY)
