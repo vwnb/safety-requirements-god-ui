@@ -315,15 +315,19 @@ export default function GraphView({
     }
   }, [containerSize.width, containerSize.height])
 
+  // Graph key to force re-initialization when data changes (e.g., template import)
   const graphKey = `${layoutedNodes.length}-${layoutedEdges.length}`
 
+  // Reset initial viewport sent flag when the graph re-initializes
   useEffect(() => {
     initialViewportSentRef.current = false
   }, [graphKey])
 
+  // Send initial viewport coordinates once the graph has finished loading and fitView has completed
   useEffect(() => {
     if (loading || !reactFlowInstanceRef.current) return
     if (initialViewportSentRef.current) return
+    // fitView triggers onMove which updates the viewport; we detect that via the state value
     if (viewport.x === 0 && viewport.y === 0 && viewport.zoom === 1) return
 
     const container = containerRef.current
