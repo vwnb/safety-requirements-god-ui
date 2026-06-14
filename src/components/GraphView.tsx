@@ -7,7 +7,7 @@ import ReactFlow, {
   Position,
   BackgroundVariant
 } from "reactflow"
-import type { FitViewOptions, Viewport } from "reactflow"
+import type { FitViewOptions, Viewport, ReactFlowInstance } from "reactflow"
 import type { Node, Edge } from "reactflow"
 import "reactflow/dist/style.css"
 import dagre from "dagre"
@@ -172,7 +172,10 @@ export default function GraphView({
   const [graphLoading, setGraphLoading] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 })
+  const viewportRef = useRef(viewport)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
+  const initialViewportSentRef = useRef(false)
+  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null)
 
   // Track container size for clamping cursor positions
   useEffect(() => {
@@ -312,8 +315,26 @@ export default function GraphView({
     }
   }, [containerSize.width, containerSize.height])
 
-  // Graph key to force re-initialization when data changes (e.g., template import)
   const graphKey = `${layoutedNodes.length}-${layoutedEdges.length}`
+
+  useEffect(() => {
+    initialViewportSentRef.current = false
+  }, [graphKey])
+
+  useEffect(() => {
+    if (loading || !reactFlowInstanceRef.current) return
+    if (initialViewportSentRef.current) return
+    if (viewport.x === 0 && viewport.y === 0 && viewport.zoom === 1) return
+
+    const container = containerRef.current
+    if (container) {
+      const rect = container.getBoundingClientRect()
+      const centerX = (rect.width / 2 - viewport.x) / viewport.zoom
+      const centerY = (rect.height / 2 - viewport.y) / viewport.zoom
+      onViewportChange({ x: centerX, y: centerY, zoom: viewport.zoom })
+      initialViewportSentRef.current = true
+    }
+  }, [loading, viewport])
 
   const fitViewOptions: FitViewOptions = {
     padding: 0.2,
@@ -370,9 +391,16 @@ export default function GraphView({
           fitView
           fitViewOptions={fitViewOptions}
           nodeExtent={[[0, 0], [3000, 3000]]}
-          onMove={(_, newViewport) => setViewport(newViewport)}
+          onInit={(instance) => {
+            reactFlowInstanceRef.current = instance
+          }}
+          onMove={(_, newViewport) => {
+            viewportRef.current = newViewport
+            setViewport(newViewport)
+          }}
           onMoveEnd={(_, viewport) => {
             setViewport(viewport)
+            viewportRef.current = viewport
             // Convert viewport center to graph-space coordinates
             const container = containerRef.current
             if (container) {
