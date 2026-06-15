@@ -232,7 +232,6 @@ header>* {
 
 .list-id {
   flex-shrink: 0;
-  font-style: italic;
   width: 120px;
   font-weight: 600;
 }
@@ -259,6 +258,11 @@ header>* {
 
 .template-list .list-id {
   width: auto;
+}
+
+.concept-option .list-id {
+  width: auto;
+  flex: 0 0 auto;
 }
 
 .graph-node {

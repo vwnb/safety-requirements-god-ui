@@ -1286,7 +1286,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                         }}
                       >
                         <div className="list-id">{p.key}</div>
-                        <div className="list-tooltip">{p.id}</div>
                       </div>
                     ))}
                   </div>
@@ -1350,7 +1349,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                   cursor: "pointer",
                                 }}
                               >
-                                {workItem.key} — {workItem.name}
+                                <div className="list-id">{workItem.key}</div>
+                                <div className="list-tooltip">{workItem.name}</div>
                               </div>
                             ))}
                           </div>
@@ -1413,7 +1413,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                         <div className="list-input" style={{ maxHeight: 300, overflow: "auto" }}>
                           {concepts.map((c) => (
                             <div
-                              className="option"
+                              className="option concept-option"
                               data-agent={`concept-${c.id}`}
                               key={c.id}
                               onClick={() => {
@@ -1452,9 +1452,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                               }}>
                                 {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}
                               </span>
-                              <div className="list-tooltip">
-                                {c.key} {c.title && `- ${c.title}`}
-                              </div>
+                              <div className="list-id">{c.key}</div>
+                              <div className="list-tooltip">{c.title}</div>
                             </div>
                           ))}
                         </div>
