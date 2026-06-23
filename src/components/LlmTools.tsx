@@ -117,12 +117,10 @@ export function LlmTools({
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
-  const [evaluationResultId, setEvaluationResultId] = useState<string | null>(null)
 
   useEffect(() => {
     setSuggestions(null)
     setLatestReportNotFound(false)
-    setEvaluationResultId(null)
     if (selectedWorkItem) {
       apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/latest`, {
         headers: { "x-suppress-error-toast": "404" }
@@ -135,7 +133,6 @@ export function LlmTools({
         })
         .then(data => {
           if (data) {
-            if (data.id) setEvaluationResultId(data.id)
             if (data.suggestions) {
               setSuggestions(data.suggestions as EvaluatorSuggestion[])
             }
@@ -173,7 +170,6 @@ export function LlmTools({
       if (suggestionsData.suggestions) {
         setSuggestions(suggestionsData.suggestions as EvaluatorSuggestion[])
       }
-      if (suggestionsData.id) setEvaluationResultId(suggestionsData.id)
       setLatestReportNotFound(false)
     } catch (err) {
       console.error(err)
