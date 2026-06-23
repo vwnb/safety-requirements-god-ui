@@ -64,6 +64,8 @@ type EvaluatorSuggestion = {
   action: SuggestionAction
   payload: SuggestionPayload
   reason?: string
+  actedOn?: "ACTED_ON" | "DISCARDED"
+  actedOnBy?: { name?: string }
 }
 
 const actionColor: Record<string, string> = {
@@ -115,15 +117,11 @@ export function LlmTools({
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
   const [evaluationResultId, setEvaluationResultId] = useState<string | null>(null)
-  const [actedOn, setActedOn] = useState<"ACTED_ON" | "DISCARDED" | null>(null)
-  const [actedOnBy, setActedOnBy] = useState<{ name?: string } | null>(null)
 
   useEffect(() => {
     setSuggestions(null)
     setLatestReportNotFound(false)
     setEvaluationResultId(null)
-    setActedOn(null)
-    setActedOnBy(null)
     if (selectedWorkItem) {
       apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/latest`, {
         headers: { "x-suppress-error-toast": "404" }
@@ -137,10 +135,17 @@ export function LlmTools({
         .then(data => {
           if (data) {
             if (data.id) setEvaluationResultId(data.id)
-            if (data.actedOn) setActedOn(data.actedOn as "ACTED_ON" | "DISCARDED")
-            if (data.actedOnBy) setActedOnBy(data.actedOnBy as { name?: string })
             if (data.suggestions) {
-              setSuggestions(data.suggestions as EvaluatorSuggestion[])
+              // Propagate the top-level actedOn/actedOnById to each suggestion if they don't have their own
+              const suggestionsArr = data.suggestions as EvaluatorSuggestion[]
+              const enriched = data.actedOn
+                ? suggestionsArr.map((s: EvaluatorSuggestion) => ({
+                    ...s,
+                    actedOn: s.actedOn || (data.actedOn as "ACTED_ON" | "DISCARDED"),
+                    actedOnBy: s.actedOnBy || (data.actedOnById ? { name: data.actedOnById } : undefined),
+                  }))
+                : suggestionsArr
+              setSuggestions(enriched)
             }
           }
         })
@@ -163,8 +168,17 @@ export function LlmTools({
       })
       if (res.ok) {
         const updated = await res.json()
-        if (updated.actedOn) setActedOn(updated.actedOn as "ACTED_ON" | "DISCARDED")
-        if (updated.actedOnBy) setActedOnBy(updated.actedOnBy as { name?: string })
+        if (updated.suggestions) {
+          const suggestionsArr = updated.suggestions as EvaluatorSuggestion[]
+          const enriched = updated.actedOn
+            ? suggestionsArr.map((s: EvaluatorSuggestion) => ({
+                ...s,
+                actedOn: s.actedOn || (updated.actedOn as "ACTED_ON" | "DISCARDED"),
+                actedOnBy: s.actedOnBy || (updated.actedOnById ? { name: updated.actedOnById } : undefined),
+              }))
+            : suggestionsArr
+          setSuggestions(enriched)
+        }
       }
     } catch (err) {
       console.error("Failed to act on evaluation result", err)
@@ -190,7 +204,17 @@ export function LlmTools({
       if (!res.ok) throw new Error("Failed to generate suggestions")
 
       const suggestionsData = await res.json()
-      setSuggestions(suggestionsData.suggestions as EvaluatorSuggestion[])
+      if (suggestionsData.suggestions) {
+        const suggestionsArr = suggestionsData.suggestions as EvaluatorSuggestion[]
+        const enriched = suggestionsData.actedOn
+          ? suggestionsArr.map((s: EvaluatorSuggestion) => ({
+              ...s,
+              actedOn: s.actedOn || (suggestionsData.actedOn as "ACTED_ON" | "DISCARDED"),
+              actedOnBy: s.actedOnBy || (suggestionsData.actedOnById ? { name: suggestionsData.actedOnById } : undefined),
+            }))
+          : suggestionsArr
+        setSuggestions(enriched)
+      }
       if (suggestionsData.id) setEvaluationResultId(suggestionsData.id)
       setLatestReportNotFound(false)
     } catch (err) {
@@ -200,7 +224,16 @@ export function LlmTools({
     }
   }
 
-  const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion) => {
+  const markSuggestion = useCallback((index: number, status: "ACTED_ON" | "DISCARDED") => {
+    setSuggestions((prev) => {
+      if (!Array.isArray(prev)) return prev
+      const updated = [...prev]
+      updated[index] = { ...updated[index], actedOn: status, actedOnBy: { name: actorForApi } }
+      return updated
+    })
+  }, [actorForApi])
+
+  const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion, index: number) => {
     const { action, payload } = suggestion
 
     const normalizedAction =
@@ -266,11 +299,7 @@ export function LlmTools({
             actOnEvaluationResult(evaluationResultId, "ACTED_ON")
           }
 
-          setSuggestions((prev) =>
-            Array.isArray(prev)
-              ? prev.filter((s) => s !== suggestion)
-              : prev
-          )
+          markSuggestion(index, "ACTED_ON")
         } finally {
           onSetLoading(false)
         }
@@ -313,11 +342,7 @@ export function LlmTools({
             actOnEvaluationResult(evaluationResultId, "ACTED_ON")
           }
 
-          setSuggestions((prev) =>
-            Array.isArray(prev)
-              ? prev.filter((s) => s !== suggestion)
-              : prev
-          )
+          markSuggestion(index, "ACTED_ON")
         } finally {
           onSetLoading(false)
         }
@@ -333,26 +358,22 @@ export function LlmTools({
         if (evaluationResultId) {
           actOnEvaluationResult(evaluationResultId, "DISCARDED")
         }
-        setSuggestions((prev) =>
-          Array.isArray(prev)
-            ? prev.filter((s) => s !== suggestion)
-            : prev
-        )
+        markSuggestion(index, "DISCARDED")
         break
       }
 
       default:
         break
     }
-  }, [apiFetch, selectedWorkItem, actorForApi, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, evaluationResultId, actOnEvaluationResult])
+  }, [apiFetch, selectedWorkItem, actorForApi, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, evaluationResultId, actOnEvaluationResult, markSuggestion])
 
   const discardSuggestion = useCallback((index: number) => {
     // Mark evaluation result as discarded
     if (evaluationResultId) {
       actOnEvaluationResult(evaluationResultId, "DISCARDED")
     }
-    setSuggestions((prev) => prev ? prev.filter((_, i) => i !== index) : prev)
-  }, [evaluationResultId, actOnEvaluationResult])
+    markSuggestion(index, "DISCARDED")
+  }, [evaluationResultId, actOnEvaluationResult, markSuggestion])
 
   const actionLabelForAction = (action: string, payload: SuggestionPayload): { actionLabel: string; graphDescription: string; hasPayloadData: boolean } => {
     const payloadConcepts = payload.concepts || []
@@ -460,27 +481,7 @@ export function LlmTools({
           </div>
         )}
         {!!suggestions && selectedWorkItemData && (
-          <>
-            <h1>Completeness Report: {selectedWorkItemData.name}</h1>
-            {actedOn && (
-              <div style={{ ...brutal.formRow, marginBottom: 12 }}>
-                <div style={brutal.label}>Status</div>
-                <span
-                  style={{
-                    ...brutal.tag,
-                    background: actedOn === "ACTED_ON" ? SemanticColor.SUCCESS : SemanticColor.DANGER,
-                  }}
-                >
-                  {actedOn === "ACTED_ON" ? "Acted on" : "Discarded"}
-                </span>
-                {actedOnBy?.name && (
-                  <span style={{ fontFamily: "monospace", fontSize: 11, marginLeft: 8 }}>
-                    by {actedOnBy.name}
-                  </span>
-                )}
-              </div>
-            )}
-          </>
+          <h1>Completeness Report: {selectedWorkItemData.name}</h1>
         )}
         {!!suggestions && (
           [...suggestions].sort((a, b) => {
@@ -489,6 +490,7 @@ export function LlmTools({
           }).map((suggestion, index) => {
             const suggestionKey = suggestion.text.slice(0, 64).replaceAll(" ", "-")
             const { actionLabel, graphDescription, hasPayloadData } = actionLabelForAction(suggestion.action, suggestion.payload)
+            const suggestionStatus = suggestion.actedOn
 
             return (
               <div
@@ -496,7 +498,8 @@ export function LlmTools({
                 style={{
                   ...brutal.box,
                   border: "2px dashed black",
-                  background: "rgba(255,255,255,0.5)"
+                  background: "rgba(255,255,255,0.5)",
+                  opacity: suggestionStatus ? 0.7 : 1,
                 }}
               >
                 <>
@@ -534,46 +537,63 @@ export function LlmTools({
                     >
                       {graphDescription}
                     </span>
+                    {suggestionStatus && (
+                      <span
+                        style={{
+                          ...brutal.tag,
+                          background: suggestionStatus === "ACTED_ON" ? SemanticColor.SUCCESS : SemanticColor.DANGER,
+                        }}
+                      >
+                        {suggestionStatus === "ACTED_ON" ? "Acted on" : "Discarded"}
+                        {suggestion.actedOnBy?.name && (
+                          <span style={{ fontFamily: "monospace", fontSize: 11, marginLeft: 4 }}>
+                            by {suggestion.actedOnBy.name}
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </div>
 
                   {suggestion.reason && (
                     <p>Reason: {suggestion.reason}</p>
                   )}
                 </>
-                <div style={brutal.actions}>
-                  <button
-                    data-agent={`btn-act-on-suggestion-${index}`}
-                    onClick={() => {
-                      const { confirmMessage, confirmLabel } = buildConfirmMessage(suggestion)
+                {!suggestionStatus && (
+                  <div style={brutal.actions}>
+                    <button
+                      data-agent={`btn-act-on-suggestion-${index}`}
+                      onClick={() => {
+                        const { confirmMessage, confirmLabel } = buildConfirmMessage(suggestion)
 
-                      if (activeRevisionId) {
-                        onSetPendingConfirm({
-                          message: `You have an active revision in progress. ${confirmMessage}`,
-                          onConfirm: () => actOnSuggestion(suggestion),
-                          confirmLabel,
-                          cancelLabel: "Cancel",
-                        })
-                      } else {
-                        onSetPendingConfirm({
-                          message: confirmMessage,
-                          onConfirm: () => actOnSuggestion(suggestion),
-                          confirmLabel,
-                          cancelLabel: "Cancel",
-                        })
-                      }
-                    }}
-                    style={{ ...brutal.button, fontSize: 10, padding: "4px 8px", background: SemanticColor.SUCCESS } as React.CSSProperties}
-                  >
-                    Act on
-                  </button>
-                  <button
-                    data-agent={`btn-discard-suggestion-${index}`}
-                    onClick={() => discardSuggestion(index)}
-                    style={{ ...brutal.button, fontSize: 10, padding: "4px 8px", background: SemanticColor.DANGER }}
-                  >
-                    Discard
-                  </button>
-                </div>
+                        if (activeRevisionId) {
+                          onSetPendingConfirm({
+                            message: `You have an active revision in progress. ${confirmMessage}`,
+                            onConfirm: () => actOnSuggestion(suggestion, index),
+                            confirmLabel,
+                            cancelLabel: "Cancel",
+                          })
+                        } else {
+                          onSetPendingConfirm({
+                            message: confirmMessage,
+                            onConfirm: () => actOnSuggestion(suggestion, index),
+                            confirmLabel,
+                            cancelLabel: "Cancel",
+                          })
+                        }
+                      }}
+                      style={{ ...brutal.button, fontSize: 10, padding: "4px 8px", background: SemanticColor.SUCCESS } as React.CSSProperties}
+                    >
+                      Act on
+                    </button>
+                    <button
+                      data-agent={`btn-discard-suggestion-${index}`}
+                      onClick={() => discardSuggestion(index)}
+                      style={{ ...brutal.button, fontSize: 10, padding: "4px 8px", background: SemanticColor.DANGER }}
+                    >
+                      Discard
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })
