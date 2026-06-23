@@ -59,6 +59,7 @@ type SuggestionPayload = {
 }
 
 type EvaluatorSuggestion = {
+  id?: string
   text: string
   importance?: SuggestionImportance
   action: SuggestionAction
@@ -150,24 +151,6 @@ export function LlmTools({
     }
   }, [selectedWorkItem, API, apiFetch])
 
-  const actOnEvaluationResult = useCallback(async (evaluationResultId: string, actedOn: "ACTED_ON" | "DISCARDED") => {
-    try {
-      const res = await apiFetch(`${API}/evaluation-results/${evaluationResultId}/act`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actedOn }),
-      })
-      if (res.ok) {
-        const updated = await res.json()
-        if (updated.suggestions) {
-          setSuggestions(updated.suggestions as EvaluatorSuggestion[])
-        }
-      }
-    } catch (err) {
-      console.error("Failed to act on evaluation result", err)
-    }
-  }, [apiFetch, API])
-
   const suggestWithLLM = async (workItemId: string) => {
     if (!selectedWorkItem) return
 
@@ -199,14 +182,47 @@ export function LlmTools({
     }
   }
 
+  const actOnSuggestionApi = useCallback(async (suggestionId: string, actedOn: "ACTED_ON" | "DISCARDED") => {
+    try {
+      const res = await apiFetch(`${API}/suggestions/${suggestionId}/act`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actedOn }),
+      })
+      if (res.ok) {
+        return await res.json()
+      }
+    } catch (err) {
+      console.error("Failed to act on suggestion", err)
+    }
+    return null
+  }, [apiFetch, API])
+
   const markSuggestion = useCallback((index: number, status: "ACTED_ON" | "DISCARDED") => {
     setSuggestions((prev) => {
       if (!Array.isArray(prev)) return prev
       const updated = [...prev]
-      updated[index] = { ...updated[index], actedOn: status, actedOnBy: { name: actorForApi } }
+      const suggestion = updated[index]
+      const suggestionId = suggestion.id
+      updated[index] = { ...suggestion, actedOn: status }
+      if (suggestionId) {
+        actOnSuggestionApi(suggestionId, status).then((result) => {
+          if (result?.actedOnBy) {
+            setSuggestions((prev) => {
+              if (!Array.isArray(prev)) return prev
+              const updated = [...prev]
+              const current = updated[index]
+              if (current) {
+                updated[index] = { ...current, actedOnBy: result.actedOnBy }
+              }
+              return updated
+            })
+          }
+        })
+      }
       return updated
     })
-  }, [actorForApi])
+  }, [actOnSuggestionApi])
 
   const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion, index: number) => {
     const { action, payload } = suggestion
@@ -268,12 +284,6 @@ export function LlmTools({
 
           await onLoadConcepts(selectedWorkItem)
           await onRefreshGraph(selectedWorkItem)
-
-          // Mark evaluation result as acted on
-          if (evaluationResultId) {
-            actOnEvaluationResult(evaluationResultId, "ACTED_ON")
-          }
-
           markSuggestion(index, "ACTED_ON")
         } finally {
           onSetLoading(false)
@@ -311,12 +321,6 @@ export function LlmTools({
 
           await onLoadConcepts(selectedWorkItem)
           await onRefreshGraph(selectedWorkItem)
-
-          // Mark evaluation result as acted on
-          if (evaluationResultId) {
-            actOnEvaluationResult(evaluationResultId, "ACTED_ON")
-          }
-
           markSuggestion(index, "ACTED_ON")
         } finally {
           onSetLoading(false)
@@ -329,10 +333,6 @@ export function LlmTools({
       case 'Reject': {
         onSetActiveRevisionId(null)
         onSetEditorValue("")
-        // Mark evaluation result as discarded
-        if (evaluationResultId) {
-          actOnEvaluationResult(evaluationResultId, "DISCARDED")
-        }
         markSuggestion(index, "DISCARDED")
         break
       }
@@ -340,15 +340,11 @@ export function LlmTools({
       default:
         break
     }
-  }, [apiFetch, selectedWorkItem, actorForApi, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, evaluationResultId, actOnEvaluationResult, markSuggestion])
+  }, [apiFetch, selectedWorkItem, actorForApi, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion])
 
   const discardSuggestion = useCallback((index: number) => {
-    // Mark evaluation result as discarded
-    if (evaluationResultId) {
-      actOnEvaluationResult(evaluationResultId, "DISCARDED")
-    }
     markSuggestion(index, "DISCARDED")
-  }, [evaluationResultId, actOnEvaluationResult, markSuggestion])
+  }, [markSuggestion])
 
   const actionLabelForAction = (action: string, payload: SuggestionPayload): { actionLabel: string; graphDescription: string; hasPayloadData: boolean } => {
     const payloadConcepts = payload.concepts || []
