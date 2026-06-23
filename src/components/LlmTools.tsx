@@ -136,16 +136,7 @@ export function LlmTools({
           if (data) {
             if (data.id) setEvaluationResultId(data.id)
             if (data.suggestions) {
-              // Propagate the top-level actedOn/actedOnById to each suggestion if they don't have their own
-              const suggestionsArr = data.suggestions as EvaluatorSuggestion[]
-              const enriched = data.actedOn
-                ? suggestionsArr.map((s: EvaluatorSuggestion) => ({
-                    ...s,
-                    actedOn: s.actedOn || (data.actedOn as "ACTED_ON" | "DISCARDED"),
-                    actedOnBy: s.actedOnBy || (data.actedOnById ? { name: data.actedOnById } : undefined),
-                  }))
-                : suggestionsArr
-              setSuggestions(enriched)
+              setSuggestions(data.suggestions as EvaluatorSuggestion[])
             }
           }
         })
@@ -169,15 +160,7 @@ export function LlmTools({
       if (res.ok) {
         const updated = await res.json()
         if (updated.suggestions) {
-          const suggestionsArr = updated.suggestions as EvaluatorSuggestion[]
-          const enriched = updated.actedOn
-            ? suggestionsArr.map((s: EvaluatorSuggestion) => ({
-                ...s,
-                actedOn: s.actedOn || (updated.actedOn as "ACTED_ON" | "DISCARDED"),
-                actedOnBy: s.actedOnBy || (updated.actedOnById ? { name: updated.actedOnById } : undefined),
-              }))
-            : suggestionsArr
-          setSuggestions(enriched)
+          setSuggestions(updated.suggestions as EvaluatorSuggestion[])
         }
       }
     } catch (err) {
@@ -205,15 +188,7 @@ export function LlmTools({
 
       const suggestionsData = await res.json()
       if (suggestionsData.suggestions) {
-        const suggestionsArr = suggestionsData.suggestions as EvaluatorSuggestion[]
-        const enriched = suggestionsData.actedOn
-          ? suggestionsArr.map((s: EvaluatorSuggestion) => ({
-              ...s,
-              actedOn: s.actedOn || (suggestionsData.actedOn as "ACTED_ON" | "DISCARDED"),
-              actedOnBy: s.actedOnBy || (suggestionsData.actedOnById ? { name: suggestionsData.actedOnById } : undefined),
-            }))
-          : suggestionsArr
-        setSuggestions(enriched)
+        setSuggestions(suggestionsData.suggestions as EvaluatorSuggestion[])
       }
       if (suggestionsData.id) setEvaluationResultId(suggestionsData.id)
       setLatestReportNotFound(false)
