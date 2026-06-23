@@ -114,10 +114,16 @@ export function LlmTools({
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
+  const [evaluationResultId, setEvaluationResultId] = useState<string | null>(null)
+  const [actedOn, setActedOn] = useState<"ACTED_ON" | "DISCARDED" | null>(null)
+  const [actedOnBy, setActedOnBy] = useState<{ name?: string } | null>(null)
 
   useEffect(() => {
     setSuggestions(null)
     setLatestReportNotFound(false)
+    setEvaluationResultId(null)
+    setActedOn(null)
+    setActedOnBy(null)
     if (selectedWorkItem) {
       apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/latest`, {
         headers: { "x-suppress-error-toast": "404" }
@@ -129,8 +135,13 @@ export function LlmTools({
           throw new Error("Failed to load latest suggestions")
         })
         .then(data => {
-          if (data && data.suggestions) {
-            setSuggestions(data.suggestions as EvaluatorSuggestion[])
+          if (data) {
+            if (data.id) setEvaluationResultId(data.id)
+            if (data.actedOn) setActedOn(data.actedOn as "ACTED_ON" | "DISCARDED")
+            if (data.actedOnBy) setActedOnBy(data.actedOnBy as { name?: string })
+            if (data.suggestions) {
+              setSuggestions(data.suggestions as EvaluatorSuggestion[])
+            }
           }
         })
         .catch(err => {
@@ -142,6 +153,23 @@ export function LlmTools({
         })
     }
   }, [selectedWorkItem, API, apiFetch])
+
+  const actOnEvaluationResult = useCallback(async (evaluationResultId: string, actedOn: "ACTED_ON" | "DISCARDED") => {
+    try {
+      const res = await apiFetch(`${API}/evaluation-results/${evaluationResultId}/act`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actedOn }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        if (updated.actedOn) setActedOn(updated.actedOn as "ACTED_ON" | "DISCARDED")
+        if (updated.actedOnBy) setActedOnBy(updated.actedOnBy as { name?: string })
+      }
+    } catch (err) {
+      console.error("Failed to act on evaluation result", err)
+    }
+  }, [apiFetch, API])
 
   const suggestWithLLM = async (workItemId: string) => {
     if (!selectedWorkItem) return
@@ -163,6 +191,7 @@ export function LlmTools({
 
       const suggestionsData = await res.json()
       setSuggestions(suggestionsData.suggestions as EvaluatorSuggestion[])
+      if (suggestionsData.id) setEvaluationResultId(suggestionsData.id)
       setLatestReportNotFound(false)
     } catch (err) {
       console.error(err)
@@ -232,6 +261,11 @@ export function LlmTools({
           await onLoadConcepts(selectedWorkItem)
           await onRefreshGraph(selectedWorkItem)
 
+          // Mark evaluation result as acted on
+          if (evaluationResultId) {
+            actOnEvaluationResult(evaluationResultId, "ACTED_ON")
+          }
+
           setSuggestions((prev) =>
             Array.isArray(prev)
               ? prev.filter((s) => s !== suggestion)
@@ -274,6 +308,11 @@ export function LlmTools({
           await onLoadConcepts(selectedWorkItem)
           await onRefreshGraph(selectedWorkItem)
 
+          // Mark evaluation result as acted on
+          if (evaluationResultId) {
+            actOnEvaluationResult(evaluationResultId, "ACTED_ON")
+          }
+
           setSuggestions((prev) =>
             Array.isArray(prev)
               ? prev.filter((s) => s !== suggestion)
@@ -290,6 +329,10 @@ export function LlmTools({
       case 'Reject': {
         onSetActiveRevisionId(null)
         onSetEditorValue("")
+        // Mark evaluation result as discarded
+        if (evaluationResultId) {
+          actOnEvaluationResult(evaluationResultId, "DISCARDED")
+        }
         setSuggestions((prev) =>
           Array.isArray(prev)
             ? prev.filter((s) => s !== suggestion)
@@ -301,11 +344,15 @@ export function LlmTools({
       default:
         break
     }
-  }, [apiFetch, selectedWorkItem, actorForApi, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage])
+  }, [apiFetch, selectedWorkItem, actorForApi, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, evaluationResultId, actOnEvaluationResult])
 
   const discardSuggestion = useCallback((index: number) => {
+    // Mark evaluation result as discarded
+    if (evaluationResultId) {
+      actOnEvaluationResult(evaluationResultId, "DISCARDED")
+    }
     setSuggestions((prev) => prev ? prev.filter((_, i) => i !== index) : prev)
-  }, [])
+  }, [evaluationResultId, actOnEvaluationResult])
 
   const actionLabelForAction = (action: string, payload: SuggestionPayload): { actionLabel: string; graphDescription: string; hasPayloadData: boolean } => {
     const payloadConcepts = payload.concepts || []
@@ -415,6 +462,24 @@ export function LlmTools({
         {!!suggestions && selectedWorkItemData && (
           <>
             <h1>Completeness Report: {selectedWorkItemData.name}</h1>
+            {actedOn && (
+              <div style={{ ...brutal.formRow, marginBottom: 12 }}>
+                <div style={brutal.label}>Status</div>
+                <span
+                  style={{
+                    ...brutal.tag,
+                    background: actedOn === "ACTED_ON" ? SemanticColor.SUCCESS : SemanticColor.DANGER,
+                  }}
+                >
+                  {actedOn === "ACTED_ON" ? "Acted on" : "Discarded"}
+                </span>
+                {actedOnBy?.name && (
+                  <span style={{ fontFamily: "monospace", fontSize: 11, marginLeft: 8 }}>
+                    by {actedOnBy.name}
+                  </span>
+                )}
+              </div>
+            )}
           </>
         )}
         {!!suggestions && (
@@ -497,14 +562,14 @@ export function LlmTools({
                         })
                       }
                     }}
-                    style={{ ...brutal.button, background: SemanticColor.SUCCESS } as React.CSSProperties}
+                    style={{ ...brutal.button, fontSize: 10, padding: "4px 8px", background: SemanticColor.SUCCESS } as React.CSSProperties}
                   >
                     Act on
                   </button>
                   <button
                     data-agent={`btn-discard-suggestion-${index}`}
                     onClick={() => discardSuggestion(index)}
-                    style={{ ...brutal.button, background: SemanticColor.DANGER }}
+                    style={{ ...brutal.button, fontSize: 10, padding: "4px 8px", background: SemanticColor.DANGER }}
                   >
                     Discard
                   </button>

@@ -44,7 +44,7 @@ body {
 }
 
 aside {
-  padding: 20px;
+  padding: 20px 20px 60px;
   grid-area: aside;
 }
 
@@ -328,7 +328,7 @@ footer {
   }
 
   #root>* {
-    max-width: 100%;
+    max-width: calc(100% - 40px)
   }
 
   header>.logo {
