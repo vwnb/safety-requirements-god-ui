@@ -41,13 +41,6 @@ export function CollaborationBanner({
     return 0
   })
 
-  console.log("[Banner]", {
-  connected,
-  roomId,
-  currentUserId,
-  presences,
-})
-
   return (
     <div
       data-agent="collaboration-banner"

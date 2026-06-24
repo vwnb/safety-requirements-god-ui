@@ -307,6 +307,11 @@ button:hover,
   gap: 1em;
 }
 
+.option > :only-child {
+  flex: 1;
+  width: auto;
+}
+
 .template-list .option > * {
   flex: 1 1 0px;
 }

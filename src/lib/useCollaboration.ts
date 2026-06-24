@@ -62,10 +62,7 @@ export function useCollaboration() {
       }
 
       socket.onmessage = (event) => {
-        console.log("[Collaboration] raw message", event.data)
-
         const data = JSON.parse(event.data)
-        console.log("[Collaboration] parsed message", data)
 
         if (data.type === "presence" && Array.isArray(data.presences)) {
           setState((prev) => ({

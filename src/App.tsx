@@ -23,6 +23,7 @@ import { CreateProjectModal } from "./components/CreateProjectModal"
 import { EditProjectModal } from "./components/EditProjectModal"
 import { useCollaboration } from "./lib/useCollaboration"
 import { CollaborationBanner } from "./components/CollaborationBanner"
+import BaselineDetailsCard from "./components/BaselineDetailsCard"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -1440,7 +1441,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                 color: "#000",
                                 whiteSpace: "nowrap",
                               }}>
-                                {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}
+                                {c.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
                               </span>
                               <div className="list-id">{c.key}</div>
                               <div className="list-tooltip">{c.title}</div>
@@ -1632,58 +1633,44 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     ) :
                       (
                         <>
-                          {baselines.map((b) => (
-                            <button
-                              data-agent={`baseline-${b.id}`}
-                              key={b.id}
-                              onClick={async () => {
-                                const full = await apiFetch(`${API}/baselines/${b.id}`).then((r) => r.json())
-                                setSelectedBaseline(full)
-                              }}
-                              style={{ ...brutal.button, display: "block", marginBottom: 4 }}
-                            >
-                              {b.name}
-                            </button>
-                          ))}
+                          <div className="list-input">
+                            {baselines.map((b) => (
+                              <div
+                                className="option"
+                                data-agent={`baseline-${b.id}`}
+                                key={b.id}
+                                onClick={async () => {
+                                  const full = await apiFetch(`${API}/baselines/${b.id}`).then((r) => r.json())
+                                  setSelectedBaseline(full)
+                                }}
+                                style={{
+                                  background: selectedBaseline?.id === b.id ? "rgb(255, 90, 0)" : undefined,
+                                  color: selectedBaseline?.id === b.id ? "#fff" : undefined,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <div className="list-id">{b.name}</div>
+                                {b.revisionCount !== undefined && (
+                                  <div className="list-tooltip">{b.revisionCount} revision{b.revisionCount !== 1 ? "s" : ""}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </>
                       )}
                 </section>
 
                 {selectedBaseline && (
-                  <>
-                    <section data-agent="selected-baseline-section">
-                      <div className="title">
-                        Baseline: {selectedBaseline.name}
-                      </div>
-
-                      {selectedBaseline.workItems.map((wi: any) => (
-                        <div key={wi.workItem.id} style={{ marginBottom: 16 }}>
-                          <div style={{ fontWeight: 600, fontFamily: "monospace", marginBottom: 8, fontSize: 14 }}>
-                            {wi.workItem.key} — {wi.workItem.name}
-                          </div>
-                          <div className="list-input">
-                            {wi.revisions.map((r: any) => (
-                              <div
-                                key={r.id}
-                                className="option"
-                                onClick={() => {
-                                  setActiveRevisionId(r.id)
-                                  setSelectedConcept(r.concept.id)
-                                  setEditorValue(r.markdown)
-                                }}>
-                                <div className="list-id">
-                                  {r.concept.key} - {r.concept.type} ({r.id})
-                                </div>
-                                <div className="list-tooltip">
-                                  {r.markdown.slice(0, 80)}...
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </section>
-                  </>
+                  <section data-agent="selected-baseline-section">
+                    <BaselineDetailsCard
+                      baseline={selectedBaseline}
+                      onSelectRevision={(revisionId, conceptId, markdown) => {
+                        setActiveRevisionId(revisionId)
+                        setSelectedConcept(conceptId)
+                        setEditorValue(markdown)
+                      }}
+                    />
+                  </section>
                 )}
 
                   <section data-agent="new-baseline-section">
