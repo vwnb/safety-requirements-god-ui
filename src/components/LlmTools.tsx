@@ -116,36 +116,61 @@ export function LlmTools({
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
+  const [evaluationResults, setEvaluationResults] = useState<Array<{ id: string; createdAt: string }>>([])
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+  const [reportCreatedAt, setReportCreatedAt] = useState<string | null>(null)
 
+  // Fetch list of evaluation results for the dropdown
   useEffect(() => {
-    setSuggestions(null)
-    setLatestReportNotFound(false)
-    if (selectedWorkItem) {
-      apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/latest`, {
-        headers: { "x-suppress-error-toast": "404" }
+    if (!selectedWorkItem) return
+    let cancelled = false
+    apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load evaluation results list")
+        return res.json()
       })
-        .then(res => {
-          if (res.ok) {
-            return res.json()
-          }
-          throw new Error("Failed to load latest suggestions")
-        })
-        .then(data => {
-          if (data) {
-            if (data.suggestions) {
-              setSuggestions(data.suggestions as EvaluatorSuggestion[])
-            }
-          }
-        })
-        .catch(err => {
-          if (err?.status === 404) {
-            setLatestReportNotFound(true)
-          } else {
-            console.error(err)
-          }
-        })
-    }
+      .then(data => {
+        if (cancelled) return
+        if (Array.isArray(data?.evaluationResults)) {
+          setEvaluationResults(data.evaluationResults)
+        }
+      })
+      .catch(err => {
+        if (!cancelled) console.error(err)
+      })
+    return () => { cancelled = true }
   }, [selectedWorkItem, API, apiFetch])
+
+  // Fetch selected report by id
+  useEffect(() => {
+    if (!selectedWorkItem) return
+    setSuggestions(null)
+    setReportCreatedAt(null)
+    if (!selectedReportId) {
+      setLatestReportNotFound(false)
+      return
+    }
+    apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/${selectedReportId}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load selected evaluation result")
+        return res.json()
+      })
+      .then(data => {
+        if (data) {
+          if (data.suggestions) {
+            setSuggestions(data.suggestions as EvaluatorSuggestion[])
+          }
+          if (data.createdAt) {
+            setReportCreatedAt(data.createdAt)
+          }
+          setLatestReportNotFound(false)
+        }
+      })
+      .catch(err => {
+        console.error(err)
+        setLatestReportNotFound(true)
+      })
+  }, [selectedWorkItem, selectedReportId, API, apiFetch])
 
   const suggestWithLLM = async (workItemId: string) => {
     if (!selectedWorkItem) return
@@ -440,6 +465,27 @@ export function LlmTools({
         Evaluate
       </button>
 
+      {selectedWorkItem && (
+        <div className="report-archive">
+          <label htmlFor="report-select">Select Completeness Report: </label>
+          <select
+            id="report-select"
+            value={selectedReportId ?? ""}
+            onChange={e => {
+              const val = e.target.value
+              setSelectedReportId(val ? val : null)
+            }}
+          >
+            <option value="">-- select report --</option>
+            {evaluationResults.map(r => (
+              <option key={r.id} value={r.id}>
+                {r.id} ({new Date(r.createdAt).toLocaleString()})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <article>
         {latestReportNotFound && (
           <div>
@@ -447,7 +493,12 @@ export function LlmTools({
           </div>
         )}
         {!!suggestions && selectedWorkItemData && (
-          <h1>Completeness Report: {selectedWorkItemData.name}</h1>
+          <>
+            <h1>Completeness Report: {selectedWorkItemData.name}</h1>
+            {reportCreatedAt && (
+              <div className="report-meta">Created: {new Date(reportCreatedAt).toLocaleString()}</div>
+            )}
+          </>
         )}
         {!!suggestions && (
           [...suggestions].sort((a, b) => {
