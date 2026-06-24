@@ -223,24 +223,26 @@ export function LlmTools({
     return null
   }, [apiFetch, API])
 
-  const markSuggestion = useCallback((index: number, status: "ACTED_ON" | "DISCARDED") => {
+  const markSuggestion = useCallback((suggestionId: string | undefined, status: "ACTED_ON" | "DISCARDED") => {
     setSuggestions((prev) => {
       if (!Array.isArray(prev)) return prev
-      const updated = [...prev]
-      const suggestion = updated[index]
-      const suggestionId = suggestion.id
-      updated[index] = { ...suggestion, actedOn: status }
+      const updated = prev.map((s) => {
+        if (s.id && s.id === suggestionId) {
+          return { ...s, actedOn: status }
+        }
+        return s
+      })
       if (suggestionId) {
         actOnSuggestionApi(suggestionId, status).then((result) => {
           if (result?.actedOnBy) {
-            setSuggestions((prev) => {
-              if (!Array.isArray(prev)) return prev
-              const updated = [...prev]
-              const current = updated[index]
-              if (current) {
-                updated[index] = { ...current, actedOnBy: result.actedOnBy }
-              }
-              return updated
+            setSuggestions((prevInner) => {
+              if (!Array.isArray(prevInner)) return prevInner
+              return prevInner.map((s) => {
+                if (s.id && s.id === suggestionId) {
+                  return { ...s, actedOnBy: result.actedOnBy }
+                }
+                return s
+              })
             })
           }
         })
@@ -249,7 +251,7 @@ export function LlmTools({
     })
   }, [actOnSuggestionApi])
 
-  const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion, index: number) => {
+  const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion) => {
     const { action, payload } = suggestion
 
     const normalizedAction =
@@ -309,7 +311,7 @@ export function LlmTools({
 
           await onLoadConcepts(selectedWorkItem)
           await onRefreshGraph(selectedWorkItem)
-          markSuggestion(index, "ACTED_ON")
+        markSuggestion(suggestion.id, "ACTED_ON")
         } finally {
           onSetLoading(false)
         }
@@ -346,7 +348,7 @@ export function LlmTools({
 
           await onLoadConcepts(selectedWorkItem)
           await onRefreshGraph(selectedWorkItem)
-          markSuggestion(index, "ACTED_ON")
+        markSuggestion(suggestion.id, "ACTED_ON")
         } finally {
           onSetLoading(false)
         }
@@ -358,7 +360,7 @@ export function LlmTools({
       case 'Reject': {
         onSetActiveRevisionId(null)
         onSetEditorValue("")
-        markSuggestion(index, "DISCARDED")
+        markSuggestion(suggestion.id, "DISCARDED")
         break
       }
 
@@ -367,8 +369,8 @@ export function LlmTools({
     }
   }, [apiFetch, selectedWorkItem, actorForApi, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion])
 
-  const discardSuggestion = useCallback((index: number) => {
-    markSuggestion(index, "DISCARDED")
+  const discardSuggestion = useCallback((suggestionId: string | undefined) => {
+    markSuggestion(suggestionId, "DISCARDED")
   }, [markSuggestion])
 
   const actionLabelForAction = (action: string, payload: SuggestionPayload): { actionLabel: string; graphDescription: string; hasPayloadData: boolean } => {
@@ -509,10 +511,12 @@ export function LlmTools({
           </>
         )}
         {!!suggestions && (
-          [...suggestions].sort((a, b) => {
-            const order: Record<SuggestionImportance, number> = { "Very high": 4, "High": 3, "Medium": 2, "Low": 1 }
-            return (order[b.importance ?? "Low"] ?? 0) - (order[a.importance ?? "Low"] ?? 0)
-          }).map((suggestion, index) => {
+          [...suggestions]
+            .sort((a, b) => {
+              const order: Record<SuggestionImportance, number> = { "Very high": 4, "High": 3, "Medium": 2, "Low": 1 };
+              return (order[b.importance ?? "Low"] ?? 0) - (order[a.importance ?? "Low"] ?? 0);
+            })
+            .map((suggestion, index) => {
             const suggestionKey = suggestion.text.slice(0, 64).replaceAll(" ", "-")
             const { actionLabel, graphDescription, hasPayloadData } = actionLabelForAction(suggestion.action, suggestion.payload)
             const suggestionStatus = suggestion.actedOn
@@ -566,14 +570,14 @@ export function LlmTools({
                         if (activeRevisionId) {
                           onSetPendingConfirm({
                             message: `You have an active revision in progress. ${confirmMessage}`,
-                            onConfirm: () => actOnSuggestion(suggestion, index),
+                            onConfirm: () => actOnSuggestion(suggestion),
                             confirmLabel,
                             cancelLabel: "Cancel",
                           })
                         } else {
                           onSetPendingConfirm({
                             message: confirmMessage,
-                            onConfirm: () => actOnSuggestion(suggestion, index),
+                            onConfirm: () => actOnSuggestion(suggestion),
                             confirmLabel,
                             cancelLabel: "Cancel",
                           })
@@ -585,7 +589,7 @@ export function LlmTools({
                     </button>
                     <button
                       data-agent={`btn-discard-suggestion-${index}`}
-                      onClick={() => discardSuggestion(index)}
+                      onClick={() => discardSuggestion(suggestion.id)}
                       className="btn btn-danger"
                     >
                       Discard
