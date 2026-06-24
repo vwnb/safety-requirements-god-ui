@@ -415,7 +415,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [editorValue, setEditorValue] = useState("")
 
   const [baselineName, setBaselineName] = useState("")
-  const [selectedRevisions, setSelectedRevisions] = useState<string[]>([])
 
   const [baseId, setBaseId] = useState<string | null>(null)
   const [targetId, setTargetId] = useState<string | null>(null)
@@ -743,28 +742,19 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
-  function toggleRevision(id: string) {
-    setSelectedRevisions((prev) =>
-      prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id]
-    )
-  }
-
   async function createBaseline() {
     return withLoading("Creating baseline...", async () => {
-      await apiFetch(`${API}/baselines`, {
+      await apiFetch(`${API}/baselines/auto`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: baselineName,
-          revisions: selectedRevisions,
+          workItemId: selectedWorkItem,
           user: actorForApi,
         }),
       })
 
       await refreshBaselines()
-      setSelectedRevisions([])
       setBaselineName("")
     })
   }
@@ -1694,8 +1684,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </>
                 )}
 
-                {!!revisionsByConcept && (
-
                   <section data-agent="new-baseline-section">
                     <div className="title">New baseline</div>
 
@@ -1707,46 +1695,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       style={{ ...brutal.input, marginBottom: 8 }}
                     />
 
-                    {Object.keys(revisionsByConcept).length === 0 ? (
-                      <p>
-                        No revisions for this concept.
-                      </p>
-                    ) : (
-                      <>
-                        <div className="list-input">
-                          {Object.values(revisionsByConcept)
-                            .flat()
-                            .map((r) => {
-                              const checked = selectedRevisions.includes(r.id)
-
-                              return (
-                                <div
-                                  className="option option--narrow"
-                                  data-agent={`baseline-revision-${r.id}`}
-                                  key={r.id}
-                                  onClick={() => toggleRevision(r.id)}
-                                  style={{
-                                    background: checked ? "rgb(255, 90, 0)" : "white",
-                                    color: checked ? "#fff" : "black",
-                                  }}
-                                >
-                                  <div className="list-id">{r.id.slice(0, 16)}</div><div className="list-tooltip">{r.markdown.slice(0, 120)}...</div>
-                                </div>
-                              )
-                            })}
-                        </div>
-
-                        <button
-                          data-agent="btn-create-baseline"
-                          onClick={createBaseline}
-                          style={{ ...brutal.button, marginTop: 8 }}
-                        >
-                          Create baseline
-                        </button>
-                      </>
-                    )}
+                    <button
+                      data-agent="btn-create-baseline"
+                      onClick={createBaseline}
+                      style={{ ...brutal.button, marginTop: 8 }}
+                    >
+                      Create baseline
+                    </button>
                   </section>
-                )}
 
                 <hr />
                 <section data-agent="import-concepts-section">
