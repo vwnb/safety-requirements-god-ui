@@ -327,7 +327,7 @@ footer {
   }
 
   #root>* {
-    max-width: calc(100% - 40px)
+    max-width: 100%;
   }
 
   header>.logo {
@@ -501,6 +501,27 @@ section,
 .loading-overlay,
 .loading-message {
   animation: fadeIn 1s ease-out forwards
+}
+
+/* LLM Tools */
+.llm-actions .report-archive {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.llm-actions .report-archive label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #000;
+}
+
+.llm-actions .report-archive select {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* ===== BRUTALIST STYLES ===== */

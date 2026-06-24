@@ -131,8 +131,13 @@ export function LlmTools({
       })
       .then(data => {
         if (cancelled) return
-        if (Array.isArray(data?.evaluationResults)) {
-          setEvaluationResults(data.evaluationResults)
+        const list: Array<{ id: string; createdAt: string }> = Array.isArray(data) ? data : (Array.isArray(data?.evaluationResults) ? data.evaluationResults : [])
+        console.debug("Loaded evaluation results list", list)
+        setEvaluationResults(list)
+        // auto-select latest report by createdAt desc
+        if (list.length > 0) {
+          const sorted = [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          setSelectedReportId(sorted[0].id)
         }
       })
       .catch(err => {
@@ -150,7 +155,7 @@ export function LlmTools({
       setLatestReportNotFound(false)
       return
     }
-    apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/${selectedReportId}`)
+    apiFetch(`${API}/evaluation-results/${selectedReportId}`)
       .then(res => {
         if (!res.ok) throw new Error("Failed to load selected evaluation result")
         return res.json()
@@ -441,50 +446,53 @@ export function LlmTools({
       <div className="title llm-tools-header">
         Evaluate work item with LLM
         <InfoButton
-          title="Evaluate Work Item with LLM"
+          title="Evaluate work item with LLM"
           content="LLM evaluation gives you a quick safety review of a work item. It helps spot missing links, overlooked hazards, and gaps in safety requirements."
         />
       </div>
 
-      <button
-        data-agent="btn-llm-suggestions"
-        onClick={() => {
-          const action = () => { suggestWithLLM(selectedWorkItem) }
+      <div className="llm-actions cms-layout">
+        <div>
+          <button
+            data-agent="btn-llm-suggestions"
+            onClick={() => {
+              const action = () => { suggestWithLLM(selectedWorkItem) }
 
-          if (activeRevisionId) {
-            onSetPendingConfirm({
-              message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
-              onConfirm: action,
-            })
-          } else {
-            action()
-          }
-        }}
-        className="btn"
-      >
-        Evaluate
-      </button>
-
-      {selectedWorkItem && (
-        <div className="report-archive">
-          <label htmlFor="report-select">Select Completeness Report: </label>
-          <select
-            id="report-select"
-            value={selectedReportId ?? ""}
-            onChange={e => {
-              const val = e.target.value
-              setSelectedReportId(val ? val : null)
+              if (activeRevisionId) {
+                onSetPendingConfirm({
+                  message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
+                  onConfirm: action,
+                })
+              } else {
+                action()
+              }
             }}
+            className="btn btn-generate"
           >
-            <option value="">-- select report --</option>
-            {evaluationResults.map(r => (
-              <option key={r.id} value={r.id}>
-                {r.id} ({new Date(r.createdAt).toLocaleString()})
-              </option>
-            ))}
-          </select>
+            Generate new completeness report
+          </button>
         </div>
-      )}
+        {selectedWorkItem && (
+          <div className="report-archive">
+            <label htmlFor="report-select">Select report: </label>
+            <select
+              id="report-select"
+              value={selectedReportId ?? ""}
+              onChange={e => {
+                const val = e.target.value
+                setSelectedReportId(val ? val : null)
+              }}
+            >
+              <option value="">-- Select report --</option>
+              {evaluationResults.map(r => (
+                <option key={r.id} value={r.id}>
+                  {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       <article>
         {latestReportNotFound && (
@@ -494,7 +502,7 @@ export function LlmTools({
         )}
         {!!suggestions && selectedWorkItemData && (
           <>
-            <h1>Completeness Report: {selectedWorkItemData.name}</h1>
+            <h1>Completeness report: {selectedWorkItemData.name}</h1>
             {reportCreatedAt && (
               <div className="report-meta">Created: {new Date(reportCreatedAt).toLocaleString()}</div>
             )}
