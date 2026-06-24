@@ -297,6 +297,13 @@ export default function GraphView({
     return layoutGraph(nodes, edges)
   }, [nodes, edges])
 
+  // Determine if we have any graph data to display. Rendering ReactFlow with
+  // empty node/edge arrays can cause it to reset its internal state and, in
+  // some edge‑cases, result in a completely blank canvas. By gating the
+  // rendering until we have at least one node and one edge we avoid spurious
+  // re‑mounts that were observed as "graph loading fails mysteriously".
+  const hasGraphData = layoutedNodes.length > 0 && layoutedEdges.length > 0
+
   // Convert graph-space coordinates to screen-space within container
   const graphToScreen = useCallback((graphX: number, graphY: number): { x: number; y: number } => {
     const { x, y, zoom } = viewport
@@ -385,60 +392,62 @@ export default function GraphView({
           </div>
         )}
 
-        <ReactFlow
-          key={graphKey}
-          className="react-flow"
-          data-agent="react-flow"
-          nodes={layoutedNodes}
-          edges={layoutedEdges}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={fitViewOptions}
-          nodeExtent={[[0, 0], [3000, 3000]]}
-          onInit={(instance) => {
-            reactFlowInstanceRef.current = instance
-          }}
-          onMove={(_, newViewport) => {
-            viewportRef.current = newViewport
-            setViewport(newViewport)
-          }}
-          onMoveEnd={(_, viewport) => {
-            setViewport(viewport)
-            viewportRef.current = viewport
-            // Convert viewport center to graph-space coordinates
-            const container = containerRef.current
-            if (container) {
-              const rect = container.getBoundingClientRect()
-              const centerX = (rect.width / 2 - viewport.x) / viewport.zoom
-              const centerY = (rect.height / 2 - viewport.y) / viewport.zoom
-              onViewportChange({ x: centerX, y: centerY, zoom: viewport.zoom })
-            }
-          }}
-          onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
-          onEdgeMouseLeave={() => setHoveredEdgeId(null)}
-          onNodeClick={(_, node) => {
-            if (onNodeClick && node.data.conceptId) {
-              onNodeClick(node.data.conceptId)
-            }
-          }}
-          onEdgeClick={(_, edge) => {
-            if (!graphLoading) {
-              deleteRelation(edge.id)
-            }
-          }}
-          onConnect={(params) => {
-            if (!params.source || !params.target) return
-
-            setPendingConnection({
-              from: params.source,
-              to: params.target,
-            })
-          }}
-        >
-          <MiniMap />
-          <Controls />
-          <Background variant={BackgroundVariant.Cross} />
-        </ReactFlow>
+       {hasGraphData && (
+         <ReactFlow
+           key={graphKey}
+           className="react-flow"
+           data-agent="react-flow"
+           nodes={layoutedNodes}
+           edges={layoutedEdges}
+           nodeTypes={nodeTypes}
+           fitView
+           fitViewOptions={fitViewOptions}
+           nodeExtent={[[0, 0], [3000, 3000]]}
+           onInit={(instance) => {
+             reactFlowInstanceRef.current = instance
+           }}
+           onMove={(_, newViewport) => {
+             viewportRef.current = newViewport
+             setViewport(newViewport)
+           }}
+           onMoveEnd={(_, viewport) => {
+             setViewport(viewport)
+             viewportRef.current = viewport
+             // Convert viewport center to graph-space coordinates
+             const container = containerRef.current
+             if (container) {
+               const rect = container.getBoundingClientRect()
+               const centerX = (rect.width / 2 - viewport.x) / viewport.zoom
+               const centerY = (rect.height / 2 - viewport.y) / viewport.zoom
+               onViewportChange({ x: centerX, y: centerY, zoom: viewport.zoom })
+             }
+           }}
+           onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
+           onEdgeMouseLeave={() => setHoveredEdgeId(null)}
+           onNodeClick={(_, node) => {
+             if (onNodeClick && node.data.conceptId) {
+               onNodeClick(node.data.conceptId)
+             }
+           }}
+           onEdgeClick={(_, edge) => {
+             if (!graphLoading) {
+               deleteRelation(edge.id)
+             }
+           }}
+           onConnect={(params) => {
+             if (!params.source || !params.target) return
+ 
+             setPendingConnection({
+               from: params.source,
+               to: params.target,
+             })
+           }}
+         >
+           <MiniMap />
+           <Controls />
+           <Background variant={BackgroundVariant.Cross} />
+         </ReactFlow>
+       )}
 
         {/* User circles - absolutely positioned elements that move with graph viewport, fixed size */}
         {presences
