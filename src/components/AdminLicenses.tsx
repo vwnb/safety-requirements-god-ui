@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react"
-import { brutal } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 
 type User = {
@@ -140,70 +139,32 @@ export function AdminLicenses({
   }
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0, 0, 0, 0.4)",
-        zIndex: 10000,
-        display: "grid",
-        placeItems: "center",
-        padding: 20,
-      }}
-    >
-      <div
-        style={{
-          background: "rgb(233, 237, 233)",
-          border: "2px solid black",
-          borderLeftWidth: 6,
-          borderRadius: 8,
-          fontFamily: "monospace",
-          padding: "min(2rem, 5vw)",
-          maxWidth: "min(700px, calc(100vw - 40px))",
-          width: "100%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-          }}
-        >
-          <div className="title" style={{ margin: 0 }}>
-            License Management
-          </div>
-          <button onClick={onClose} style={brutal.button}>
-            Close
-          </button>
+    <div className="admin-modal-overlay">
+      <div className="admin-modal-content">
+        <div className="admin-modal-header">
+          <div className="title admin-modal-title">License Management</div>
+          <button onClick={onClose} className="btn">Close</button>
         </div>
 
         {error && (
-          <div style={{ ...brutal.box, border: "2px solid black" }}>
-            <p style={{ color: "black" }}>{error}</p>
+          <div className="error-box">
+            <p className="error-text">{error}</p>
           </div>
         )}
 
-        <div style={{ marginBottom: 16 }}>
+        <div className="mb-16">
           <button
             onClick={() => setShowForm(!showForm)}
-            style={{
-              ...brutal.button,
-              background: showForm ? SemanticColor.DANGER : SemanticColor.SUCCESS,
-            }}
+            className="btn"
+            style={{ background: showForm ? SemanticColor.DANGER : SemanticColor.SUCCESS }}
           >
             {showForm ? "Cancel" : "Grant License"}
           </button>
         </div>
 
         {showForm && (
-          <div style={{ ...brutal.box, marginBottom: 16 }}>
-            <div style={{ fontWeight: 600, marginBottom: 12 }}>
-              Grant / Replace License
-            </div>
+          <div className="card">
+            <div className="grant-form-title">Grant / Replace License</div>
 
             <div className="license-form-row">
               <div className="license-label">User ID</div>
@@ -213,7 +174,8 @@ export function AdminLicenses({
                   setFormData({ ...formData, userId: e.target.value })
                 }
                 placeholder="auth0|..."
-                style={brutal.input}
+                className="license-value"
+                style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
               />
             </div>
 
@@ -225,7 +187,8 @@ export function AdminLicenses({
                 onChange={(e) =>
                   setFormData({ ...formData, expiresAt: e.target.value })
                 }
-                style={brutal.input}
+                className="license-value"
+                style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
               />
             </div>
 
@@ -241,20 +204,16 @@ export function AdminLicenses({
                     llmLimit: parseInt(e.target.value) || 0,
                   })
                 }
-                style={brutal.input}
+                className="license-value"
+                style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
               />
             </div>
 
             <button
               onClick={grantLicense}
               disabled={submitting || !formData.userId.trim() || !formData.expiresAt}
-              style={{
-                ...brutal.button,
-                background: SemanticColor.SUCCESS,
-                ...(submitting || !formData.userId.trim() || !formData.expiresAt
-                  ? brutal.disabled
-                  : {}),
-              }}
+              className="btn"
+              style={{ opacity: (submitting || !formData.userId.trim() || !formData.expiresAt) ? 0.6 : 1, cursor: (submitting || !formData.userId.trim() || !formData.expiresAt) ? 'not-allowed' : 'pointer', background: SemanticColor.SUCCESS }}
             >
               {submitting ? "Granting..." : "Grant License"}
             </button>
@@ -277,56 +236,35 @@ export function AdminLicenses({
               return (
                 <div
                   key={license.id}
-                  style={{
-                    ...brutal.box,
-                    marginBottom: 12,
-                  }}
+                  className="card mb-12"
                 >
                   {/* Header row: status badge + license ID */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 10,
-                    }}
-                  >
+                  <div className="license-card-header">
                     <div
-                      style={{
-                        ...brutal.tag,
-                        flexShrink: 0,
-                        background: isExpired
-                          ? SemanticColor.DANGER
-                          : SemanticColor.SUCCESS,
-                      }}
+                      className="tag"
+                      style={{ background: isExpired ? SemanticColor.DANGER : SemanticColor.SUCCESS }}
                     >
                       {isExpired ? "Expired" : "Active"}
                     </div>
-                    <span style={{ fontSize: 11, opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span className="license-card-id">
                       ID: {license.id}
                     </span>
                   </div>
 
                   {/* User info - prominent */}
-                  <div className="license-user-card" style={{ marginBottom: 10, padding: "6px 10px", background: "rgba(0,0,0,0.04)", borderRadius: 4, border: "1px solid rgba(0,0,0,0.15)" }}>
-                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                      <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
-                        <span style={{ fontWeight: 600 }}>{license.user.name}</span>
-                        <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 8 }}>
+                  <div className="license-user-card">
+                    <div className="license-user-details">
+                      <div className="license-user-name-email">
+                        <span className="text-bold">{license.user.name}</span>
+                        <span className="license-granted-by" style={{ marginLeft: 8 }}>
                           {license.user.email}
                         </span>
                       </div>
                       <button
                         onClick={() => revokeLicense(license.userId)}
                         disabled={submitting}
-                        style={{
-                          ...brutal.button,
-                          background: SemanticColor.DANGER,
-                          fontSize: 11,
-                          padding: "3px 10px",
-                          flexShrink: 0,
-                          ...(submitting ? brutal.disabled : {}),
-                        }}
+                        className="btn btn-danger btn-sm"
+                        style={{ opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}
                       >
                         Revoke
                       </button>
@@ -342,7 +280,7 @@ export function AdminLicenses({
                       day: "numeric",
                     })}
                     {!isExpired && (
-                      <span style={{ marginLeft: 8, fontSize: 11, opacity: 0.7 }} className="license-nowrap-hint">
+                      <span className="license-nowrap-hint" style={{ marginLeft: 8, fontSize: 11, opacity: 0.7 }}>
                         (in {Math.ceil((new Date(license.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days)
                       </span>
                     )}
@@ -356,31 +294,21 @@ export function AdminLicenses({
                   </DetailRow>
                   <DetailRow label="Granted By">
                     {license.grantedBy.name}{" "}
-                    <span style={{ fontSize: 11, opacity: 0.7 }}>({license.grantedBy.email})</span>
+                    <span className="license-granted-by">({license.grantedBy.email})</span>
                   </DetailRow>
 
                   {/* LLM usage with progress bar */}
                   <div className="license-form-row">
                     <div className="license-label" style={{ width: 100 }}>LLM Calls</div>
                     <div className="license-value" style={{ opacity: 1, cursor: "default", border: "none", background: "transparent", padding: 0, wordBreak: "break-word" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: 12 }}>
+                      <div className="usage-bar-header">
                         <span>{license.llmUsed} / {license.llmLimit} used</span>
                         <span style={{ opacity: 0.7 }}>{usagePercent}%</span>
                       </div>
-                      <div
-                        style={{
-                          width: "100%",
-                          height: 10,
-                          border: "2px solid black",
-                          background: "white",
-                          borderRadius: 2,
-                          overflow: "hidden",
-                          marginTop: 4,
-                        }}
-                      >
+                      <div className="license-bar-track">
                         <div
+                          className="license-bar-fill"
                           style={{
-                            height: "100%",
                             width: `${Math.min(usagePercent, 100)}%`,
                             background:
                               usagePercent >= 90
@@ -388,7 +316,6 @@ export function AdminLicenses({
                                 : usagePercent >= 75
                                 ? SemanticColor.ARGUMENT
                                 : SemanticColor.SUCCESS,
-                            transition: "width 0.3s ease",
                           }}
                         />
                       </div>

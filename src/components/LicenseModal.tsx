@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import Modal from "./Modal"
-import { brutal } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 
 type User = {
@@ -95,19 +94,16 @@ export function LicenseModal({
       {loading && <p>Loading license information...</p>}
 
       {error && (
-        <div style={{ ...brutal.box, border: "2px solid black" }}>
-          <p style={{ color: "black" }}>{error}</p>
+        <div className="error-box">
+          <p className="error-text">{error}</p>
         </div>
       )}
 
       {!loading && !error && !license && (
         <div>
           <div
-            style={{
-              ...brutal.tag,
-              background: SemanticColor.DANGER,
-              marginBottom: 12,
-            }}
+            className="tag license-no-active"
+            style={{ background: SemanticColor.DANGER }}
           >
             No Active License
           </div>
@@ -121,40 +117,23 @@ export function LicenseModal({
       {!loading && !error && license && (
         <div>
           {/* Header: status + license ID */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 14,
-            }}
-          >
+          <div className="license-status-row">
             <div
-              style={{
-                ...brutal.tag,
-                background: isExpired ? SemanticColor.DANGER : SemanticColor.SUCCESS,
-              }}
+              className="tag"
+              style={{ background: isExpired ? SemanticColor.DANGER : SemanticColor.SUCCESS }}
             >
               {isExpired ? "Expired" : "Active"}
             </div>
-            <span style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+            <span className="license-id">
               ID: {license.id}
             </span>
           </div>
 
           {/* User info card */}
           {license.user && (
-            <div
-              style={{
-                marginBottom: 14,
-                padding: "8px 12px",
-                background: "rgba(0,0,0,0.04)",
-                borderRadius: 4,
-                border: "1px solid rgba(0,0,0,0.15)",
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{license.user.name}</div>
-              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
+            <div className="license-user-card">
+              <div className="license-user-name">{license.user.name}</div>
+              <div className="license-user-email">
                 {license.user.email}
               </div>
             </div>
@@ -176,20 +155,14 @@ export function LicenseModal({
                 month: "long",
                 day: "numeric",
               })}
-              {!isExpired && (
-                <span
-                  style={{
-                    marginLeft: 8,
-                    color:
-                      daysUntilExpiry <= 7
-                        ? SemanticColor.DANGER
-                        : "black",
-                  }}
-                  className="license-nowrap-hint"
-                >
-                  ({daysUntilExpiry} day{daysUntilExpiry !== 1 ? "s" : ""} remaining)
-                </span>
-              )}
+               {!isExpired && (
+                 <span
+                   className="license-nowrap-hint"
+                   style={{ marginLeft: 8, color: daysUntilExpiry <= 7 ? SemanticColor.DANGER : "black" }}
+                 >
+                   ({daysUntilExpiry} day{daysUntilExpiry !== 1 ? "s" : ""} remaining)
+                 </span>
+               )}
             </div>
           </div>
 
@@ -211,7 +184,7 @@ export function LicenseModal({
               <div className="license-label">Granted By</div>
               <div className="license-value">
                 {license.grantedBy.name}{" "}
-                <span style={{ fontSize: 11, opacity: 0.7 }}>
+                <span className="text-sm" style={{ opacity: 0.7 }}>
                   ({license.grantedBy.email})
                 </span>
               </div>
@@ -223,12 +196,12 @@ export function LicenseModal({
             <div className="license-value" style={{ whiteSpace: "normal" }}>
               <span>{license.llmUsed} / {license.llmLimit} used</span>
               {remaining && remaining.remaining > 0 && (
-                <span style={{ marginLeft: 8 }} className="license-nowrap-hint">
+                <span className="license-nowrap-hint" style={{ marginLeft: 8 }}>
                   ({remaining.remaining} remaining)
                 </span>
               )}
               {remaining && remaining.remaining <= 0 && (
-                <span style={{ marginLeft: 8, color: SemanticColor.DANGER }} className="license-nowrap-hint">
+                <span className="license-nowrap-hint" style={{ marginLeft: 8, color: SemanticColor.DANGER }}>
                   (limit reached)
                 </span>
               )}
@@ -237,32 +210,15 @@ export function LicenseModal({
 
           {/* Usage bar */}
           {remaining && (
-            <div style={{ marginTop: 16 }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontFamily: "monospace",
-                  fontSize: 11,
-                  marginBottom: 4,
-                }}
-              >
+            <div className="usage-bar-container">
+              <div className="usage-bar-header">
                 <span>Usage</span>
                 <span>{usagePercent}%</span>
               </div>
-              <div
-                style={{
-                  width: "100%",
-                  height: 12,
-                  border: "2px solid black",
-                  background: "white",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                }}
-              >
+              <div className="usage-bar-track">
                 <div
+                  className="usage-bar-fill"
                   style={{
-                    height: "100%",
                     width: `${Math.min(usagePercent, 100)}%`,
                     background:
                       usagePercent >= 90
@@ -270,7 +226,6 @@ export function LicenseModal({
                         : usagePercent >= 75
                         ? SemanticColor.ARGUMENT
                         : SemanticColor.SUCCESS,
-                    transition: "width 0.3s ease",
                   }}
                 />
               </div>

@@ -1,6 +1,5 @@
 import { useState } from "react"
 import Modal from "./Modal"
-import { brutal } from "../App"
 
 export function InfoButton({ title, content }: { title: string, content: string }) {
   const [open, setOpen] = useState(false)
@@ -8,7 +7,8 @@ export function InfoButton({ title, content }: { title: string, content: string 
   return (
     <>
       <span
-        style={{ cursor: "pointer", marginLeft: "8px", verticalAlign: "middle" }}
+        className="cursor-pointer"
+        style={{ marginLeft: "8px", verticalAlign: "middle" }}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true) }}
         title={`More info about ${title}`}
       >
@@ -19,10 +19,11 @@ export function InfoButton({ title, content }: { title: string, content: string 
           <article>
             <p>{content}</p>
           </article>
-          <div style={{ marginTop: 16 }}>
+          <div className="mt-16">
             <button
               onClick={() => setOpen(false)}
-              style={brutal.button}
+              className="license-value"
+              style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', borderLeftWidth: '6px', borderRadius: 4, padding: '8px 16px', margin: '8px 0', fontFamily: 'monospace', fontWeight: 600 }}
             >
               Close
             </button>

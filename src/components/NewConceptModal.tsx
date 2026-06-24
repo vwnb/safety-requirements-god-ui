@@ -1,7 +1,5 @@
 import { useState } from "react"
 import Modal from "./Modal"
-import { brutal } from "../App"
-import { SemanticColor } from "../lib/SemanticColor"
 
 type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 
@@ -14,44 +12,80 @@ export default function NewConceptModal({
 }) {
   const [key, setKey] = useState("")
   const [title, setTitle] = useState("")
-  const [type, setType] = useState("ITEM")
-  const [phase, setPhase] = useState("ITEM_DEFINITION")
+  const [type, setType] = useState("")
+  const [phase, setPhase] = useState("")
   const [asil, setAsil] = useState("")
   const [sil, setSil] = useState("")
   const [pl, setPl] = useState("")
   const [standards, setStandards] = useState<Standard[]>([])
 
+  const handleCreate = () => {
+    if (key.trim() && title.trim() && type) {
+      onCreate(key, title, type, phase, asil, sil, pl, standards)
+    }
+  }
+
+  const handleCancel = () => {
+    onClose()
+  }
+
+  const toggleStandard = (s: Standard) => {
+    setStandards(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
+  }
+
   return (
     <Modal title="New concept" onClose={onClose}>
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>Key</div>
+      <div className="form-row">
+        <div className="field-label">Key</div>
         <input
           data-agent="input-new-concept-key"
-          placeholder="e.g. BRAKE_FAILURE"
+          placeholder="e.g. HAZARD-001"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          style={{ ...brutal.input, flex: 1 }}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
         />
       </div>
 
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>Title</div>
+      <div className="form-row">
+        <div className="field-label">Title</div>
         <input
           data-agent="input-new-concept-title"
-          placeholder="optional"
+          placeholder="e.g. Loss of braking"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          style={{ ...brutal.input, flex: 1 }}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
         />
       </div>
 
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>Phase</div>
+      <div className="form-row">
+        <div className="field-label">Type</div>
+        <select
+          data-agent="select-new-concept-type"
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
+        >
+          <option value="">-- Select Type --</option>
+          <option value="HAZARD">Hazard</option>
+          <option value="SAFETY_GOAL">Safety Goal</option>
+          <option value="FSR">Functional Safety Requirement</option>
+          <option value="TSR">Technical Safety Requirement</option>
+          <option value="SSR">Software Safety Requirement</option>
+          <option value="TEST_CASE">Test Case</option>
+        </select>
+      </div>
+
+      <div className="form-row">
+        <div className="field-label">Phase</div>
         <select
           data-agent="select-new-concept-phase"
           value={phase}
           onChange={(e) => setPhase(e.target.value)}
-          style={{ ...brutal.select, flex: 1 }}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
         >
           <option value="">-- Select Phase --</option>
           <option value="ITEM_DEFINITION">Item Definition</option>
@@ -63,36 +97,35 @@ export default function NewConceptModal({
           <option value="IMPLEMENTATION">Implementation</option>
           <option value="VERIFICATION">Verification</option>
           <option value="VALIDATION">Validation</option>
-          <option value="PRODUCTION">Production</option>
-          <option value="OPERATION">Operation</option>
-          <option value="DECOMMISSIONING">Decommissioning</option>
         </select>
       </div>
 
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>ASIL</div>
+      <div className="form-row">
+        <div className="field-label">ASIL</div>
         <select
           data-agent="select-new-concept-asil"
           value={asil}
           onChange={(e) => setAsil(e.target.value)}
-          style={{ ...brutal.select, flex: 1 }}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
         >
           <option value="">-- Select ASIL --</option>
           <option value="QM">QM</option>
-          <option value="ASIL_A">ASIL_A</option>
-          <option value="ASIL_B">ASIL_B</option>
-          <option value="ASIL_C">ASIL_C</option>
-          <option value="ASIL_D">ASIL_D</option>
+          <option value="ASIL_A">ASIL A</option>
+          <option value="ASIL_B">ASIL B</option>
+          <option value="ASIL_C">ASIL C</option>
+          <option value="ASIL_D">ASIL D</option>
         </select>
       </div>
 
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>SIL</div>
+      <div className="form-row">
+        <div className="field-label">SIL</div>
         <select
           data-agent="select-new-concept-sil"
           value={sil}
           onChange={(e) => setSil(e.target.value)}
-          style={{ ...brutal.select, flex: 1 }}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
         >
           <option value="">-- Select SIL --</option>
           <option value="SIL_1">SIL 1</option>
@@ -102,38 +135,33 @@ export default function NewConceptModal({
         </select>
       </div>
 
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>PL</div>
+      <div className="form-row">
+        <div className="field-label">PL</div>
         <select
           data-agent="select-new-concept-pl"
           value={pl}
           onChange={(e) => setPl(e.target.value)}
-          style={{ ...brutal.select, flex: 1 }}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
         >
           <option value="">-- Select PL --</option>
-          <option value="PL_A">PL A</option>
-          <option value="PL_B">PL B</option>
-          <option value="PL_C">PL C</option>
-          <option value="PL_D">PL D</option>
-          <option value="PL_E">PL E</option>
+          <option value="PL_A">PL a</option>
+          <option value="PL_B">PL b</option>
+          <option value="PL_C">PL c</option>
+          <option value="PL_D">PL d</option>
+          <option value="PL_E">PL e</option>
         </select>
       </div>
 
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>Standards</div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+      <div className="form-row">
+        <div className="field-label">Standards</div>
+        <div className="flex-wrap">
           {(["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]).map((s) => (
-            <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+            <label key={s} className="checkbox-label">
               <input
                 type="checkbox"
                 checked={standards.includes(s)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setStandards([...standards, s])
-                  } else {
-                    setStandards(standards.filter((x) => x !== s))
-                  }
-                }}
+                onChange={() => toggleStandard(s)}
               />
               {s.replace("_", " ")}
             </label>
@@ -141,55 +169,19 @@ export default function NewConceptModal({
         </div>
       </div>
 
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>Type</div>
-        <select
-          data-agent="select-new-concept-type"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          style={{ ...brutal.select, flex: 1 }}
-        >
-          <option value="">-- Select Type --</option>
-          <option value="ITEM">Item</option>
-          <option value="HAZARD">Hazard</option>
-          <option value="HARM">Harm</option>
-          <option value="SAFETY_GOAL">Safety goal</option>
-          <option value="FUNCTIONAL_SAFETY_REQUIREMENT">Functional safety requirement</option>
-          <option value="TECHNICAL_SAFETY_REQUIREMENT">Technical safety requirement</option>
-          <option value="HARDWARE_REQUIREMENT">Hardware requirement</option>
-          <option value="SOFTWARE_REQUIREMENT">Software requirement</option>
-          <option value="HARDWARE_SAFETY_REQUIREMENT">Hardware safety requirement</option>
-          <option value="SOFTWARE_SAFETY_REQUIREMENT">Software safety requirement</option>
-          <option value="ASSUMPTION">Assumption</option>
-          <option value="CONSTRAINT">Constraint</option>
-          <option value="TEST_CASE">Test case</option>
-          <option value="TEST_RESULT">Test result</option>
-          <option value="PROOF_TEST">Proof test</option>
-          <option value="VERIFICATION_REPORT">Verification report</option>
-          <option value="VALIDATION_REPORT">Validation report</option>
-          <option value="SAFETY_CASE">Safety case</option>
-          <option value="SAFETY_MANUAL">Safety manual</option>
-          <option value="CHANGE_REQUEST">Change request</option>
-          <option value="ANOMALY">Anomaly</option>
-          <option value="FAILURE_RATE">Failure rate</option>
-          <option value="DIAGNOSTIC_COVERAGE">Diagnostic coverage</option>
-          <option value="COMMON_CAUSE_FAILURE">Common cause failure</option>
-          <option value="ARCHITECTURE">Architecture</option>
-        </select>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+      <div className="form-actions">
         <button
           data-agent="btn-create-concept"
-          onClick={() => onCreate(key, title, type, phase, asil, sil, pl, standards)}
-          style={brutal.button}
+          onClick={handleCreate}
+          className="btn"
+          style={{ opacity: (key.trim() && title.trim() && type) ? 1 : 0.6, cursor: (key.trim() && title.trim() && type) ? 'pointer' : 'not-allowed' }}
         >
           Create
         </button>
         <button
           data-agent="btn-cancel-new-concept"
-          onClick={onClose}
-          style={{ ...brutal.button, backgroundColor: SemanticColor.DANGER }}
+          onClick={handleCancel}
+          className="btn btn-danger"
         >
           Cancel
         </button>

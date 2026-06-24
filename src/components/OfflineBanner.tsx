@@ -19,22 +19,7 @@ export function OfflineBanner() {
   if (isOnline) return null
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 10000,
-        background: "#FF5A00",
-        color: "white",
-        fontFamily: "monospace",
-        padding: "1em",
-        textAlign: "center",
-        borderTop: "2px solid black",
-        fontWeight: "bold",
-      }}
-    >
+    <div className="offline-banner">
       You are offline. Changes won't be saved.
     </div>
   )

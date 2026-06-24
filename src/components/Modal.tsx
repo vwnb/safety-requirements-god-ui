@@ -26,31 +26,12 @@ export default function Modal({
   const modalContent = (
     <div
       data-agent="modal-overlay"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0, 0, 0, 0.4)",
-        zIndex: 10000,
-        display: "grid",
-        placeItems: "center",
-        padding: 20,
-      }}
+      className="modal"
     >
       <div
         data-agent="modal-content"
         ref={ref}
-        style={{
-          background: "rgb(233, 237, 233)",
-          border: "2px solid black",
-          borderLeftWidth: 6,
-          borderRadius: 8,
-          fontFamily: "monospace",
-          padding: "min(2rem, 5vw)",
-          maxWidth: "min(480px, calc(100vw - 40px))",
-          width: "100%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
+        className="modal-content"
       >
         {title && <div className="title" style={{ marginBottom: 16 }}>{title}</div>}
         {children}

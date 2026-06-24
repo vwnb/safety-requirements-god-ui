@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
-import { brutal, type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type WorkItem } from "../App"
-import { SemanticColor } from "../lib/SemanticColor"
+import { type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type WorkItem } from "../App"
 
 const PHASES = [
   "ITEM_DEFINITION", "HARA", "FUNCTIONAL_SAFETY", "TECHNICAL_SAFETY",
@@ -13,12 +12,6 @@ const SIL_OPTIONS = ["SIL_1", "SIL_2", "SIL_3", "SIL_4"] as SIL[]
 const PL_OPTIONS = ["PL_A", "PL_B", "PL_C", "PL_D", "PL_E"] as PL[]
 const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]
 
-const fieldLabel: React.CSSProperties = {
-  fontWeight: 600,
-  minWidth: 140,
-  flexShrink: 0,
-  color: "#000",
-}
 
 export default function WorkItemCard({
   workItem,
@@ -92,94 +85,95 @@ export default function WorkItemCard({
   }
 
   return (
-    <div data-agent="work-item-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px dashed black", background: "rgba(255,255,255,0.5)" }}>
+    <div data-agent="work-item-card" className="card">
       {!isEditing ? (
         <article>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div className="card-header-row-start">
             <h2>
               {workItem.key} — {workItem.name}
             </h2>
             <button
               data-agent="btn-edit-work-item"
               onClick={() => setIsEditing(true)}
-              style={brutal.button}
+              className="btn"
             >
               Edit
             </button>
           </div>
 
           {workItem.description && (
-            <p style={{ marginTop: 6, lineHeight: 1.5, color: "#222" }}>
+            <p className="description-text">
               {workItem.description}
             </p>
           )}
 
-          <p style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
-            <span><span style={fieldLabel}>Created by</span> {workItem.createdBy?.name || "—"}</span>
+          <p className="info-row">
+            <span><span className="field-label">Created by</span> {workItem.createdBy?.name || "—"}</span>
             {workItem.phase && (
-              <span><span style={fieldLabel}>Phase</span> {workItem.phase.replace(/_/g, " ")}</span>
+              <span><span className="field-label">Phase</span> {workItem.phase.replace(/_/g, " ")}</span>
             )}
           </p>
 
-          <p style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-            {workItem.asil && <span style={{ ...brutal.tag, background: SemanticColor.RISK }}>ASIL: {workItem.asil}</span>}
-            {workItem.sil && <span style={{ ...brutal.tag, background: SemanticColor.FUNCTIONAL }}>SIL: {workItem.sil}</span>}
-            {workItem.pl && <span style={{ ...brutal.tag, background: SemanticColor.METRIC }}>PL: {workItem.pl}</span>}
+          <p className="info-row-tags">
+            {workItem.asil && <span className="tag tag-risk">ASIL: {workItem.asil}</span>}
+            {workItem.sil && <span className="tag tag-functional">SIL: {workItem.sil}</span>}
+            {workItem.pl && <span className="tag tag-metric">PL: {workItem.pl}</span>}
             {(workItem.standards ?? []).map((s) => (
-              <span key={s} style={{ ...brutal.tag, background: SemanticColor.STRUCTURE }}>{s.replace(/_/g, " ")}</span>
+              <span key={s} className="tag tag-structure">{s.replace(/_/g, " ")}</span>
             ))}
           </p>
 
-          <p style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
+          <p className="info-row">
             {workItem.applicationContext && (
-              <span><span style={fieldLabel}>Application Context</span> {workItem.applicationContext}</span>
+              <span><span className="field-label">Application Context</span> {workItem.applicationContext}</span>
             )}
             {workItem.systemBoundary && (
-              <span><span style={fieldLabel}>System Boundary</span> {workItem.systemBoundary}</span>
+              <span><span className="field-label">System Boundary</span> {workItem.systemBoundary}</span>
             )}
           </p>
         </article>
       ) : (
         <>
-          <div className="title" style={{ marginTop: 0 }}>Edit work item details</div>
+          <div className="title mt-0">Edit work item details</div>
 
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Key</div>
-            <div data-agent="input-work-item-key" style={{ ...brutal.input, ...brutal.disabled }}>
+          <div className="form-row">
+            <div className="field-label">Key</div>
+            <div data-agent="input-work-item-key" className="license-value" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
               {workItem.key}
             </div>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Created by</div>
-            <div data-agent="input-work-item-created-by" style={{ ...brutal.input, ...brutal.disabled }}>
+          <div className="form-row">
+            <div className="field-label">Created by</div>
+            <div data-agent="input-work-item-created-by" className="license-value" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
               {workItem.createdBy?.name || ""}
             </div>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Name</div>
+          <div className="form-row">
+            <div className="field-label">Name</div>
             <input
               data-agent="input-work-item-name"
               value={editName}
               onChange={(e) => onEditName(e.target.value)}
-              style={brutal.input}
+              className="license-value"
+              style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
             />
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Description</div>
+          <div className="form-row">
+            <div className="field-label">Description</div>
             <textarea
               data-agent="input-work-item-description"
               value={editDescription}
               onChange={(e) => onEditDescription(e.target.value)}
-              style={{ ...brutal.input, height: 60 }}
+              className="license-value form-row-textarea"
+              style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
             />
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Phase</div>
+          <div className="form-row">
+            <div className="field-label">Phase</div>
             <select
               data-agent="select-work-item-phase"
               value={editPhase}
               onChange={(e) => onEditPhase(e.target.value as LifecyclePhase | "")}
-              style={brutal.select}
             >
               <option value="">-- Select Phase --</option>
               {PHASES.map((p) => (
@@ -187,13 +181,12 @@ export default function WorkItemCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>ASIL</div>
+          <div className="form-row">
+            <div className="field-label">ASIL</div>
             <select
               data-agent="select-work-item-asil"
               value={editAsil}
               onChange={(e) => onEditAsil(e.target.value as ASIL | "")}
-              style={brutal.select}
             >
               <option value="">-- Select ASIL --</option>
               {ASIL_OPTIONS.map((a) => (
@@ -201,13 +194,12 @@ export default function WorkItemCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>SIL</div>
+          <div className="form-row">
+            <div className="field-label">SIL</div>
             <select
               data-agent="select-work-item-sil"
               value={editSil}
               onChange={(e) => onEditSil(e.target.value as SIL | "")}
-              style={brutal.select}
             >
               <option value="">-- Select SIL --</option>
               {SIL_OPTIONS.map((s) => (
@@ -215,13 +207,12 @@ export default function WorkItemCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>PL</div>
+          <div className="form-row">
+            <div className="field-label">PL</div>
             <select
               data-agent="select-work-item-pl"
               value={editPl}
               onChange={(e) => onEditPl(e.target.value as PL | "")}
-              style={brutal.select}
             >
               <option value="">-- Select PL --</option>
               {PL_OPTIONS.map((p) => (
@@ -229,11 +220,11 @@ export default function WorkItemCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Standards</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+          <div className="form-row">
+            <div className="field-label">Standards</div>
+            <div className="flex-wrap">
               {STANDARDS.map((s) => (
-                <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                <label key={s} className="checkbox-label">
                   <input
                     type="checkbox"
                     checked={editStandards.includes(s)}
@@ -250,27 +241,29 @@ export default function WorkItemCard({
               ))}
             </div>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Application Context</div>
+          <div className="form-row">
+            <div className="field-label">Application Context</div>
             <input
               data-agent="input-work-item-application-context"
               value={editApplicationContext}
               onChange={(e) => onEditApplicationContext(e.target.value)}
-              style={brutal.input}
+              className="license-value"
+              style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
             />
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>System Boundary</div>
+          <div className="form-row">
+            <div className="field-label">System Boundary</div>
             <input
               data-agent="input-work-item-system-boundary"
               value={editSystemBoundary}
               onChange={(e) => onEditSystemBoundary(e.target.value)}
-              style={brutal.input}
+              className="license-value"
+              style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
             />
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button data-agent="btn-save-changes" style={brutal.button} onClick={handleSave}>Save changes</button>
-            <button data-agent="btn-cancel-edit-work-item" onClick={handleCancel} style={{ ...brutal.button, backgroundColor: SemanticColor.DANGER }}>Cancel</button>
+          <div className="form-actions">
+            <button data-agent="btn-save-changes" className="btn" onClick={handleSave}>Save changes</button>
+            <button data-agent="btn-cancel-edit-work-item" className="btn btn-danger" onClick={handleCancel}>Cancel</button>
           </div>
         </>
       )}

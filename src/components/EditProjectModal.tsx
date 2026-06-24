@@ -1,6 +1,5 @@
 import { useState } from "react"
 import Modal from "./Modal"
-import { brutal } from "../App"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -49,35 +48,35 @@ export function EditProjectModal({
   return (
     <Modal title="Edit Project" onClose={onClose}>
       {error && (
-        <div style={{ ...brutal.box, border: "2px solid black", marginBottom: 12 }}>
-          <p style={{ color: "black", margin: 0 }}>{error}</p>
+        <div className="error-box">
+          <p className="error-text">{error}</p>
         </div>
       )}
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>Name</div>
+      <div className="form-row">
+        <div className="field-label">Name</div>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          style={brutal.input}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
           autoFocus
         />
       </div>
-      <div style={brutal.formRow}>
-        <div style={brutal.label}>Description</div>
+      <div className="form-row">
+        <div className="field-label">Description</div>
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Optional description"
-          style={brutal.input}
+          className="license-value"
+          style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
         />
       </div>
       <button
         onClick={handleUpdate}
         disabled={submitting || !name.trim()}
-        style={{
-          ...brutal.button,
-          ...(submitting || !name.trim() ? brutal.disabled : {}),
-        }}
+        className="btn"
+        style={{ opacity: (submitting || !name.trim()) ? 0.6 : 1, cursor: (submitting || !name.trim()) ? 'not-allowed' : 'pointer' }}
       >
         {submitting ? "Saving..." : "Save"}
       </button>

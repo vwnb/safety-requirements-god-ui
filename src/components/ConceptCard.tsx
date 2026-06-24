@@ -1,6 +1,5 @@
 import { useState } from "react"
-import { brutal, typeColor, type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type Concept } from "../App"
-import { SemanticColor } from "../lib/SemanticColor"
+import { typeColor, type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type Concept } from "../App"
 
 const PHASES = [
   "ITEM_DEFINITION", "HARA", "FUNCTIONAL_SAFETY", "TECHNICAL_SAFETY",
@@ -27,12 +26,6 @@ const TYPES = [
   "ARCHITECTURE",
 ] as const
 
-const fieldLabel: React.CSSProperties = {
-  fontWeight: 600,
-  minWidth: 140,
-  flexShrink: 0,
-  color: "#000",
-}
 
 export default function ConceptCard({
   concept,
@@ -105,15 +98,12 @@ export default function ConceptCard({
   const typeLabel = concept.type.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())
 
   return (
-    <div data-agent="concept-card" style={{ marginTop: 20, marginBottom: 20, padding: 12, border: "2px dashed black", background: "rgba(255,255,255,0.5)" }}>
+    <div data-agent="concept-card" className="card">
       {!isEditing ? (
-        <article> 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flex: 1 }}>
+        <article>
+          <div className="card-header-row">
             <h2>
-              <span style={{
-                ...brutal.tag,
-                background: typeColor[concept.type] || "#ccc",
-              }}>
+              <span className="tag" style={{ background: typeColor[concept.type] || "#ccc" }}>
                 {typeLabel}
               </span>
               {concept.key} {concept.title && `— ${concept.title}`}
@@ -122,63 +112,64 @@ export default function ConceptCard({
             <button
               data-agent="btn-edit-concept"
               onClick={() => setEditingState(true)}
-              style={brutal.button}
+              className="btn"
             >
               Edit
             </button>
           </div>
 
-          <p style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap", fontSize: 13 }}>
-            <span><span style={fieldLabel}>Created by</span> {concept.createdBy?.name || "—"}</span>
+          <p className="info-row">
+            <span><span className="field-label">Created by</span> {concept.createdBy?.name || "—"}</span>
             {concept.phase && (
-              <span><span style={fieldLabel}>Phase</span> {concept.phase.replace(/_/g, " ")}</span>
+              <span><span className="field-label">Phase</span> {concept.phase.replace(/_/g, " ")}</span>
             )}
           </p>
 
-          <p style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-            {concept.asil && <span style={{ ...brutal.tag, background: SemanticColor.RISK }}>ASIL: {concept.asil}</span>}
-            {concept.sil && <span style={{ ...brutal.tag, background: SemanticColor.FUNCTIONAL }}>SIL: {concept.sil}</span>}
-            {concept.pl && <span style={{ ...brutal.tag, background: SemanticColor.METRIC }}>PL: {concept.pl}</span>}
+          <p className="info-row-tags">
+            {concept.asil && <span className="tag tag-risk">ASIL: {concept.asil}</span>}
+            {concept.sil && <span className="tag tag-functional">SIL: {concept.sil}</span>}
+            {concept.pl && <span className="tag tag-metric">PL: {concept.pl}</span>}
             {(concept.standards ?? []).map((s) => (
-              <span key={s} style={{ ...brutal.tag, background: SemanticColor.STRUCTURE }}>{s.replace(/_/g, " ")}</span>
+              <span key={s} className="tag tag-structure">{s.replace(/_/g, " ")}</span>
             ))}
           </p>
         </article>
       ) : (
         <>
-          <div className="title" style={{ marginTop: 0, marginBottom: 12 }}>Edit concept details</div>
+          <div className="title mt-0" style={{ marginBottom: 12 }}>Edit concept details</div>
 
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Key</div>
+          <div className="form-row">
+            <div className="field-label">Key</div>
             <input
               data-agent="input-edit-concept-key"
               value={editKey}
               onChange={(e) => onEditKey(e.target.value)}
-              style={brutal.input}
+              className="license-value"
+              style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
             />
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Created by</div>
-            <div style={{ ...brutal.input, ...brutal.disabled }}>
+          <div className="form-row">
+            <div className="field-label">Created by</div>
+            <div className="license-value" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
               {concept.createdBy?.name || ""}
             </div>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Title</div>
+          <div className="form-row">
+            <div className="field-label">Title</div>
             <input
               data-agent="input-edit-concept-title"
               value={editTitle}
               onChange={(e) => onEditTitle(e.target.value)}
-              style={brutal.input}
+              className="license-value"
+              style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
             />
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Type</div>
+          <div className="form-row">
+            <div className="field-label">Type</div>
             <select
               data-agent="select-edit-concept-type"
               value={editType}
               onChange={(e) => onEditType(e.target.value)}
-              style={brutal.select}
             >
               <option value="">-- Select Type --</option>
               {TYPES.map((t) => (
@@ -186,13 +177,12 @@ export default function ConceptCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Phase</div>
+          <div className="form-row">
+            <div className="field-label">Phase</div>
             <select
               data-agent="select-edit-concept-phase"
               value={editPhase}
               onChange={(e) => onEditPhase(e.target.value)}
-              style={brutal.select}
             >
               <option value="">-- Select Phase --</option>
               {PHASES.map((p) => (
@@ -200,13 +190,12 @@ export default function ConceptCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>ASIL</div>
+          <div className="form-row">
+            <div className="field-label">ASIL</div>
             <select
               data-agent="select-edit-concept-asil"
               value={editAsil}
               onChange={(e) => onEditAsil(e.target.value)}
-              style={brutal.select}
             >
               <option value="">-- Select ASIL --</option>
               {ASIL_OPTIONS.map((a) => (
@@ -214,13 +203,12 @@ export default function ConceptCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>SIL</div>
+          <div className="form-row">
+            <div className="field-label">SIL</div>
             <select
               data-agent="select-edit-concept-sil"
               value={editSil}
               onChange={(e) => onEditSil(e.target.value)}
-              style={brutal.select}
             >
               <option value="">-- Select SIL --</option>
               {SIL_OPTIONS.map((s) => (
@@ -228,13 +216,12 @@ export default function ConceptCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>PL</div>
+          <div className="form-row">
+            <div className="field-label">PL</div>
             <select
               data-agent="select-edit-concept-pl"
               value={editPl}
               onChange={(e) => onEditPl(e.target.value)}
-              style={brutal.select}
             >
               <option value="">-- Select PL --</option>
               {PL_OPTIONS.map((p) => (
@@ -242,11 +229,11 @@ export default function ConceptCard({
               ))}
             </select>
           </div>
-          <div style={brutal.formRow}>
-            <div style={brutal.label}>Standards</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+          <div className="form-row">
+            <div className="field-label">Standards</div>
+            <div className="flex-wrap">
               {STANDARDS.map((s) => (
-                <label key={s} style={{ fontFamily: "monospace", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                <label key={s} className="checkbox-label">
                   <input
                     type="checkbox"
                     checked={editStandards.includes(s)}
@@ -263,9 +250,9 @@ export default function ConceptCard({
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button data-agent="btn-save-concept" style={brutal.button} onClick={handleSave}>Save concept</button>
-            <button data-agent="btn-cancel-edit-concept" onClick={handleCancel} style={{ ...brutal.button, backgroundColor: SemanticColor.DANGER }}>Cancel</button>
+          <div className="form-actions">
+            <button data-agent="btn-save-concept" className="btn" onClick={handleSave}>Save concept</button>
+            <button data-agent="btn-cancel-edit-concept" className="btn btn-danger" onClick={handleCancel}>Cancel</button>
           </div>
         </>
       )}

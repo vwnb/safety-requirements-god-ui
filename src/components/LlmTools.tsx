@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react"
-import { brutal } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 import { InfoButton } from "./InfoButton"
 
@@ -414,7 +413,7 @@ export function LlmTools({
 
   return (
     <section data-agent="llm-suggestions-section">
-      <div className="title" style={{ display: "flex", alignItems: "center" }}>
+      <div className="title llm-tools-header">
         Evaluate work item with LLM
         <InfoButton
           title="Evaluate Work Item with LLM"
@@ -436,7 +435,7 @@ export function LlmTools({
             action()
           }
         }}
-        style={brutal.button}
+        className="btn"
       >
         Evaluate
       </button>
@@ -459,25 +458,19 @@ export function LlmTools({
             const { actionLabel, graphDescription, hasPayloadData } = actionLabelForAction(suggestion.action, suggestion.payload)
             const suggestionStatus = suggestion.actedOn
 
+            const cardClass = suggestionStatus ? "card suggestion-card suggestion-card-processed" : "card suggestion-card"
+
             return (
               <div
                 key={suggestionKey}
-                style={{
-                  ...brutal.box,
-                  border: "2px dashed black",
-                  background: "rgba(255,255,255,0.5)",
-                  opacity: suggestionStatus ? 0.7 : 1,
-                }}
+                className={cardClass}
               >
                 <>
                   <p data-agent={`suggestion-${suggestionKey}`}>
                     {suggestion.importance && (
                       <span
-                        style={{
-                          ...brutal.tag,
-                          background: importanceColor[suggestion.importance] || "#999",
-                          marginRight: 8,
-                        }}
+                        className="tag suggestion-importance"
+                        style={{ background: importanceColor[suggestion.importance] || "#999" }}
                       >
                         {suggestion.importance}
                       </span>
@@ -485,48 +478,27 @@ export function LlmTools({
                     {suggestion.text}
                   </p>
 
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+                  <div className="suggestion-meta">
                     <span
-                      style={{
-                        ...brutal.tag,
-                        background: actionColor[actionLabel] || "#999",
-                      }}
+                      className="tag"
+                      style={{ background: actionColor[actionLabel] || "#999" }}
                     >
                       {actionLabel}
                     </span>
                     <span
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: 11,
-                        color: hasPayloadData ? "#333" : "#999",
-                        fontStyle: hasPayloadData ? "normal" : "italic",
-                      }}
+                      className={hasPayloadData ? "suggestion-graph-description" : "suggestion-graph-description-empty"}
                     >
                       {graphDescription}
                     </span>
-                    {suggestionStatus && (
-                      <span
-                        style={{
-                          ...brutal.tag,
-                          background: suggestionStatus === "ACTED_ON" ? SemanticColor.SUCCESS : SemanticColor.DANGER,
-                        }}
-                      >
-                        {suggestionStatus === "ACTED_ON" ? "Acted on" : "Discarded"}
-                        {suggestion.actedOnBy?.name && (
-                          <span style={{ fontFamily: "monospace", fontSize: 11, marginLeft: 4 }}>
-                            by {suggestion.actedOnBy.name}
-                          </span>
-                        )}
-                      </span>
-                    )}
                   </div>
 
                   {suggestion.reason && (
                     <p>Reason: {suggestion.reason}</p>
                   )}
                 </>
+                <hr className="suggestion-divider" />
                 {!suggestionStatus && (
-                  <div style={brutal.actions}>
+                  <div className="suggestion-actions">
                     <button
                       data-agent={`btn-act-on-suggestion-${index}`}
                       onClick={() => {
@@ -548,18 +520,31 @@ export function LlmTools({
                           })
                         }
                       }}
-                      style={{ ...brutal.button, fontSize: 10, padding: "4px 8px", background: SemanticColor.SUCCESS } as React.CSSProperties}
+                      className="btn btn-success"
                     >
                       Act on
                     </button>
                     <button
                       data-agent={`btn-discard-suggestion-${index}`}
                       onClick={() => discardSuggestion(index)}
-                      style={{ ...brutal.button, fontSize: 10, padding: "4px 8px", background: SemanticColor.DANGER }}
+                      className="btn btn-danger"
                     >
                       Discard
                     </button>
                   </div>
+                )}
+                {suggestionStatus && (
+                  <span
+                    className="tag suggestion-status"
+                    style={{ background: suggestionStatus === "ACTED_ON" ? SemanticColor.SUCCESS : SemanticColor.DANGER }}
+                  >
+                    {suggestionStatus === "ACTED_ON" ? "Acted on" : "Discarded"}
+                    {suggestion.actedOnBy?.name && (
+                      <span className="suggestion-status-name">
+                        by {suggestion.actedOnBy.name}
+                      </span>
+                    )}
+                  </span>
                 )}
               </div>
             )
