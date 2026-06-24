@@ -910,7 +910,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   async function importConceptsFromTemplate(workItemId: string) {
     return withLoading("Importing concepts from template...", async () => {
       const res = await apiFetch(`${API}/graph/${workItemId}`)
-      const { concepts: importedConcepts, relations: importedRelations } = await res.json()
+      const { concepts: importedConcepts, relations: importedRelations, revisions: importedRevisions } = await res.json()
 
       await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
         method: "POST",
@@ -918,6 +918,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         body: JSON.stringify({
           concepts: importedConcepts,
           relations: importedRelations,
+          revisions: importedRevisions,
           user: actorForApi
         }),
       })
