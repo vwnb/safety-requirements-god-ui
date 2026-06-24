@@ -749,7 +749,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: baselineName,
-          workItemId: selectedWorkItem,
+          projectId: selectedProject?.id,
           user: actorForApi,
         }),
       })
@@ -1656,30 +1656,32 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                         Baseline: {selectedBaseline.name}
                       </div>
 
-                      <div className="list-input">
-                        {selectedBaseline.items.map((item: any) => {
-                          const r = item.revision
-
-                          return (
-                            <div
-                              key={r.id}
-                              className="option"
-                              onClick={() => {
-                                setActiveRevisionId(r.id)
-                                setSelectedConcept(r.conceptId)
-                                setEditorValue(r.markdown)
-                              }}>
-                              <div className="list-id">
-                                {r.concept.key} - {r.concept.type} ({r.id})
+                      {selectedBaseline.workItems.map((wi: any) => (
+                        <div key={wi.workItem.id} style={{ marginBottom: 16 }}>
+                          <div style={{ fontWeight: 600, fontFamily: "monospace", marginBottom: 8, fontSize: 14 }}>
+                            {wi.workItem.key} — {wi.workItem.name}
+                          </div>
+                          <div className="list-input">
+                            {wi.revisions.map((r: any) => (
+                              <div
+                                key={r.id}
+                                className="option"
+                                onClick={() => {
+                                  setActiveRevisionId(r.id)
+                                  setSelectedConcept(r.concept.id)
+                                  setEditorValue(r.markdown)
+                                }}>
+                                <div className="list-id">
+                                  {r.concept.key} - {r.concept.type} ({r.id})
+                                </div>
+                                <div className="list-tooltip">
+                                  {r.markdown.slice(0, 80)}...
+                                </div>
                               </div>
-
-                              <div className="list-tooltip">
-                                {r.markdown.slice(0, 80)}...
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </section>
                   </>
                 )}
