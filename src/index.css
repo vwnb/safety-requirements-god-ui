@@ -1036,7 +1036,7 @@ section,
 }
 
 .suggestion-card-processed {
-  opacity: 0.7;
+  border: 2px solid black;
 }
 
 .suggestion-importance {
