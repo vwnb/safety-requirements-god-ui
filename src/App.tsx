@@ -1888,7 +1888,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             const conceptRelations = (graph?.relations ?? []).filter(
               (rel: any) => conceptRevisionIds.has(rel.fromId) || conceptRevisionIds.has(rel.toId)
             )
-            const conceptMap = new Map<string, { id: string; key: string }>((graph?.concepts ?? []).map((c: any) => [c.id, { id: c.id, key: c.key }]))
 
             return (
               <div data-agent="revise-panel" className="revise-panel">
@@ -1908,8 +1907,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   value={editorValue}
                   onChange={setEditorValue}
                   relations={conceptRelations}
-                  allRevisions={allRevisions}
-                  conceptMap={conceptMap}
                 />
                 <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
                   <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, background: SemanticColor.SUCCESS }}>

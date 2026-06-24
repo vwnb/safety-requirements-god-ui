@@ -6,6 +6,8 @@ type RelationWithCreatedBy = {
   type: string
   fromId: string
   toId: string
+  fromConceptKey?: string
+  toConceptKey?: string
   createdBy?: { name: string }
 }
 
@@ -13,14 +15,10 @@ export function BrutalistMarkdownEditor({
   value,
   onChange,
   relations,
-  allRevisions,
-  conceptMap,
 }: {
   value: string
   onChange: (v: string) => void
   relations?: RelationWithCreatedBy[]
-  allRevisions?: { id: string; conceptId: string }[]
-  conceptMap?: Map<string, { id: string; key: string }>
 }) {
   const html = useMemo(() => marked.parse(value || ""), [value])
 
@@ -74,10 +72,8 @@ export function BrutalistMarkdownEditor({
           <div className="title" style={{ fontSize: 13, marginBottom: 4 }}>Relations</div>
           <div className="list-input">
             {relations.map((rel) => {
-              const fromRev = allRevisions?.find(r => r.id === rel.fromId)
-              const toRev = allRevisions?.find(r => r.id === rel.toId)
-              const fromConcept = fromRev ? conceptMap?.get(fromRev.conceptId) : null
-              const toConcept = toRev ? conceptMap?.get(toRev.conceptId) : null
+              const fromLabel = rel.fromConceptKey ?? rel.fromId.slice(0, 8)
+              const toLabel = rel.toConceptKey ?? rel.toId.slice(0, 8)
               return (
                 <div
                   key={rel.id}
@@ -85,7 +81,7 @@ export function BrutalistMarkdownEditor({
                   style={{ fontSize: 11, padding: "4px 8px", marginBottom: 2, cursor: "default" }}
                 >
                   <span style={{ fontWeight: "bold" }}>{rel.type}</span>
-                  : {fromConcept?.key || rel.fromId.slice(0, 8)} → {toConcept?.key || rel.toId.slice(0, 8)}
+                  : {fromLabel} → {toLabel}
                   {rel.createdBy?.name && (
                     <span style={{ opacity: 0.6, marginLeft: 8 }}>
                       (by {rel.createdBy.name})
