@@ -332,7 +332,7 @@ export function LlmTools({
           }]
 
           const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
-            method: "PUT",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               concepts: [],
