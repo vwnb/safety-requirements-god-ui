@@ -415,6 +415,8 @@ function ConceptNode({ data, id }: any) {
     .toLowerCase()
     .replace(/\b\w/g, (l: any) => l.toUpperCase())
 
+  const isQuerySource = data.queryValue && data.queryValue !== "NONE"
+
   return (
     <div
       data-agent={`graph-node-${id}`}
@@ -425,7 +427,8 @@ function ConceptNode({ data, id }: any) {
         background: data.color || "white",
         width: nodeWidth,
         display: "flex",
-        flexDirection: "column"
+        flexDirection: "column",
+        border: isQuerySource ? "4px solid #ff5a00" : undefined,
       }}
     >
       <div data-agent="graph-node-label" style={{ fontWeight: "bold" }}>
