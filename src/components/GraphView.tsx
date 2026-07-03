@@ -1,8 +1,6 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from "react"
 import ReactFlow, {
   Background,
-  Controls,
-  MiniMap,
   Handle,
   Position,
   BackgroundVariant
@@ -312,6 +310,104 @@ function getVisibleSubgraph(
   return { nodes, edges }
 }
 
+function formatTypeSummaries(nodes: Node[], conceptMap: Map<string, Concept>) {
+  const counts = new Map<string, number>()
+  nodes.forEach((node) => {
+    const type = conceptMap.get(node.data.conceptId)?.type || "Unknown"
+    counts.set(type, (counts.get(type) || 0) + 1)
+  })
+
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([type, count]) => `${count} ${type.replace(/_/g, " ").toLowerCase()}`)
+    .join(", ")
+}
+
+function getQueryExplanation(
+  queryType: VisibilityQueryType,
+  sourceNodeId: string | null,
+  visibleNodes: Node[],
+  visibleEdges: Edge[],
+  conceptMap: Map<string, Concept>
+) {
+  if (queryType === "NONE" || !sourceNodeId) {
+    return null
+  }
+
+  const sourceNode = visibleNodes.find((node) => node.id === sourceNodeId)
+  const sourceConcept = sourceNode
+    ? conceptMap.get(sourceNode.data.conceptId)
+    : undefined
+  const sourceLabel = sourceConcept?.key || sourceNode?.data.label || "Unknown concept"
+  const sourceCount = visibleNodes.length - 1
+  const edgeCount = visibleEdges.length
+  const typeSummary = formatTypeSummaries(visibleNodes, conceptMap)
+
+  switch (queryType) {
+    case "CHANGE_PROPAGATION":
+      return {
+        title: `Change propagation from ${sourceLabel}`,
+        content: `Shows the immediate graph neighbors of ${sourceLabel}. ${sourceCount} directly connected concept${sourceCount === 1 ? "" : "s"} are visible, connected by ${edgeCount} relation${edgeCount === 1 ? "" : "s"}. Use this view to identify concepts most likely to be affected by a change.`,
+      }
+    case "IMPACT_ANALYSIS":
+      return {
+        title: `Impact analysis around ${sourceLabel}`,
+        content: `Displays the full connected footprint for ${sourceLabel}. ${sourceCount} related concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relationship${edgeCount === 1 ? "" : "s"} were included. This helps you understand broader ripple effects across the graph.`,
+      }
+    case "IMPLEMENTATION_COVERAGE": {
+      const covered = visibleNodes.filter((node) =>
+        implementationCoverageTypes.has(conceptMap.get(node.data.conceptId)?.type || "")
+      )
+      const coverageCount = covered.length
+      return {
+        title: `Implementation coverage for ${sourceLabel}`,
+        content: coverageCount
+          ? `Highlights ${coverageCount} implementation or verification artifact${coverageCount === 1 ? "" : "s"} in the related network. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`
+          : `No implementation or verification artifacts were found in the immediate coverage graph for ${sourceLabel}.`,
+      }
+    }
+    case "VERIFICATION_STATUS": {
+      const verified = visibleNodes.filter((node) =>
+        verificationStatusTypes.has(conceptMap.get(node.data.conceptId)?.type || "")
+      )
+      const verificationCount = verified.length
+      return {
+        title: `Verification status for ${sourceLabel}`,
+        content: verificationCount
+          ? `Shows ${verificationCount} verification-related concept${verificationCount === 1 ? "" : "s"} connected to ${sourceLabel}. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`
+          : `No verification artifacts were found in the filtered graph for ${sourceLabel}.`,
+      }
+    }
+    case "SAFETY_RATIONALE": {
+      const rationale = visibleNodes.filter((node) =>
+        safetyRationaleTypes.has(conceptMap.get(node.data.conceptId)?.type || "")
+      )
+      const rationaleCount = rationale.length
+      return {
+        title: `Safety rationale for ${sourceLabel}`,
+        content: rationaleCount
+          ? `Surfaces ${rationaleCount} safety rationale artifact${rationaleCount === 1 ? "" : "s"} related to ${sourceLabel}. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`
+          : `No safety rationale nodes were found in the result set for ${sourceLabel}.`,
+      }
+    }
+    case "REQUIREMENT_DECOMPOSITION": {
+      const decomposed = visibleNodes.filter((node) =>
+        requirementDecompositionTypes.has(conceptMap.get(node.data.conceptId)?.type || "")
+      )
+      const decompositionCount = decomposed.length
+      return {
+        title: `Requirement decomposition for ${sourceLabel}`,
+        content: decompositionCount
+          ? `Highlights ${decompositionCount} decomposed requirement or specification concept${decompositionCount === 1 ? "" : "s"}. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`
+          : `No decomposed requirement concepts were found in the filtered graph for ${sourceLabel}.`,
+      }
+    }
+  }
+
+  return null
+}
+
 function ConceptNode({ data, id }: any) {
   const [showHoverActions, setShowHoverActions] = useState(false)
   const hoverTimeoutRef = useRef<number | null>(null)
@@ -585,6 +681,11 @@ export default function GraphView({
     return getVisibleSubgraph(activeQuery, activeQuerySourceId, nodes, edges, conceptMap)
   }, [activeQuery, activeQuerySourceId, nodes, edges, conceptMap])
 
+  const queryExplanation = useMemo(
+    () => getQueryExplanation(activeQuery, activeQuerySourceId, visibleNodes, visibleEdges, conceptMap),
+    [activeQuery, activeQuerySourceId, visibleNodes, visibleEdges, conceptMap]
+  )
+
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
     return layoutGraph(visibleNodes, visibleEdges)
   }, [visibleNodes, visibleEdges])
@@ -776,8 +877,6 @@ export default function GraphView({
               })
             }}
           >
-            <MiniMap />
-            <Controls />
             <Background variant={BackgroundVariant.Cross} />
           </ReactFlow>
         )}
@@ -834,6 +933,27 @@ export default function GraphView({
               </div>
             )
           })}
+        {queryExplanation && (
+          <div
+            data-agent="graph-query-explanation"
+            style={{
+              position: "absolute",
+              left: 16,
+              right: 16,
+              bottom: 16,
+              border: "2px solid black",
+              borderRadius: 8,
+              background: "white",
+              padding: 16,
+              fontFamily: "monospace",
+              boxSizing: "border-box",
+              zIndex: 6,
+            }}
+          >
+            <div style={{ fontWeight: "bold", marginBottom: 8 }}>{queryExplanation.title}</div>
+            <div style={{ opacity: 0.85, lineHeight: 1.5 }}>{queryExplanation.content}</div>
+          </div>
+        )}
       </div>
 
       {pendingConnection && (
