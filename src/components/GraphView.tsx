@@ -203,7 +203,7 @@ function getVisibleSubgraph(
   }
 
   if (queryType === "IMPACT_ANALYSIS") {
-    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const visibleNodeIds = new Set<string>()
     const queue = [sourceNodeId]
     while (queue.length) {
       const current = queue.shift()!
@@ -813,10 +813,7 @@ export default function GraphView({
                 nodes.find((n) => n.id === queryModalSourceId)?.data.conceptId || ""
               )?.key || "Unknown"
             }
-            options={[
-              { value: "NONE", label: "Show all" },
-              ...VISIBILITY_QUERIES,
-            ]}
+            options={VISIBILITY_QUERIES}
             onSelect={(value) => {
               if (value === "NONE") {
                 setActiveQuery("NONE")
