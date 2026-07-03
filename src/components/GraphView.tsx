@@ -613,7 +613,7 @@ export default function GraphView({
         id: r.id,
         type: "concept",
         data: {
-          label: concept?.title || r.markdown.slice(0, 40),
+          label: concept?.key + " - " + concept?.title,
           type: concept?.type,
           color: typeColor[concept?.type || ""],
           conceptId: r.conceptId,
