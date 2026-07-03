@@ -409,90 +409,98 @@ function getQueryExplanation(
 }
 
 function ConceptNode({ data, id }: any) {
-  const [showHoverActions, setShowHoverActions] = useState(false)
-  const hoverTimeoutRef = useRef<number | null>(null)
-
-  const handleMouseEnter = useCallback(() => {
-    hoverTimeoutRef.current = window.setTimeout(() => {
-      setShowHoverActions(true)
-    }, 250)
-  }, [])
-
-  const handleMouseLeave = useCallback(() => {
-    if (hoverTimeoutRef.current) {
-      window.clearTimeout(hoverTimeoutRef.current)
-      hoverTimeoutRef.current = null
-    }
-    setShowHoverActions(false)
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) {
-        window.clearTimeout(hoverTimeoutRef.current)
-      }
-    }
-  }, [])
+  const [showActions, setShowActions] = useState(false)
+  const typeLabel = data.type
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (l: any) => l.toUpperCase())
 
   return (
     <div
       data-agent={`graph-node-${id}`}
       className="graph-node"
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
       style={{
         background: data.color || "white",
         width: nodeWidth,
         display: "flex",
         flexDirection: "column"
       }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <div data-agent="graph-node-label" style={{ fontWeight: "bold" }}>
         {data.label}
       </div>
-      <div data-agent="graph-node-type" style={{ opacity: 0.7 }}>{data.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: any) => l.toUpperCase())}</div>
-
       <div
+        data-agent="graph-node-type"
         style={{
+          opacity: 0.7,
+          position: "relative",
+          minHeight: 24,
+          marginTop: 4,
           overflow: "hidden",
-          maxHeight: showHoverActions ? 150 : 0,
-          opacity: showHoverActions ? 1 : 0,
-          transform: showHoverActions ? "translateY(0)" : "translateY(-6px)",
-          transition: "opacity 0.5s ease, max-height 0.5s ease, transform 0.5s ease",
         }}
       >
-        {data.onEditRevision && (
+        <span
+          style={{
+            display: "inline-block",
+            transition: "transform 180ms ease, opacity 180ms ease",
+            transform: showActions ? "translateX(-8px)" : "translateX(0)",
+            opacity: showActions ? 0 : 1,
+            pointerEvents: showActions ? "none" : "auto",
+          }}
+        >
+          {typeLabel}
+        </span>
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "50%",
+            transform: showActions
+              ? "translateY(-50%) translateX(0)"
+              : "translateY(-50%) translateX(8px)",
+            opacity: showActions ? 1 : 0,
+            pointerEvents: showActions ? "auto" : "none",
+            display: "flex",
+            gap: 6,
+            flexWrap: "nowrap",
+            transition: "transform 180ms ease, opacity 180ms ease",
+          }}
+        >
+          {data.onEditRevision && (
+            <button
+              data-agent="graph-node-edit-revision"
+              onClick={(event) => {
+                event.stopPropagation()
+                data.onEditRevision()
+              }}
+              style={{
+                ...brutal.button,
+                padding: "4px 8px",
+                fontSize: 11,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Edit
+            </button>
+          )}
           <button
-            data-agent="graph-node-edit-revision"
+            data-agent="graph-node-query"
             onClick={(event) => {
               event.stopPropagation()
-              data.onEditRevision()
+              data.onOpenQueryModal?.()
             }}
             style={{
               ...brutal.button,
-              width: "100%",
-              marginTop: 8,
-              padding: "8px 12px",
+              padding: "4px 8px",
+              fontSize: 11,
+              whiteSpace: "nowrap",
             }}
           >
-            Edit latest revision
+            Query
           </button>
-        )}
-        <button
-          data-agent="graph-node-query"
-          onClick={(event) => {
-            event.stopPropagation()
-            data.onOpenQueryModal?.()
-          }}
-          style={{
-            ...brutal.button,
-            width: "100%",
-            marginTop: 8,
-            padding: "8px 12px",
-          }}
-        >
-          Query
-        </button>
+        </div>
       </div>
 
       <Handle type="source" position={Position.Right} />
