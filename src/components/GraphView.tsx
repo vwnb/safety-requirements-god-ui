@@ -8,12 +8,13 @@ import ReactFlow, {
   BackgroundVariant
 } from "reactflow"
 import type { FitViewOptions, Viewport, ReactFlowInstance } from "reactflow"
-import type { Node, Edge } from "reactflow"
+import type { Node, Edge } from "@reactflow/core"
 import "reactflow/dist/style.css"
 import dagre from "dagre"
 import RelationTypePicker from "./RelationTypePicker"
+import QueryPicker from "./QueryPicker"
 import { useApiFetch } from "../lib/apiFetchContext"
-import { typeColor } from "../App"
+import { brutal, typeColor } from "../App"
 import background from "../assets/background.jpg";
 import type { UserPresence } from "../types/collaboration";
 
@@ -40,6 +41,67 @@ type Relation = {
 
 const nodeWidth = 220
 const nodeHeight = 80
+
+type VisibilityQueryType =
+  | "NONE"
+  | "CHANGE_PROPAGATION"
+  | "IMPLEMENTATION_COVERAGE"
+  | "IMPACT_ANALYSIS"
+  | "VERIFICATION_STATUS"
+  | "SAFETY_RATIONALE"
+  | "REQUIREMENT_DECOMPOSITION"
+
+const VISIBILITY_QUERIES: Array<{ value: VisibilityQueryType; label: string }> = [
+  { value: "CHANGE_PROPAGATION", label: "Change propagation" },
+  { value: "IMPACT_ANALYSIS", label: "Impact analysis" },
+  { value: "IMPLEMENTATION_COVERAGE", label: "Implementation coverage" },
+  { value: "VERIFICATION_STATUS", label: "Verification status" },
+  { value: "SAFETY_RATIONALE", label: "Safety rationale" },
+  { value: "REQUIREMENT_DECOMPOSITION", label: "Requirement decomposition" },
+]
+
+const implementationCoverageTypes = new Set([
+  "FUNCTIONAL_SAFETY_REQUIREMENT",
+  "TECHNICAL_SAFETY_REQUIREMENT",
+  "SOFTWARE_REQUIREMENT",
+  "SOFTWARE_SAFETY_REQUIREMENT",
+  "HARDWARE_REQUIREMENT",
+  "IMPLEMENTATION",
+  "VERIFICATION",
+  "VERIFICATION_REPORT",
+  "VALIDATION_REPORT",
+])
+
+const verificationStatusTypes = new Set([
+  "FUNCTIONAL_SAFETY_REQUIREMENT",
+  "TECHNICAL_SAFETY_REQUIREMENT",
+  "HARDWARE_REQUIREMENT",
+  "SOFTWARE_REQUIREMENT",
+  "HARDWARE_SAFETY_REQUIREMENT",
+  "SOFTWARE_SAFETY_REQUIREMENT",
+  "TEST_CASE",
+  "TEST_RESULT",
+  "PROOF_TEST",
+  "VERIFICATION_REPORT",
+])
+
+const safetyRationaleTypes = new Set([
+  "HAZARD",
+  "SAFETY_GOAL",
+  "SAFETY_CASE",
+  "SAFETY_MANUAL",
+  "ASSUMPTION",
+  "CONSTRAINT",
+])
+
+const requirementDecompositionTypes = new Set([
+  "FUNCTIONAL_SAFETY_REQUIREMENT",
+  "TECHNICAL_SAFETY_REQUIREMENT",
+  "HARDWARE_REQUIREMENT",
+  "SOFTWARE_REQUIREMENT",
+  "HARDWARE_SAFETY_REQUIREMENT",
+  "SOFTWARE_SAFETY_REQUIREMENT",
+])
 
 function layoutGraph(nodes: Node[], edges: Edge[]) {
   const g = new dagre.graphlib.Graph()
@@ -73,22 +135,206 @@ function layoutGraph(nodes: Node[], edges: Edge[]) {
   return { nodes: layoutedNodes, edges }
 }
 
-function ConceptNode({ data, id }: any) {
-  const [showExcerpt, setShowExcerpt] = useState(false)
+function getVisibleSubgraph(
+  queryType: VisibilityQueryType,
+  sourceNodeId: string | null,
+  nodes: Node[],
+  edges: Edge[],
+  conceptMap: Map<string, Concept>
+) {
+  if (queryType === "NONE" || !sourceNodeId) {
+    return { nodes, edges }
+  }
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const nodeById = new Map(nodes.map((n) => [n.id, n]))
+  if (!nodeById.has(sourceNodeId)) {
+    return { nodes: [], edges: [] }
+  }
+
+  const neighborIds = (nodeId: string) => {
+    return edges.reduce<string[]>((acc, e) => {
+      if (e.source === nodeId) acc.push(e.target)
+      if (e.target === nodeId) acc.push(e.source)
+      return acc
+    }, [])
+  }
+
+  const bfs = (includeNode: (node: Node) => boolean, traverseNode: (node: Node) => boolean) => {
+    const visibleNodeIds = new Set<string>()
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      if (visibleNodeIds.has(current)) continue
+
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+
+      if (traverseNode(currentNode)) {
+        visibleNodeIds.add(current)
+      }
+
+      neighborIds(current).forEach((neighborId) => {
+        if (visibleNodeIds.has(neighborId)) return
+        const neighborNode = nodeById.get(neighborId)
+        if (!neighborNode) return
+        if (includeNode(neighborNode)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    return visibleNodeIds
+  }
+
+  if (queryType === "CHANGE_PROPAGATION") {
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const visibleEdges = edges.filter((e) => {
+      const matches = e.source === sourceNodeId || e.target === sourceNodeId
+      if (matches) {
+        visibleNodeIds.add(e.source)
+        visibleNodeIds.add(e.target)
+      }
+      return matches
+    })
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "IMPACT_ANALYSIS") {
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+    while (queue.length) {
+      const current = queue.shift()!
+      if (visibleNodeIds.has(current)) continue
+      visibleNodeIds.add(current)
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "VERIFICATION_STATUS") {
+    const visibleNodeIds = bfs(
+      (node) => verificationStatusTypes.has(conceptMap.get(node.data.conceptId)?.type || ""),
+      () => true
+    )
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "SAFETY_RATIONALE") {
+    const visibleNodeIds = bfs(
+      (node) => safetyRationaleTypes.has(conceptMap.get(node.data.conceptId)?.type || ""),
+      () => true
+    )
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "REQUIREMENT_DECOMPOSITION") {
+    const visibleNodeIds = bfs(
+      (node) => requirementDecompositionTypes.has(conceptMap.get(node.data.conceptId)?.type || ""),
+      () => true
+    )
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "IMPLEMENTATION_COVERAGE") {
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+
+      edges.forEach((e) => {
+        const neighborId = e.source === current ? e.target : e.target === current ? e.source : null
+        if (!neighborId || visibleNodeIds.has(neighborId)) return
+
+        const neighborNode = nodeById.get(neighborId)
+        if (!neighborNode) return
+
+        const neighborConcept = conceptMap.get(neighborNode.data.conceptId)
+        if (implementationCoverageTypes.has(neighborConcept?.type || "")) {
+          visibleNodeIds.add(neighborId)
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  return { nodes, edges }
+}
+
+function ConceptNode({ data, id }: any) {
+  const [showHoverActions, setShowHoverActions] = useState(false)
+  const hoverTimeoutRef = useRef<number | null>(null)
 
   const handleMouseEnter = useCallback(() => {
-    timerRef.current = setTimeout(() => {
-      setShowExcerpt(true)
-    }, 2000)
+    hoverTimeoutRef.current = window.setTimeout(() => {
+      setShowHoverActions(true)
+    }, 250)
   }, [])
 
   const handleMouseLeave = useCallback(() => {
-    setShowExcerpt(false)
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
+    if (hoverTimeoutRef.current) {
+      window.clearTimeout(hoverTimeoutRef.current)
+      hoverTimeoutRef.current = null
+    }
+    setShowHoverActions(false)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        window.clearTimeout(hoverTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -111,19 +357,46 @@ function ConceptNode({ data, id }: any) {
       <div data-agent="graph-node-type" style={{ opacity: 0.7 }}>{data.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: any) => l.toUpperCase())}</div>
 
       <div
-        data-agent="graph-node-excerpt"
-        className="graph-node-excerpt"
         style={{
-          boxSizing: "border-box",
-          fontSize: 10,
-          color: "#333",
           overflow: "hidden",
-          maxHeight: showExcerpt ? 200 : 0,
-          marginTop: showExcerpt ? 0 : -10,
-          transition: "max-height 1s ease, margin-top 1s ease",
+          maxHeight: showHoverActions ? 150 : 0,
+          opacity: showHoverActions ? 1 : 0,
+          transform: showHoverActions ? "translateY(0)" : "translateY(-6px)",
+          transition: "opacity 0.5s ease, max-height 0.5s ease, transform 0.5s ease",
         }}
       >
-        {data.excerpt}
+        {data.onEditRevision && (
+          <button
+            data-agent="graph-node-edit-revision"
+            onClick={(event) => {
+              event.stopPropagation()
+              data.onEditRevision()
+            }}
+            style={{
+              ...brutal.button,
+              width: "100%",
+              marginTop: 8,
+              padding: "8px 12px",
+            }}
+          >
+            Edit latest revision
+          </button>
+        )}
+        <button
+          data-agent="graph-node-query"
+          onClick={(event) => {
+            event.stopPropagation()
+            data.onOpenQueryModal?.()
+          }}
+          style={{
+            ...brutal.button,
+            width: "100%",
+            marginTop: 8,
+            padding: "8px 12px",
+          }}
+        >
+          Query
+        </button>
       </div>
 
       <Handle type="source" position={Position.Right} />
@@ -170,6 +443,9 @@ export default function GraphView({
   } | null>(null)
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
   const [graphLoading, setGraphLoading] = useState(false)
+  const [activeQuery, setActiveQuery] = useState<VisibilityQueryType>("NONE")
+  const [activeQuerySourceId, setActiveQuerySourceId] = useState<string | null>(null)
+  const [queryModalSourceId, setQueryModalSourceId] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 })
   const viewportRef = useRef(viewport)
@@ -177,7 +453,6 @@ export default function GraphView({
   const initialViewportSentRef = useRef(false)
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null)
 
-  // Track container size for clamping cursor positions
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
@@ -228,6 +503,7 @@ export default function GraphView({
     return revisions.map((r) => {
       const concept = conceptMap.get(r.conceptId)
       const latestRev = latestRevisionByConcept.get(r.conceptId)
+      const isActiveQuerySource = activeQuerySourceId === r.id
 
       return {
         id: r.id,
@@ -237,12 +513,24 @@ export default function GraphView({
           type: concept?.type,
           color: typeColor[concept?.type || ""],
           conceptId: r.conceptId,
-          excerpt: latestRev?.markdown?.slice(0, 120) + "..."
+          excerpt: latestRev?.markdown?.slice(0, 120) + "...",
+          queryValue: isActiveQuerySource ? activeQuery : "NONE",
+          onQueryChange: (value: VisibilityQueryType) => {
+            if (value === "NONE") {
+              setActiveQuery("NONE")
+              setActiveQuerySourceId(null)
+            } else {
+              setActiveQuery(value)
+              setActiveQuerySourceId(r.id)
+            }
+          },
+          onOpenQueryModal: () => setQueryModalSourceId(r.id),
+          onEditRevision: onNodeClick ? () => onNodeClick(r.conceptId) : undefined,
         },
         position: { x: 0, y: 0 },
       }
     })
-  }, [revisions, conceptMap, latestRevisionByConcept])
+  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId])
 
   const edges: Edge[] = useMemo(() => {
     return relations.map((r) => ({
@@ -293,16 +581,20 @@ export default function GraphView({
     }))
   }, [relations, hoveredEdgeId])
 
+  const { nodes: visibleNodes, edges: visibleEdges } = useMemo(() => {
+    return getVisibleSubgraph(activeQuery, activeQuerySourceId, nodes, edges, conceptMap)
+  }, [activeQuery, activeQuerySourceId, nodes, edges, conceptMap])
+
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
-    return layoutGraph(nodes, edges)
-  }, [nodes, edges])
+    return layoutGraph(visibleNodes, visibleEdges)
+  }, [visibleNodes, visibleEdges])
 
   // Determine if we have any graph data to display. Rendering ReactFlow with
   // empty node/edge arrays can cause it to reset its internal state and, in
   // some edge‑cases, result in a completely blank canvas. By gating the
-  // rendering until we have at least one node and one edge we avoid spurious
-  // re‑mounts that were observed as "graph loading fails mysteriously".
-  const hasGraphData = layoutedNodes.length > 0 && layoutedEdges.length > 0
+  // rendering until we have at least one node we avoid spurious re‑mounts that
+  // were observed as "graph loading fails mysteriously".
+  const hasGraphData = layoutedNodes.length > 0
 
   // Convert graph-space coordinates to screen-space within container
   const graphToScreen = useCallback((graphX: number, graphY: number): { x: number; y: number } => {
@@ -392,62 +684,103 @@ export default function GraphView({
           </div>
         )}
 
-       {hasGraphData && (
-         <ReactFlow
-           key={graphKey}
-           className="react-flow"
-           data-agent="react-flow"
-           nodes={layoutedNodes}
-           edges={layoutedEdges}
-           nodeTypes={nodeTypes}
-           fitView
-           fitViewOptions={fitViewOptions}
-           nodeExtent={[[0, 0], [3000, 3000]]}
-           onInit={(instance) => {
-             reactFlowInstanceRef.current = instance
-           }}
-           onMove={(_, newViewport) => {
-             viewportRef.current = newViewport
-             setViewport(newViewport)
-           }}
-           onMoveEnd={(_, viewport) => {
-             setViewport(viewport)
-             viewportRef.current = viewport
-             // Convert viewport center to graph-space coordinates
-             const container = containerRef.current
-             if (container) {
-               const rect = container.getBoundingClientRect()
-               const centerX = (rect.width / 2 - viewport.x) / viewport.zoom
-               const centerY = (rect.height / 2 - viewport.y) / viewport.zoom
-               onViewportChange({ x: centerX, y: centerY, zoom: viewport.zoom })
-             }
-           }}
-           onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
-           onEdgeMouseLeave={() => setHoveredEdgeId(null)}
-           onNodeClick={(_, node) => {
-             if (onNodeClick && node.data.conceptId) {
-               onNodeClick(node.data.conceptId)
-             }
-           }}
-           onEdgeClick={(_, edge) => {
-             if (!graphLoading) {
-               deleteRelation(edge.id)
-             }
-           }}
-           onConnect={(params) => {
-             if (!params.source || !params.target) return
- 
-             setPendingConnection({
-               from: params.source,
-               to: params.target,
-             })
-           }}
-         >
-           <MiniMap />
-           <Controls />
-           <Background variant={BackgroundVariant.Cross} />
-         </ReactFlow>
-       )}
+        {(activeQuery !== "NONE" || activeQuerySourceId) && (
+          <button
+            data-agent="graph-show-all-button"
+            onClick={() => {
+              setActiveQuery("NONE")
+              setActiveQuerySourceId(null)
+            }}
+            style={{
+              ...brutal.button,
+              position: "absolute",
+              top: 14,
+              right: 14,
+              zIndex: 12,
+              padding: "8px 12px",
+              margin: 0,
+            }}
+          >
+            Show all
+          </button>
+        )}
+
+        {queryModalSourceId && (
+          <QueryPicker
+            sourceName={
+              conceptMap.get(
+                nodes.find((n) => n.id === queryModalSourceId)?.data.conceptId || ""
+              )?.key || "Unknown"
+            }
+            options={[
+              { value: "NONE", label: "Show all" },
+              ...VISIBILITY_QUERIES,
+            ]}
+            onSelect={(value) => {
+              if (value === "NONE") {
+                setActiveQuery("NONE")
+                setActiveQuerySourceId(null)
+              } else {
+                setActiveQuery(value as VisibilityQueryType)
+                setActiveQuerySourceId(queryModalSourceId)
+              }
+              setQueryModalSourceId(null)
+            }}
+            onClose={() => setQueryModalSourceId(null)}
+          />
+        )}
+
+        {hasGraphData && (
+          <ReactFlow
+            key={graphKey}
+            className="react-flow"
+            data-agent="react-flow"
+            nodes={layoutedNodes}
+            edges={layoutedEdges}
+            nodeTypes={nodeTypes}
+            fitView
+            fitViewOptions={fitViewOptions}
+            nodeExtent={[[0, 0], [3000, 3000]]}
+            onInit={(instance) => {
+              reactFlowInstanceRef.current = instance
+            }}
+            onMove={(_, newViewport) => {
+              viewportRef.current = newViewport
+              setViewport(newViewport)
+            }}
+            onMoveEnd={(_, viewport) => {
+              setViewport(viewport)
+              viewportRef.current = viewport
+              // Convert viewport center to graph-space coordinates
+              const container = containerRef.current
+              if (container) {
+                const rect = container.getBoundingClientRect()
+                const centerX = (rect.width / 2 - viewport.x) / viewport.zoom
+                const centerY = (rect.height / 2 - viewport.y) / viewport.zoom
+                onViewportChange({ x: centerX, y: centerY, zoom: viewport.zoom })
+              }
+            }}
+            onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
+            onEdgeMouseLeave={() => setHoveredEdgeId(null)}
+            onEdgeClick={(_, edge) => {
+              if (!graphLoading) {
+                deleteRelation(edge.id)
+              }
+            }}
+            onConnect={(params) => {
+              if (!params.source || !params.target) return
+
+              setPendingConnection({
+                from: params.source,
+                to: params.target,
+              })
+            }}
+          >
+            <MiniMap />
+            <Controls />
+            <Background variant={BackgroundVariant.Cross} />
+          </ReactFlow>
+        )}
 
         {/* User circles - absolutely positioned elements that move with graph viewport, fixed size */}
         {presences

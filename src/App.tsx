@@ -200,6 +200,23 @@ export const brutal = {
     color: "#fff",
   },
 
+  list: {
+    display: "grid",
+    gap: 6,
+    margin: 0,
+    padding: 0,
+  },
+
+  listItem: {
+    background: "white",
+    border: "2px solid black",
+    borderRadius: 4,
+    padding: "10px 12px",
+    cursor: "pointer",
+    fontFamily: "monospace",
+    userSelect: "none" as const,
+  },
+
   actions: {
     display: "flex",
     gap: "4px",
@@ -1072,7 +1089,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   fn()
                 }}
 
-                style={{ ...brutal.button, background: SemanticColor.SUCCESS }}
+                style={{ ...brutal.button, background: SemanticColor.DANGER }}
               >
                 {pendingConfirm.confirmLabel || "Discard & proceed"}
               </button>
@@ -1544,7 +1561,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                     }}
                                     style={brutal.button}
                                   >
-                                    Load
+                                    Edit
                                   </button>
 
                                   <div
