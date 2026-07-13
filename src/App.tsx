@@ -1206,17 +1206,23 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       {!user && (
         <aside>
           <hr />
-          <article style={{ padding: 80, maxWidth: 1100 }}>
-            <h1>Discover safety with WCGW Safety Suite</h1>
+          <article style={{ padding: 40, maxWidth: 1100 }}>
+            <h1>🎊 Public beta is open.</h1>
 
-            <p>
-              WCGW Safety Suite provides structured requirements management and lifecycle traceability
-              for safety-critical systems. Aimed at manufacturing and safety engineering teams, it supports comprehensive documentation across ISO 26262, IEC 61508,
-              and ISO 13849 frameworks, enabling rigorous capture of hazard analysis, safety goals, functional requirements,
-              technical specifications, and validation evidence. The platform maintains artifact relationships throughout
-              the development lifecycle, supporting change management, baseline creation, and AI-assisted creation of audit-ready
-              documentation in preparing for certification and compliance.
-            </p>
+            <div style={{ display: "grid", gap: 12, fontFamily: "IBM Plex Mono, monospace", lineHeight: 1.6, fontSize: 15 }}>
+              <p style={{ margin: 0 }}>
+                We are pleased to make this software available through an open public beta, with continued development and refinement underway as we gather feedback and assess its broader deployment.
+              </p>
+              <p style={{ margin: 0 }}>
+                The software is provided as-is for the time being, and we appreciate your understanding as we continue to improve the platform and its service model.
+              </p>
+              <p style={{ margin: 0 }}>
+                In line with our privacy approach, we use cookies to help identify users and to analyze product usage in a quasi-anonymous manner so we can better improve your user experience.
+              </p>
+              <p style={{ margin: 0 }}>
+                For feedback, demos, licensing, or general inquiries, please contact <span style={{ textDecoration: "underline" }}>wcgwsafety@gmail.com</span>.
+              </p>
+            </div>
           </article>
           <hr />
           <footer>
