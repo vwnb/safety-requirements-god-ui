@@ -1208,21 +1208,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           <hr />
           <article style={{ padding: 40, maxWidth: 1100 }}>
             <h1>🎊 Public beta is open.</h1>
-
-            <div style={{ display: "grid", gap: 12, fontFamily: "IBM Plex Mono, monospace", lineHeight: 1.6, fontSize: 15 }}>
-              <p style={{ margin: 0 }}>
-                We are pleased to make this software available through an open public beta, with continued development and refinement underway as we gather feedback and assess its broader deployment.
-              </p>
-              <p style={{ margin: 0 }}>
-                The software is provided as-is for the time being, and we appreciate your understanding as we continue to improve the platform and its service model.
-              </p>
-              <p style={{ margin: 0 }}>
-                In line with our privacy approach, we use cookies to help identify users and to analyze product usage in a quasi-anonymous manner so we can better improve your user experience.
-              </p>
-              <p style={{ margin: 0 }}>
-                For feedback, demos, licensing, or general inquiries, please contact <span style={{ textDecoration: "underline" }}>wcgwsafety@gmail.com</span>.
-              </p>
-            </div>
+            <p>
+              We are pleased to make this software available through an open public beta, with continued development and refinement underway as we gather feedback and assess its broader deployment. The software is provided as-is for the time being, and we appreciate your understanding as we continue to improve the platform and its service model.
+            </p>
+            <p>
+              For feedback, demos, licensing, or general inquiries, please contact <span style={{ textDecoration: "underline" }}>wcgwsafety@gmail.com</span>.
+            </p>
+            <h2>Privacy policy</h2>
+            <p>
+              In line with our privacy approach, we use cookies to help identify users and to analyze product usage in a quasi-anonymous manner so we can better improve your user experience.
+            </p>
           </article>
           <hr />
           <footer>
@@ -1697,25 +1692,25 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   </section>
                 )}
 
-                  <section data-agent="new-baseline-section">
-                    <div className="title">New baseline</div>
+                <section data-agent="new-baseline-section">
+                  <div className="title">New baseline</div>
 
-                    <input
-                      data-agent="input-baseline-name"
-                      placeholder="Baseline name"
-                      value={baselineName}
-                      onChange={(e) => setBaselineName(e.target.value)}
-                      style={{ ...brutal.input, marginBottom: 8 }}
-                    />
+                  <input
+                    data-agent="input-baseline-name"
+                    placeholder="Baseline name"
+                    value={baselineName}
+                    onChange={(e) => setBaselineName(e.target.value)}
+                    style={{ ...brutal.input, marginBottom: 8 }}
+                  />
 
-                    <button
-                      data-agent="btn-create-baseline"
-                      onClick={createBaseline}
-                      style={{ ...brutal.button, marginTop: 8 }}
-                    >
-                      Create baseline
-                    </button>
-                  </section>
+                  <button
+                    data-agent="btn-create-baseline"
+                    onClick={createBaseline}
+                    style={{ ...brutal.button, marginTop: 8 }}
+                  >
+                    Create baseline
+                  </button>
+                </section>
 
                 <hr />
                 <section data-agent="import-concepts-section">
