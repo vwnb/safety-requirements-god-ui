@@ -418,6 +418,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [templates, setTemplates] = useState<(WorkItem & { templateManifest?: TemplateManifest })[]>()
   const [filterText, setFilterText] = useState("")
+  const [templateSearchMode, setTemplateSearchMode] = useState<"browse" | "prompt">("browse")
+  const [templateSearchResults, setTemplateSearchResults] = useState<(WorkItem & { templateManifest?: TemplateManifest })[] | null>(null)
+  const [templateSearchLoading, setTemplateSearchLoading] = useState(false)
+  const [templateSearchError, setTemplateSearchError] = useState<string | null>(null)
 
   const [concepts, setConcepts] = useState<Concept[] | null>(null)
   const [conceptsInitialized, setConceptsInitialized] = useState(false)
@@ -945,27 +949,68 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
-  const filteredTemplates = templates?.filter((wi) => {
-    const search = filterText.trim().toLowerCase()
-    const manifest = wi.templateManifest
-    return !search || [
-      wi.key,
-      wi.name,
-      wi.description || "",
-      ...(wi.standards ?? []),
-      ...(manifest?.tags ?? []),
-      ...(manifest?.asilRange ?? []),
-      ...(manifest?.silRange ?? []),
-      ...(manifest?.plRange ?? []),
-      ...(manifest?.phases ?? []),
-      ...(manifest?.requiredConcepts ?? []),
-      ...(manifest?.relationPatterns ?? []),
-      ...(manifest?.composability?.conflicts ?? []),
-      ...(manifest?.composability?.mergeKeys ?? []),
-    ]
-      .map((value) => value?.toString().toLowerCase() ?? "")
-      .some((value) => value.includes(search))
-  }) ?? []
+  const filteredTemplates = templateSearchMode === "prompt"
+    ? (templateSearchResults ?? templates ?? [])
+    : (templates?.filter((wi) => {
+      const search = filterText.trim().toLowerCase()
+      const manifest = wi.templateManifest
+      return !search || [
+        wi.key,
+        wi.name,
+        wi.description || "",
+        ...(wi.standards ?? []),
+        ...(manifest?.tags ?? []),
+        ...(manifest?.asilRange ?? []),
+        ...(manifest?.silRange ?? []),
+        ...(manifest?.plRange ?? []),
+        ...(manifest?.phases ?? []),
+        ...(manifest?.requiredConcepts ?? []),
+        ...(manifest?.relationPatterns ?? []),
+        ...(manifest?.composability?.conflicts ?? []),
+        ...(manifest?.composability?.mergeKeys ?? []),
+      ]
+        .map((value) => value?.toString().toLowerCase() ?? "")
+        .some((value) => value.includes(search))
+    }) ?? [])
+
+  async function searchTemplatesWithPrompt() {
+    const prompt = filterText.trim()
+    if (!prompt) return
+
+    setTemplateSearchLoading(true)
+    setTemplateSearchError(null)
+
+    try {
+      const remainingRes = await apiFetch(`${API}/me/license/remaining`)
+      if (!remainingRes.ok) {
+        throw new Error(remainingRes.status === 403 ? "You need an active license to use prompt search." : "Unable to check remaining license points.")
+      }
+
+      const remainingData = await remainingRes.json()
+      const remaining = typeof remainingData?.remaining === "number" ? remainingData.remaining : 0
+      if (remaining <= 0) {
+        throw new Error("You have no remaining license points for prompt search.")
+      }
+
+      const res = await apiFetch(`${API}/templates/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, limit: 8 }),
+      })
+      if (!res.ok) {
+        throw new Error("Failed to search templates")
+      }
+
+      const data = await res.json()
+      const results = Array.isArray(data) ? data : data.templates ?? []
+      setTemplateSearchResults(results as (WorkItem & { templateManifest?: TemplateManifest })[])
+    } catch (error) {
+      setTemplateSearchResults(null)
+      setTemplateSearchError(error instanceof Error ? error.message : "Failed to search templates")
+    } finally {
+      setTemplateSearchLoading(false)
+    }
+  }
 
   async function refreshBaselines() {
     const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
@@ -1718,7 +1763,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     Import work item templates
                     <InfoButton
                       title="Work item templates"
-                      content="Use the search box to filter templates by phase, standards, tags, required concepts, relations, or any other manifest field. Templates can be applied as a starting point for a new work item by importing the template's concepts and relationships into the current work item."
+                      content="Use Browse to filter locally loaded templates by manifest fields. Use Prompt search to send a natural-language request to the server and retrieve matching templates."
                     />
                   </div>
                   {templates === undefined ? (
@@ -1731,18 +1776,76 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     </p>
                   ) : (
                     <>
-                      <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
+                      <div style={{ display: "grid", gap: 8, marginBottom: 16 }}>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTemplateSearchMode("browse")
+                              setTemplateSearchError(null)
+                            }}
+                            style={{
+                              ...brutal.button,
+                              margin: 0,
+                              ...(templateSearchMode === "browse" ? brutal.active : {})
+                            }}
+                          >
+                            Browse
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTemplateSearchMode("prompt")
+                              setTemplateSearchError(null)
+                            }}
+                            style={{
+                              ...brutal.button,
+                              margin: 0,
+                              ...(templateSearchMode === "prompt" ? brutal.active : {})
+                            }}
+                          >
+                            Prompt search
+                          </button>
+                        </div>
                         <input
-                          aria-label="Search templates"
-                          placeholder="Search templates, tags, concepts, phases, standards..."
+                          aria-label={templateSearchMode === "prompt" ? "Search templates with a prompt" : "Search templates"}
+                          placeholder={templateSearchMode === "prompt"
+                            ? "Try: hazard and risk analysis of a robotic kitten system"
+                            : "Search templates, tags, concepts, phases, standards..."
+                          }
                           style={brutal.input}
                           value={filterText}
                           onChange={(e) => setFilterText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (templateSearchMode === "prompt" && e.key === "Enter") {
+                              e.preventDefault()
+                              searchTemplatesWithPrompt()
+                            }
+                          }}
                         />
+                        {templateSearchMode === "prompt" && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              onClick={searchTemplatesWithPrompt}
+                              style={{ ...brutal.button, margin: 0 }}
+                              disabled={templateSearchLoading}
+                            >
+                              {templateSearchLoading ? "Searching..." : "Search"}
+                            </button>
+                            <span style={{ fontSize: 12, fontFamily: "monospace" }}>
+                              Note: Prompt mode consumes LLM calls.
+                            </span>
+                          </div>
+                        )}
                       </div>
 
+                      {templateSearchError && (
+                        <p style={{ color: "#b42318", marginBottom: 12 }}>{templateSearchError}</p>
+                      )}
+
                       {filteredTemplates.length === 0 ? (
-                        <p>No matching templates.</p>
+                        <p>{templateSearchMode === "prompt" ? "No prompt matches yet." : "No matching templates."}</p>
                       ) : (
                         <div className="list-input template-list">
                           {filteredTemplates.map((wi) => {
