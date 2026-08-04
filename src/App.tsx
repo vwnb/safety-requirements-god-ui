@@ -1,6 +1,6 @@
 import logo from "./assets/logo.png"
 import { useAuth0 } from "@auth0/auth0-react"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { parseDiff, Diff, Hunk, type HunkData, type DiffType } from "react-diff-view"
 import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
@@ -479,6 +479,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [editWorkItemApplicationContext, setEditWorkItemApplicationContext] = useState("")
   const [editWorkItemSystemBoundary, setEditWorkItemSystemBoundary] = useState("")
   const [workItemCompleteness, setWorkItemCompleteness] = useState<WorkItemCompleteness | null>(null)
+  const completenessInFlightRef = useRef(false)
+  const completenessPendingRef = useRef(false)
 
   const [graph, setGraph] = useState<any>(null)
 
@@ -623,7 +625,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     async function load() {
       await Promise.all([
         loadWorkItemDetails(selectedWorkItem),
-        loadWorkItemCompleteness(selectedWorkItem),
         loadConcepts(selectedWorkItem),
         refreshGraph(selectedWorkItem),
         refreshBaselines()
@@ -880,6 +881,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   async function loadWorkItemCompleteness(workItemId: string) {
+    if (completenessInFlightRef.current) {
+      completenessPendingRef.current = true
+      return
+    }
+
+    completenessInFlightRef.current = true
+
     try {
       const res = await apiFetch(`${API}/graph/${workItemId}/completeness`)
 
@@ -891,6 +899,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       setWorkItemCompleteness(await res.json())
     } catch {
       setWorkItemCompleteness(null)
+    } finally {
+      completenessInFlightRef.current = false
+
+      if (completenessPendingRef.current) {
+        completenessPendingRef.current = false
+        loadWorkItemCompleteness(workItemId)
+      }
     }
   }
 
@@ -936,7 +951,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       })
 
       await loadWorkItemDetails(selectedWorkItemData.id)
-      await loadWorkItemCompleteness(selectedWorkItemData.id)
       await refreshGraph(selectedWorkItem)
 
       setWorkItems((prev) =>
@@ -953,6 +967,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   async function refreshGraph(workItemId: string) {
     const data = await apiFetch(`${API}/graph/${workItemId}`).then((r) => r.json())
     setGraph(data)
+    // Re-fetching the graph should also trigger a completeness refresh
+    loadWorkItemCompleteness(workItemId)
   }
 
   async function importConceptsFromTemplate(workItemId: string) {
