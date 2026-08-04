@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { brutal } from "../App"
+import Modal from "./Modal"
 import type { ConceptCentricQueryType } from "./GraphView"
 
 type QueryOption = {
@@ -21,42 +22,16 @@ type QueryPickerProps = {
 
 export default function QueryPicker({ sourceName, categories, onSelect, onClose }: QueryPickerProps) {
   const [open, setOpen] = useState(true)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false)
-        onClose()
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [onClose])
 
   if (!open) return null
 
+  const close = () => {
+    setOpen(false)
+    onClose()
+  }
+
   return (
-    <div
-      data-agent="query-picker"
-      ref={ref}
-      style={{
-        background: "rgb(233, 237, 233)",
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        border: "2px solid black",
-        fontFamily: "monospace",
-        padding: "2rem",
-        zIndex: 9999,
-        width: 380,
-        maxHeight: "80vh",
-        overflowY: "auto",
-        borderRadius: 8,
-      }}
-    >
+    <Modal onClose={close} width={380}>
       <div className="title" style={{ marginBottom: 16 }}>
         Query graph from node:
         <br />
@@ -99,14 +74,11 @@ export default function QueryPicker({ sourceName, categories, onSelect, onClose 
 
       <button
         data-agent="query-picker-cancel"
-        onClick={() => {
-          setOpen(false)
-          onClose()
-        }}
+        onClick={close}
         style={brutal.button}
       >
         Cancel
       </button>
-    </div>
+    </Modal>
   )
 }

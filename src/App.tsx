@@ -25,6 +25,7 @@ import { useCollaboration } from "./lib/useCollaboration"
 import { CollaborationBanner } from "./components/CollaborationBanner"
 import BaselineDetailsCard from "./components/BaselineDetailsCard"
 import TemplateList from "./components/TemplateList"
+import Modal from "./components/Modal"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -1134,57 +1135,34 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         currentUserId={actorForApi}
       />}
       {pendingConfirm && (
-        <div
-          data-agent="confirm-overlay"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.4)",
-            zIndex: 10000,
-            display: "grid",
-            placeItems: "center",
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              border: "2px solid black",
-              background: "rgb(233, 237, 233)",
-              padding: 24,
-              fontFamily: "monospace",
-              fontSize: 14,
-              maxWidth: 400,
-              textAlign: "center",
-            }}
-          >
-            <p style={{ margin: "0 0 16px 0" }}>{pendingConfirm.message}</p>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              <button
-                onClick={() => {
-                  setPendingConfirm(null)
-                }}
-                style={{ ...brutal.button }}
-              >
-                {pendingConfirm.cancelLabel || "Keep editing"}
-              </button>
-              <button
-                onClick={() => {
-                  const fn = pendingConfirm.onConfirm
-                  if (pendingConfirm.clearRevisionOnConfirm !== false) {
-                    setActiveRevisionId(null)
-                    setEditorValue("")
-                  }
-                  setPendingConfirm(null)
-                  fn()
-                }}
+        <Modal onClose={() => setPendingConfirm(null)} width={400}>
+          <p style={{ margin: "0 0 16px 0", textAlign: "center" }}>{pendingConfirm.message}</p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <button
+              onClick={() => {
+                setPendingConfirm(null)
+              }}
+              style={{ ...brutal.button }}
+            >
+              {pendingConfirm.cancelLabel || "Keep editing"}
+            </button>
+            <button
+              onClick={() => {
+                const fn = pendingConfirm.onConfirm
+                if (pendingConfirm.clearRevisionOnConfirm !== false) {
+                  setActiveRevisionId(null)
+                  setEditorValue("")
+                }
+                setPendingConfirm(null)
+                fn()
+              }}
 
-                style={{ ...brutal.button, background: SemanticColor.DANGER }}
-              >
-                {pendingConfirm.confirmLabel || "Discard & proceed"}
-              </button>
-            </div>
+              style={{ ...brutal.button, background: SemanticColor.DANGER }}
+            >
+              {pendingConfirm.confirmLabel || "Discard & proceed"}
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
 
       {loading && (

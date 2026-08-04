@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { brutal } from "../App"
+import Modal from "./Modal"
 import { GRAPH_WIDE_QUERY_TYPES, type GraphWideQueryType } from "./GraphView"
 
 type QueryOption = {
@@ -20,21 +21,13 @@ type GraphWideQueryPickerProps = {
 
 export default function GraphWideQueryPicker({ categories, onSelect, onClose }: GraphWideQueryPickerProps) {
   const [open, setOpen] = useState(true)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false)
-        onClose()
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [onClose])
 
   if (!open) return null
+
+  const close = () => {
+    setOpen(false)
+    onClose()
+  }
 
   // Filter categories to only show graph-wide query types
   const filteredCategories = categories
@@ -45,25 +38,7 @@ export default function GraphWideQueryPicker({ categories, onSelect, onClose }: 
     .filter((cat) => cat.options.length > 0)
 
   return (
-    <div
-      data-agent="graph-wide-query-picker"
-      ref={ref}
-      style={{
-        background: "rgb(233, 237, 233)",
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        border: "2px solid black",
-        fontFamily: "monospace",
-        padding: "2rem",
-        zIndex: 9999,
-        width: 380,
-        maxHeight: "80vh",
-        overflowY: "auto",
-        borderRadius: 8,
-      }}
-    >
+    <Modal onClose={close} width={380}>
       <div className="title" style={{ marginBottom: 16 }}>
         Query graph
       </div>
@@ -108,14 +83,11 @@ export default function GraphWideQueryPicker({ categories, onSelect, onClose }: 
 
       <button
         data-agent="graph-wide-query-picker-cancel"
-        onClick={() => {
-          setOpen(false)
-          onClose()
-        }}
+        onClick={close}
         style={brutal.button}
       >
         Cancel
       </button>
-    </div>
+    </Modal>
   )
 }

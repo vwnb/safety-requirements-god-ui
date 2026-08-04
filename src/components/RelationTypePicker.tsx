@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { brutal } from "../App"
+import Modal from "./Modal"
 
 const RELATION_TYPES = [
   "DERIVES_FROM",
@@ -20,42 +21,16 @@ export default function RelationTypePicker({
   onClose: () => void
 }) {
   const [open, setOpen] = useState(true)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-        onClose()
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [onClose])
 
   if (!open) return null
 
+  const close = () => {
+    setOpen(false)
+    onClose()
+  }
+
   return (
-    <div
-      data-agent="relation-type-picker"
-      ref={ref}
-      style={{
-        background: "rgb(233, 237, 233)",
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        height: "auto",
-        transform: "translate(-50%, -50%)",
-        border: "2px solid black",
-        fontFamily: "monospace",
-        padding: "2rem",
-        zIndex: 9999,
-        width: 260,
-        borderRadius: 8,
-        borderLeftWidth: 6,
-      }}
-    >
+    <Modal onClose={close} width={260}>
       <div
         data-agent="relation-type-picker-title"
         className="title"
@@ -89,14 +64,11 @@ export default function RelationTypePicker({
 
       <button
         data-agent="btn-cancel-relation"
-        onClick={() => {
-          setOpen(false)
-          onClose()
-        }}
+        onClick={close}
         style={brutal.button}
       >
         Cancel
       </button>
-    </div>
+    </Modal>
   )
 }
