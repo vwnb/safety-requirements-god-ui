@@ -458,7 +458,7 @@ footer {
 }
 
 main.revise-active {
-  animation: popUp 0.3s ease-out;
+  animation: fadeIn 3s ease-out forwards;
 }
 
 @media (max-width: 1280px) {
@@ -467,18 +467,6 @@ main.revise-active {
     background: rgb(233, 237, 233);
     border: none;
     margin: 0;
-  }
-}
-
-@keyframes popUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
   }
 }
 
