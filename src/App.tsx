@@ -618,6 +618,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }
 
     loadWorkItems()
+    refreshBaselines(projectId)
   }, [selectedProject])
 
   useEffect(() => {
@@ -627,8 +628,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       await Promise.all([
         loadWorkItemDetails(selectedWorkItem),
         loadConcepts(selectedWorkItem),
-        refreshGraph(selectedWorkItem),
-        refreshBaselines()
+        refreshGraph(selectedWorkItem)
       ])
 
       setTimeout(() => {
@@ -779,17 +779,19 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   async function createBaseline() {
     return withLoading("Creating baseline...", async () => {
-      await apiFetch(`${API}/baselines/auto`, {
+      const projectId = selectedProject?.id
+      if (!projectId) return
+
+      await apiFetch(`${API}/projects/${projectId}/baselines/auto`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: baselineName,
-          projectId: selectedProject?.id,
           user: actorForApi,
         }),
       })
 
-      await refreshBaselines()
+      await refreshBaselines(projectId)
       setBaselineName("")
     })
   }
@@ -1056,8 +1058,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }
   }
 
-  async function refreshBaselines() {
-    const data = await apiFetch(`${API}/baselines`).then((r) => r.json())
+  async function refreshBaselines(projectId?: string) {
+    const id = projectId?.trim() || selectedProject?.id
+    if (!id) return
+    const data = await apiFetch(`${API}/projects/${id}/baselines`).then((r) => r.json())
     setBaselines(data)
   }
 
@@ -1745,7 +1749,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                 data-agent={`baseline-${b.id}`}
                                 key={b.id}
                                 onClick={async () => {
-                                  const full = await apiFetch(`${API}/baselines/${b.id}`).then((r) => r.json())
+                                  if (!selectedProject) return
+                                  const full = await apiFetch(`${API}/projects/${selectedProject.id}/baselines/${b.id}`).then((r) => r.json())
                                   setSelectedBaseline(full)
                                 }}
                                 style={{
