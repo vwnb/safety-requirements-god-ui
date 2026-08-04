@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['src/assets/favicon.ico'],
       manifest: {
         name: 'Safety Requirements GOD UI',
         short_name: 'Safety GOD',
@@ -19,9 +19,9 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'favicon.svg',
+            src: 'src/assets/favicon.ico',
             sizes: 'any',
-            type: 'image/svg+xml',
+            type: 'image/x-icon',
             purpose: 'any maskable',
           },
         ],
