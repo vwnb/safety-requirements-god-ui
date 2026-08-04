@@ -124,15 +124,6 @@ export default function ConceptCard({
               <span><span className="field-label">Phase</span> {concept.phase.replace(/_/g, " ")}</span>
             )}
           </p>
-
-          <p className="info-row-tags">
-            {concept.asil && <span className="tag tag-risk">ASIL: {concept.asil}</span>}
-            {concept.sil && <span className="tag tag-functional">SIL: {concept.sil}</span>}
-            {concept.pl && <span className="tag tag-metric">PL: {concept.pl}</span>}
-            {(concept.standards ?? []).map((s) => (
-              <span key={s} className="tag tag-structure">{s.replace(/_/g, " ")}</span>
-            ))}
-          </p>
         </article>
       ) : (
         <>

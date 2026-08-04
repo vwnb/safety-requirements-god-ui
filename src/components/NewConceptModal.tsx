@@ -1,36 +1,26 @@
 import { useState } from "react"
 import Modal from "./Modal"
 
-type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
-
 export default function NewConceptModal({
   onCreate,
   onClose,
 }: {
-  onCreate: (key: string, title: string, type: string, phase: string, asil: string, sil: string, pl: string, standards: Standard[]) => void
+  onCreate: (key: string, title: string, type: string, phase: string) => void
   onClose: () => void
 }) {
   const [key, setKey] = useState("")
   const [title, setTitle] = useState("")
   const [type, setType] = useState("")
   const [phase, setPhase] = useState("")
-  const [asil, setAsil] = useState("")
-  const [sil, setSil] = useState("")
-  const [pl, setPl] = useState("")
-  const [standards, setStandards] = useState<Standard[]>([])
 
   const handleCreate = () => {
     if (key.trim() && title.trim() && type) {
-      onCreate(key, title, type, phase, asil, sil, pl, standards)
+      onCreate(key, title, type, phase)
     }
   }
 
   const handleCancel = () => {
     onClose()
-  }
-
-  const toggleStandard = (s: Standard) => {
-    setStandards(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
   }
 
   return (
@@ -119,75 +109,6 @@ export default function NewConceptModal({
           <option value="VERIFICATION">Verification</option>
           <option value="VALIDATION">Validation</option>
         </select>
-      </div>
-
-      <div className="form-row">
-        <div className="field-label">ASIL</div>
-        <select
-          data-agent="select-new-concept-asil"
-          value={asil}
-          onChange={(e) => setAsil(e.target.value)}
-          className="license-value"
-          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
-        >
-          <option value="">-- Select ASIL --</option>
-          <option value="QM">QM</option>
-          <option value="ASIL_A">ASIL A</option>
-          <option value="ASIL_B">ASIL B</option>
-          <option value="ASIL_C">ASIL C</option>
-          <option value="ASIL_D">ASIL D</option>
-        </select>
-      </div>
-
-      <div className="form-row">
-        <div className="field-label">SIL</div>
-        <select
-          data-agent="select-new-concept-sil"
-          value={sil}
-          onChange={(e) => setSil(e.target.value)}
-          className="license-value"
-          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
-        >
-          <option value="">-- Select SIL --</option>
-          <option value="SIL_1">SIL 1</option>
-          <option value="SIL_2">SIL 2</option>
-          <option value="SIL_3">SIL 3</option>
-          <option value="SIL_4">SIL 4</option>
-        </select>
-      </div>
-
-      <div className="form-row">
-        <div className="field-label">PL</div>
-        <select
-          data-agent="select-new-concept-pl"
-          value={pl}
-          onChange={(e) => setPl(e.target.value)}
-          className="license-value"
-          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
-        >
-          <option value="">-- Select PL --</option>
-          <option value="PL_A">PL a</option>
-          <option value="PL_B">PL b</option>
-          <option value="PL_C">PL c</option>
-          <option value="PL_D">PL d</option>
-          <option value="PL_E">PL e</option>
-        </select>
-      </div>
-
-      <div className="form-row">
-        <div className="field-label">Standards</div>
-        <div className="flex-wrap">
-          {(["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]).map((s) => (
-            <label key={s} className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={standards.includes(s)}
-                onChange={() => toggleStandard(s)}
-              />
-              {s.replace("_", " ")}
-            </label>
-          ))}
-        </div>
       </div>
 
       <div className="form-actions">

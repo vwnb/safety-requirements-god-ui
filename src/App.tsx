@@ -1085,7 +1085,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
-  const handleNewConceptCreate = async (key: string, title: string, type: string, phase: string, asil: string, sil: string, pl: string, standards: Standard[]) => {
+  const handleNewConceptCreate = async (key: string, title: string, type: string, phase: string) => {
     if (!key.trim()) return
 
     return withLoading("Creating concept...", async () => {
@@ -1098,10 +1098,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         type,
         title,
         phase: phase || null,
-        asil: asil || null,
-        sil: sil || null,
-        pl: pl || null,
-        standards: standards.length > 0 ? standards : null,
         createdBy: { name: actorForApi }
       }
 
@@ -1226,8 +1222,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
       {showNewConceptModal && (
         <NewConceptModal
-          onCreate={(key, title, type, phase, asil, sil, pl, standards) => {
-            handleNewConceptCreate(key, title, type, phase, asil, sil, pl, standards)
+          onCreate={(key, title, type, phase) => {
+            handleNewConceptCreate(key, title, type, phase)
           }}
           onClose={() => setShowNewConceptModal(false)}
         />
