@@ -42,20 +42,117 @@ const nodeHeight = 80
 
 type VisibilityQueryType =
   | "NONE"
+  // Traceability
+  | "TRACEABILITY_PATH"
+  | "UPSTREAM_TRACEABILITY"
+  | "DOWNSTREAM_TRACEABILITY"
+  // Impact
   | "CHANGE_PROPAGATION"
-  | "IMPLEMENTATION_COVERAGE"
   | "IMPACT_ANALYSIS"
+  | "DEPENDENCY_CYCLE"
+  | "FAN_IN_OUT"
+  // Missing evidence
+  | "MISSING_VERIFICATION"
+  | "UNVERIFIED_REQUIREMENTS"
+  | "ORPHANED_NODES"
+  // Implementation progress
+  | "IMPLEMENTATION_COVERAGE"
+  | "IMPLEMENTATION_GAP"
   | "VERIFICATION_STATUS"
+  // Architectural weaknesses
+  | "ARCHITECTURE_LAYERS"
+  | "SINGLE_POINT_OF_FAILURE"
+  // Audit preparation
+  | "AUDIT_TRAIL"
+  | "COMPLIANCE_GAPS"
+  // Safety cases
   | "SAFETY_RATIONALE"
+  | "SAFETY_CASE_STRUCTURE"
+  | "HAZARD_MITIGATION"
+  // Lifecycle completeness
   | "REQUIREMENT_DECOMPOSITION"
+  | "LIFECYCLE_COVERAGE"
+  // Navigation
+  | "NEIGHBORHOOD"
+  | "CONNECTED_COMPONENT"
+  | "BREADTH_FIRST"
 
-const VISIBILITY_QUERIES: Array<{ value: VisibilityQueryType; label: string }> = [
-  { value: "CHANGE_PROPAGATION", label: "Change propagation" },
-  { value: "IMPACT_ANALYSIS", label: "Impact analysis" },
-  { value: "IMPLEMENTATION_COVERAGE", label: "Implementation coverage" },
-  { value: "VERIFICATION_STATUS", label: "Verification status" },
-  { value: "SAFETY_RATIONALE", label: "Safety rationale" },
-  { value: "REQUIREMENT_DECOMPOSITION", label: "Requirement decomposition" },
+type QueryCategory = {
+  category: string
+  options: Array<{ value: VisibilityQueryType; label: string }>
+}
+
+const VISIBILITY_QUERY_CATEGORIES: QueryCategory[] = [
+  {
+    category: "Traceability",
+    options: [
+      { value: "TRACEABILITY_PATH", label: "Traceability path" },
+      { value: "UPSTREAM_TRACEABILITY", label: "Upstream traceability" },
+      { value: "DOWNSTREAM_TRACEABILITY", label: "Downstream traceability" },
+    ],
+  },
+  {
+    category: "Impact & Risk",
+    options: [
+      { value: "CHANGE_PROPAGATION", label: "Change propagation" },
+      { value: "IMPACT_ANALYSIS", label: "Impact analysis" },
+      { value: "DEPENDENCY_CYCLE", label: "Dependency cycles" },
+      { value: "FAN_IN_OUT", label: "Fan-in / fan-out" },
+    ],
+  },
+  {
+    category: "Missing Evidence",
+    options: [
+      { value: "MISSING_VERIFICATION", label: "Missing verification" },
+      { value: "UNVERIFIED_REQUIREMENTS", label: "Unverified requirements" },
+      { value: "ORPHANED_NODES", label: "Orphaned nodes" },
+    ],
+  },
+  {
+    category: "Implementation Progress",
+    options: [
+      { value: "IMPLEMENTATION_COVERAGE", label: "Implementation coverage" },
+      { value: "IMPLEMENTATION_GAP", label: "Implementation gaps" },
+      { value: "VERIFICATION_STATUS", label: "Verification status" },
+    ],
+  },
+  {
+    category: "Architecture",
+    options: [
+      { value: "ARCHITECTURE_LAYERS", label: "Architecture layers" },
+      { value: "SINGLE_POINT_OF_FAILURE", label: "Single points of failure" },
+    ],
+  },
+  {
+    category: "Audit Preparation",
+    options: [
+      { value: "AUDIT_TRAIL", label: "Audit trail" },
+      { value: "COMPLIANCE_GAPS", label: "Compliance gaps" },
+    ],
+  },
+  {
+    category: "Safety Cases",
+    options: [
+      { value: "SAFETY_RATIONALE", label: "Safety rationale" },
+      { value: "SAFETY_CASE_STRUCTURE", label: "Safety case structure" },
+      { value: "HAZARD_MITIGATION", label: "Hazard mitigation chain" },
+    ],
+  },
+  {
+    category: "Lifecycle",
+    options: [
+      { value: "REQUIREMENT_DECOMPOSITION", label: "Requirement decomposition" },
+      { value: "LIFECYCLE_COVERAGE", label: "Lifecycle coverage" },
+    ],
+  },
+  {
+    category: "Navigation",
+    options: [
+      { value: "NEIGHBORHOOD", label: "Neighborhood (1-hop)" },
+      { value: "CONNECTED_COMPONENT", label: "Connected component" },
+      { value: "BREADTH_FIRST", label: "Breadth-first (3 levels)" },
+    ],
+  },
 ]
 
 const implementationCoverageTypes = new Set([
@@ -307,6 +404,780 @@ function getVisibleSubgraph(
     }
   }
 
+  // --- Traceability ---
+
+  if (queryType === "TRACEABILITY_PATH") {
+    // Show all nodes reachable from source via directed edges (downstream)
+    // plus all nodes that can reach source (upstream), forming full trace paths.
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+
+    // Downstream: follow edges from source
+    const downstreamQueue = [sourceNodeId]
+    while (downstreamQueue.length) {
+      const current = downstreamQueue.shift()!
+      edges.forEach((e) => {
+        if (e.source === current && !visibleNodeIds.has(e.target)) {
+          visibleNodeIds.add(e.target)
+          downstreamQueue.push(e.target)
+        }
+      })
+    }
+
+    // Upstream: follow edges into source
+    const upstreamQueue = [sourceNodeId]
+    while (upstreamQueue.length) {
+      const current = upstreamQueue.shift()!
+      edges.forEach((e) => {
+        if (e.target === current && !visibleNodeIds.has(e.source)) {
+          visibleNodeIds.add(e.source)
+          upstreamQueue.push(e.source)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "UPSTREAM_TRACEABILITY") {
+    // Show only nodes that trace up to the source (predecessors)
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      edges.forEach((e) => {
+        if (e.target === current && !visibleNodeIds.has(e.source)) {
+          visibleNodeIds.add(e.source)
+          queue.push(e.source)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "DOWNSTREAM_TRACEABILITY") {
+    // Show only nodes that the source traces down to (successors)
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      edges.forEach((e) => {
+        if (e.source === current && !visibleNodeIds.has(e.target)) {
+          visibleNodeIds.add(e.target)
+          queue.push(e.target)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  // --- Impact & Risk ---
+
+  if (queryType === "DEPENDENCY_CYCLE") {
+    // Find cycles that include the source node using DFS
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const visited = new Set<string>()
+    const stack: string[] = []
+    const inStack = new Set<string>()
+
+    const dfs = (nodeId: string) => {
+      if (inStack.has(nodeId)) {
+        // Found a cycle - mark all nodes in the current stack
+        const cycleStart = stack.indexOf(nodeId)
+        if (cycleStart >= 0) {
+          stack.slice(cycleStart).forEach((id) => visibleNodeIds.add(id))
+        }
+        return
+      }
+      if (visited.has(nodeId)) return
+
+      visited.add(nodeId)
+      inStack.add(nodeId)
+      stack.push(nodeId)
+
+      edges.forEach((e) => {
+        if (e.source === nodeId) {
+          dfs(e.target)
+        }
+      })
+
+      stack.pop()
+      inStack.delete(nodeId)
+    }
+
+    dfs(sourceNodeId)
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "FAN_IN_OUT") {
+    // Show source plus nodes with high connectivity (fan-in >= 2 or fan-out >= 2)
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const fanIn = new Map<string, number>()
+    const fanOut = new Map<string, number>()
+
+    edges.forEach((e) => {
+      fanIn.set(e.target, (fanIn.get(e.target) || 0) + 1)
+      fanOut.set(e.source, (fanOut.get(e.source) || 0) + 1)
+    })
+
+    // Include source's immediate neighbors
+    neighborIds(sourceNodeId).forEach((id) => visibleNodeIds.add(id))
+
+    // Include high fan-in/fan-out nodes in the connected component
+    const queue = [sourceNodeId]
+    while (queue.length) {
+      const current = queue.shift()!
+      neighborIds(current).forEach((neighborId) => {
+        if (visibleNodeIds.has(neighborId)) return
+        const inCount = fanIn.get(neighborId) || 0
+        const outCount = fanOut.get(neighborId) || 0
+        if (inCount >= 2 || outCount >= 2) {
+          visibleNodeIds.add(neighborId)
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  // --- Missing Evidence ---
+
+  if (queryType === "MISSING_VERIFICATION") {
+    // Show requirements that lack verification artifacts (TEST_CASE, TEST_RESULT, VERIFICATION_REPORT)
+    const verificationTypes = new Set(["TEST_CASE", "TEST_RESULT", "PROOF_TEST", "VERIFICATION_REPORT", "VALIDATION_REPORT"])
+    const requirementTypes = new Set([
+      "FUNCTIONAL_SAFETY_REQUIREMENT",
+      "TECHNICAL_SAFETY_REQUIREMENT",
+      "SOFTWARE_REQUIREMENT",
+      "SOFTWARE_SAFETY_REQUIREMENT",
+      "HARDWARE_REQUIREMENT",
+      "HARDWARE_SAFETY_REQUIREMENT",
+    ])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+      const currentType = conceptMap.get(currentNode.data.conceptId)?.type || ""
+
+      // If this is a requirement, check if it has verification
+      if (requirementTypes.has(currentType)) {
+        const hasVerification = edges.some((e) => {
+          const otherId = e.source === current ? e.target : e.target === current ? e.source : null
+          if (!otherId) return false
+          const otherNode = nodeById.get(otherId)
+          if (!otherNode) return false
+          const otherType = conceptMap.get(otherNode.data.conceptId)?.type || ""
+          return verificationTypes.has(otherType)
+        })
+
+        if (!hasVerification) {
+          visibleNodeIds.add(current)
+        }
+      }
+
+      // Traverse to neighbors
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "UNVERIFIED_REQUIREMENTS") {
+    // Show requirements that have no TEST_RESULT or VERIFICATION_REPORT connected
+    const evidenceTypes = new Set(["TEST_RESULT", "VERIFICATION_REPORT", "VALIDATION_REPORT"])
+    const requirementTypes = new Set([
+      "FUNCTIONAL_SAFETY_REQUIREMENT",
+      "TECHNICAL_SAFETY_REQUIREMENT",
+      "SOFTWARE_REQUIREMENT",
+      "SOFTWARE_SAFETY_REQUIREMENT",
+      "HARDWARE_REQUIREMENT",
+      "HARDWARE_SAFETY_REQUIREMENT",
+    ])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+      const currentType = conceptMap.get(currentNode.data.conceptId)?.type || ""
+
+      if (requirementTypes.has(currentType)) {
+        const hasEvidence = edges.some((e) => {
+          const otherId = e.source === current ? e.target : e.target === current ? e.source : null
+          if (!otherId) return false
+          const otherNode = nodeById.get(otherId)
+          if (!otherNode) return false
+          const otherType = conceptMap.get(otherNode.data.conceptId)?.type || ""
+          return evidenceTypes.has(otherType)
+        })
+
+        if (!hasEvidence) {
+          visibleNodeIds.add(current)
+        }
+      }
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "ORPHANED_NODES") {
+    // Show nodes with no connections at all, plus the source for context
+    const connectedIds = new Set<string>()
+    edges.forEach((e) => {
+      connectedIds.add(e.source)
+      connectedIds.add(e.target)
+    })
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    nodes.forEach((n) => {
+      if (!connectedIds.has(n.id)) {
+        visibleNodeIds.add(n.id)
+      }
+    })
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  // --- Implementation Progress ---
+
+  if (queryType === "IMPLEMENTATION_GAP") {
+    // Show requirements that lack IMPLEMENTATION artifacts
+    const implementationTypes = new Set(["IMPLEMENTATION", "VERIFICATION", "VERIFICATION_REPORT"])
+    const requirementTypes = new Set([
+      "FUNCTIONAL_SAFETY_REQUIREMENT",
+      "TECHNICAL_SAFETY_REQUIREMENT",
+      "SOFTWARE_REQUIREMENT",
+      "SOFTWARE_SAFETY_REQUIREMENT",
+      "HARDWARE_REQUIREMENT",
+      "HARDWARE_SAFETY_REQUIREMENT",
+    ])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+      const currentType = conceptMap.get(currentNode.data.conceptId)?.type || ""
+
+      if (requirementTypes.has(currentType)) {
+        const hasImplementation = edges.some((e) => {
+          const otherId = e.source === current ? e.target : e.target === current ? e.source : null
+          if (!otherId) return false
+          const otherNode = nodeById.get(otherId)
+          if (!otherNode) return false
+          const otherType = conceptMap.get(otherNode.data.conceptId)?.type || ""
+          return implementationTypes.has(otherType)
+        })
+
+        if (!hasImplementation) {
+          visibleNodeIds.add(current)
+        }
+      }
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  // --- Architecture ---
+
+  if (queryType === "ARCHITECTURE_LAYERS") {
+    // Show nodes grouped by architectural layer: Item/Architecture → Requirements → Implementation → Verification
+    const layerTypes = new Set([
+      "ITEM",
+      "ARCHITECTURE",
+      "FUNCTIONAL_SAFETY_REQUIREMENT",
+      "TECHNICAL_SAFETY_REQUIREMENT",
+      "SOFTWARE_REQUIREMENT",
+      "SOFTWARE_SAFETY_REQUIREMENT",
+      "HARDWARE_REQUIREMENT",
+      "HARDWARE_SAFETY_REQUIREMENT",
+      "IMPLEMENTATION",
+      "VERIFICATION",
+      "TEST_CASE",
+      "TEST_RESULT",
+      "VERIFICATION_REPORT",
+      "VALIDATION_REPORT",
+    ])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+      const currentType = conceptMap.get(currentNode.data.conceptId)?.type || ""
+
+      if (layerTypes.has(currentType)) {
+        visibleNodeIds.add(current)
+      }
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          const neighborNode = nodeById.get(neighborId)
+          if (!neighborNode) return
+          const neighborType = conceptMap.get(neighborNode.data.conceptId)?.type || ""
+          if (layerTypes.has(neighborType)) {
+            queue.push(neighborId)
+          }
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "SINGLE_POINT_OF_FAILURE") {
+    // Show nodes that are critical connectors (high betweenness centrality approximation)
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const neighbors = neighborIds(current)
+
+      // A node is a potential SPOF if it connects to many other nodes
+      if (neighbors.length >= 3) {
+        visibleNodeIds.add(current)
+      }
+
+      neighbors.forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  // --- Audit Preparation ---
+
+  if (queryType === "AUDIT_TRAIL") {
+    // Show the source plus all nodes connected via DERIVES_FROM, REFINES, SUPERSEDES relations
+    const auditRelationTypes = new Set(["DERIVES_FROM", "REFINES", "SUPERSEDES"])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      edges.forEach((e) => {
+        if (!auditRelationTypes.has(e.type || "")) return
+        const neighborId = e.source === current ? e.target : e.target === current ? e.source : null
+        if (!neighborId || visibleNodeIds.has(neighborId)) return
+        visibleNodeIds.add(neighborId)
+        queue.push(neighborId)
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target) && auditRelationTypes.has(e.type || "")
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "COMPLIANCE_GAPS") {
+    // Show nodes that are missing expected relations (e.g., requirements without DERIVES_FROM or VALIDATES)
+    const complianceRelationTypes = new Set(["DERIVES_FROM", "VALIDATES", "MITIGATES", "REFINES"])
+    const requirementTypes = new Set([
+      "FUNCTIONAL_SAFETY_REQUIREMENT",
+      "TECHNICAL_SAFETY_REQUIREMENT",
+      "SOFTWARE_REQUIREMENT",
+      "SOFTWARE_SAFETY_REQUIREMENT",
+      "HARDWARE_REQUIREMENT",
+      "HARDWARE_SAFETY_REQUIREMENT",
+    ])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+      const currentType = conceptMap.get(currentNode.data.conceptId)?.type || ""
+
+      if (requirementTypes.has(currentType)) {
+        const hasComplianceRelation = edges.some((e) => {
+          const isConnected = e.source === current || e.target === current
+          return isConnected && complianceRelationTypes.has(e.type || "")
+        })
+
+        if (!hasComplianceRelation) {
+          visibleNodeIds.add(current)
+        }
+      }
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  // --- Safety Cases ---
+
+  if (queryType === "SAFETY_CASE_STRUCTURE") {
+    // Show the safety case hierarchy: Safety Case → Safety Goal → Requirements → Evidence
+    const safetyCaseTypes = new Set([
+      "SAFETY_CASE",
+      "SAFETY_GOAL",
+      "SAFETY_MANUAL",
+      "FUNCTIONAL_SAFETY_REQUIREMENT",
+      "TECHNICAL_SAFETY_REQUIREMENT",
+      "SOFTWARE_REQUIREMENT",
+      "SOFTWARE_SAFETY_REQUIREMENT",
+      "HARDWARE_REQUIREMENT",
+      "HARDWARE_SAFETY_REQUIREMENT",
+      "TEST_CASE",
+      "TEST_RESULT",
+      "VERIFICATION_REPORT",
+      "VALIDATION_REPORT",
+      "ASSUMPTION",
+      "CONSTRAINT",
+    ])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+      const currentType = conceptMap.get(currentNode.data.conceptId)?.type || ""
+
+      if (safetyCaseTypes.has(currentType)) {
+        visibleNodeIds.add(current)
+      }
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          const neighborNode = nodeById.get(neighborId)
+          if (!neighborNode) return
+          const neighborType = conceptMap.get(neighborNode.data.conceptId)?.type || ""
+          if (safetyCaseTypes.has(neighborType)) {
+            queue.push(neighborId)
+          }
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "HAZARD_MITIGATION") {
+    // Show the chain: Hazard → Safety Goal → Requirements → Verification
+    const hazardChainTypes = new Set([
+      "HAZARD",
+      "HARM",
+      "SAFETY_GOAL",
+      "FUNCTIONAL_SAFETY_REQUIREMENT",
+      "TECHNICAL_SAFETY_REQUIREMENT",
+      "SOFTWARE_REQUIREMENT",
+      "SOFTWARE_SAFETY_REQUIREMENT",
+      "HARDWARE_REQUIREMENT",
+      "HARDWARE_SAFETY_REQUIREMENT",
+      "TEST_CASE",
+      "TEST_RESULT",
+      "VERIFICATION_REPORT",
+      "VALIDATION_REPORT",
+    ])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+      const currentType = conceptMap.get(currentNode.data.conceptId)?.type || ""
+
+      if (hazardChainTypes.has(currentType)) {
+        visibleNodeIds.add(current)
+      }
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          const neighborNode = nodeById.get(neighborId)
+          if (!neighborNode) return
+          const neighborType = conceptMap.get(neighborNode.data.conceptId)?.type || ""
+          if (hazardChainTypes.has(neighborType)) {
+            queue.push(neighborId)
+          }
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  // --- Lifecycle ---
+
+  if (queryType === "LIFECYCLE_COVERAGE") {
+    // Show nodes across all lifecycle phases connected to source
+    const lifecycleTypes = new Set([
+      "ITEM",
+      "ARCHITECTURE",
+      "HAZARD",
+      "SAFETY_GOAL",
+      "FUNCTIONAL_SAFETY_REQUIREMENT",
+      "TECHNICAL_SAFETY_REQUIREMENT",
+      "SOFTWARE_REQUIREMENT",
+      "SOFTWARE_SAFETY_REQUIREMENT",
+      "HARDWARE_REQUIREMENT",
+      "HARDWARE_SAFETY_REQUIREMENT",
+      "IMPLEMENTATION",
+      "VERIFICATION",
+      "TEST_CASE",
+      "TEST_RESULT",
+      "VERIFICATION_REPORT",
+      "VALIDATION_REPORT",
+      "SAFETY_MANUAL",
+      "ASSUMPTION",
+      "CONSTRAINT",
+    ])
+
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      const currentNode = nodeById.get(current)
+      if (!currentNode) continue
+      const currentType = conceptMap.get(currentNode.data.conceptId)?.type || ""
+
+      if (lifecycleTypes.has(currentType)) {
+        visibleNodeIds.add(current)
+      }
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          const neighborNode = nodeById.get(neighborId)
+          if (!neighborNode) return
+          const neighborType = conceptMap.get(neighborNode.data.conceptId)?.type || ""
+          if (lifecycleTypes.has(neighborType)) {
+            queue.push(neighborId)
+          }
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  // --- Navigation ---
+
+  if (queryType === "NEIGHBORHOOD") {
+    // Show source plus 1-hop neighbors
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    neighborIds(sourceNodeId).forEach((id) => visibleNodeIds.add(id))
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "CONNECTED_COMPONENT") {
+    // Show the full connected component containing the source
+    const visibleNodeIds = new Set<string>()
+    const queue = [sourceNodeId]
+
+    while (queue.length) {
+      const current = queue.shift()!
+      if (visibleNodeIds.has(current)) continue
+      visibleNodeIds.add(current)
+
+      neighborIds(current).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
+  if (queryType === "BREADTH_FIRST") {
+    // Show nodes up to 3 levels deep from source
+    const visibleNodeIds = new Set<string>([sourceNodeId])
+    const queue: Array<{ id: string; depth: number }> = [{ id: sourceNodeId, depth: 0 }]
+
+    while (queue.length) {
+      const { id, depth } = queue.shift()!
+      if (depth >= 3) continue
+
+      neighborIds(id).forEach((neighborId) => {
+        if (!visibleNodeIds.has(neighborId)) {
+          visibleNodeIds.add(neighborId)
+          queue.push({ id: neighborId, depth: depth + 1 })
+        }
+      })
+    }
+
+    const visibleEdges = edges.filter(
+      (e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
+    )
+
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: visibleEdges,
+    }
+  }
+
   return { nodes, edges }
 }
 
@@ -403,6 +1274,133 @@ function getQueryExplanation(
           : `No decomposed requirement concepts were found in the filtered graph for ${sourceLabel}.`,
       }
     }
+    case "TRACEABILITY_PATH":
+      return {
+        title: `Traceability path for ${sourceLabel}`,
+        content: `Shows the complete traceability path through ${sourceLabel}, including both upstream sources and downstream targets. ${sourceCount} related concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} were included. ${typeSummary ? `Top types returned: ${typeSummary}.` : ""}`,
+      }
+    case "UPSTREAM_TRACEABILITY":
+      return {
+        title: `Upstream traceability for ${sourceLabel}`,
+        content: `Displays all concepts that ${sourceLabel} traces back to. ${sourceCount} upstream concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} were included. Use this view to understand where ${sourceLabel} originates from. ${typeSummary ? `Top types returned: ${typeSummary}.` : ""}`,
+      }
+    case "DOWNSTREAM_TRACEABILITY":
+      return {
+        title: `Downstream traceability for ${sourceLabel}`,
+        content: `Displays all concepts that trace down from ${sourceLabel}. ${sourceCount} downstream concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} were included. Use this view to see what ${sourceLabel} impacts downstream. ${typeSummary ? `Top types returned: ${typeSummary}.` : ""}`,
+      }
+    case "DEPENDENCY_CYCLE":
+      return {
+        title: `Dependency cycles involving ${sourceLabel}`,
+        content: `Highlights circular dependencies in the graph that involve ${sourceLabel}. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} participate in cycle${sourceCount === 1 ? "" : "s"} with ${edgeCount} relation${edgeCount === 1 ? "" : "s"}. Cycles can indicate architectural issues or unintended feedback loops.`,
+      }
+    case "FAN_IN_OUT":
+      return {
+        title: `Fan-in / fan-out around ${sourceLabel}`,
+        content: `Shows ${sourceLabel} and the nodes with high connectivity in its vicinity. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} with significant fan-in or fan-out are visible. High fan-in nodes are integration points; high fan-out nodes are potential change amplifiers.`,
+      }
+    case "MISSING_VERIFICATION": {
+      const missingCount = visibleNodes.filter((node) => {
+        const type = conceptMap.get(node.data.conceptId)?.type || ""
+        return type.includes("REQUIREMENT")
+      }).length
+      return {
+        title: `Missing verification for ${sourceLabel}`,
+        content: missingCount
+          ? `Identifies ${missingCount} requirement${missingCount === 1 ? "" : "s"} in the connected graph that lack any verification artifact (test case, test result, or verification report). These are candidates for additional verification work.`
+          : `No requirements without verification were found in the connected graph for ${sourceLabel}.`,
+      }
+    }
+    case "UNVERIFIED_REQUIREMENTS": {
+      const unverifiedCount = visibleNodes.filter((node) => {
+        const type = conceptMap.get(node.data.conceptId)?.type || ""
+        return type.includes("REQUIREMENT")
+      }).length
+      return {
+        title: `Unverified requirements near ${sourceLabel}`,
+        content: unverifiedCount
+          ? `Shows ${unverifiedCount} requirement${unverifiedCount === 1 ? "" : "s"} that have no test result or verification report connected. These requirements lack objective evidence of being verified.`
+          : `No unverified requirements were found in the connected graph for ${sourceLabel}.`,
+      }
+    }
+    case "ORPHANED_NODES": {
+      const orphanCount = visibleNodes.length - 1
+      return {
+        title: `Orphaned nodes in the graph`,
+        content: orphanCount
+          ? `Found ${orphanCount} orphaned node${orphanCount === 1 ? "" : "s"} with no relations to any other concept. Orphaned nodes may indicate incomplete modeling or missing traceability links.`
+          : `No orphaned nodes were found. All concepts in the graph have at least one relation.`,
+      }
+    }
+    case "IMPLEMENTATION_GAP": {
+      const gapCount = visibleNodes.filter((node) => {
+        const type = conceptMap.get(node.data.conceptId)?.type || ""
+        return type.includes("REQUIREMENT")
+      }).length
+      return {
+        title: `Implementation gaps for ${sourceLabel}`,
+        content: gapCount
+          ? `Identifies ${gapCount} requirement${gapCount === 1 ? "" : "s"} in the connected graph that lack implementation artifacts. These requirements have not yet been implemented or linked to implementation evidence.`
+          : `No implementation gaps were found in the connected graph for ${sourceLabel}.`,
+      }
+    }
+    case "ARCHITECTURE_LAYERS":
+      return {
+        title: `Architecture layers around ${sourceLabel}`,
+        content: `Shows the architectural layering around ${sourceLabel}: item/architecture, requirements, implementation, and verification. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} across ${edgeCount} relation${edgeCount === 1 ? "" : "s"} are visible. Use this view to assess whether the architecture has clear separation of concerns.`,
+      }
+    case "SINGLE_POINT_OF_FAILURE":
+      return {
+        title: `Single points of failure near ${sourceLabel}`,
+        content: `Highlights nodes with high connectivity (3+ relations) that could act as single points of failure. ${sourceCount} such node${sourceCount === 1 ? "" : "s"} were found. If these nodes change or fail, many dependent concepts are affected.`,
+      }
+    case "AUDIT_TRAIL":
+      return {
+        title: `Audit trail for ${sourceLabel}`,
+        content: `Shows the derivation history for ${sourceLabel} via DERIVES_FROM, REFINES, and SUPERSEDES relations. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} form the audit trail. Use this to demonstrate how requirements evolved and trace back to their origins.`,
+      }
+    case "COMPLIANCE_GAPS": {
+      const gapCount = visibleNodes.filter((node) => {
+        const type = conceptMap.get(node.data.conceptId)?.type || ""
+        return type.includes("REQUIREMENT")
+      }).length
+      return {
+        title: `Compliance gaps for ${sourceLabel}`,
+        content: gapCount
+          ? `Identifies ${gapCount} requirement${gapCount === 1 ? "" : "s"} that lack expected compliance relations (DERIVES_FROM, VALIDATES, MITIGATES, or REFINES). These may fail audit checks for traceability completeness.`
+          : `No compliance gaps were found in the connected graph for ${sourceLabel}.`,
+      }
+    }
+    case "SAFETY_CASE_STRUCTURE":
+      return {
+        title: `Safety case structure for ${sourceLabel}`,
+        content: `Shows the safety case hierarchy connected to ${sourceLabel}: safety case, safety goals, requirements, and supporting evidence. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} are visible. Use this to assess the strength of the safety argument.`,
+      }
+    case "HAZARD_MITIGATION":
+      return {
+        title: `Hazard mitigation chain for ${sourceLabel}`,
+        content: `Displays the full hazard mitigation chain: hazard → safety goal → requirements → verification evidence. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} are visible. Use this to verify that every hazard is properly mitigated and verified.`,
+      }
+    case "LIFECYCLE_COVERAGE":
+      return {
+        title: `Lifecycle coverage for ${sourceLabel}`,
+        content: `Shows concepts across the full safety lifecycle connected to ${sourceLabel}: from item definition through requirements, implementation, verification, and operation. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} are visible. Use this to assess lifecycle completeness.`,
+      }
+    case "NEIGHBORHOOD":
+      return {
+        title: `Neighborhood of ${sourceLabel}`,
+        content: `Shows ${sourceLabel} and its immediate 1-hop neighbors. ${sourceCount} directly connected concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} are visible. Use this for quick local exploration of the graph.`,
+      }
+    case "CONNECTED_COMPONENT":
+      return {
+        title: `Connected component of ${sourceLabel}`,
+        content: `Shows the entire connected component containing ${sourceLabel}. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} are visible. Use this to understand the full scope of related concepts.`,
+      }
+    case "BREADTH_FIRST":
+      return {
+        title: `Breadth-first exploration from ${sourceLabel}`,
+        content: `Shows nodes up to 3 levels deep from ${sourceLabel}. ${sourceCount} concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relation${edgeCount === 1 ? "" : "s"} are visible. Use this to explore the graph structure around ${sourceLabel} without showing the entire graph.`,
+      }
   }
 
   return null
@@ -886,7 +1884,7 @@ export default function GraphView({
                 nodes.find((n) => n.id === queryModalSourceId)?.data.conceptId || ""
               )?.key || "Unknown"
             }
-            options={VISIBILITY_QUERIES}
+            categories={VISIBILITY_QUERY_CATEGORIES}
             onSelect={(value) => {
               if (value === "NONE") {
                 setActiveQuery("NONE")
