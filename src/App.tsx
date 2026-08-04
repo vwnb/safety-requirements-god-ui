@@ -1966,7 +1966,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             API={API}
             presences={collab.presences}
             currentUserId={actorForApi}
+            projectTitle={selectedProject?.key}
             workItemId={selectedWorkItem}
+            workItemTitle={selectedWorkItemData ? `${selectedWorkItemData.key} - ${selectedWorkItemData.name}` : undefined}
             onViewportChange={(viewport) => {
               collab.sendViewportCoordinates({ x: viewport.x, y: viewport.y })
             }}

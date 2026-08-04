@@ -353,7 +353,7 @@ function getQueryExplanation(
     case "IMPACT_ANALYSIS":
       return {
         title: `Impact analysis around ${sourceLabel}`,
-        content: `Displays the full connected footprint for ${sourceLabel}. ${sourceCount} related concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relationship${edgeCount === 1 ? "" : "s"} were included. This helps you understand broader ripple effects across the graph.`,
+        content: `Displays the full connected footprint for ${sourceLabel}. ${sourceCount} related concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relationship${edgeCount === 1 ? "" : "s"} were included. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`,
       }
     case "IMPLEMENTATION_COVERAGE": {
       const covered = visibleNodes.filter((node) =>
@@ -529,7 +529,9 @@ export default function GraphView({
   presences,
   currentUserId,
   onViewportChange,
+  projectTitle,
   workItemId,
+  workItemTitle,
 }: {
   concepts: Concept[]
   revisions: Revision[]
@@ -541,7 +543,9 @@ export default function GraphView({
   presences: UserPresence[]
   currentUserId: string
   onViewportChange: (viewport: Viewport) => void
+  projectTitle?: string
   workItemId?: string
+  workItemTitle?: string
 }) {
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
@@ -824,6 +828,33 @@ export default function GraphView({
             }}
           >
             Loading graph...
+          </div>
+        )}
+
+        {workItemTitle && (
+          <div
+            data-agent="graph-work-item-title"
+            style={{
+              color:"white",
+              position: "absolute",
+              top: 14,
+              left: 14,
+              border: "2px solid black",
+              borderRadius: 8,
+              background: "#FF5A00",
+              padding: "8px 14px",
+              fontFamily: "monospace",
+              fontWeight: "bold",
+              fontSize: 13,
+              boxSizing: "border-box",
+              zIndex: 12,
+              maxWidth: "calc(100% - 160px)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {projectTitle} <span style={{color: "black"}}>›</span> {workItemTitle}
           </div>
         )}
 
