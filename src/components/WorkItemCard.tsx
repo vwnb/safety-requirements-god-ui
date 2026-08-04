@@ -95,7 +95,7 @@ export default function WorkItemCard({
           ? Math.round((completeness.requirementTestCoverage.covered / completeness.requirementTestCoverage.total) * 100)
           : 0,
         totalLabel: `${completeness.requirementTestCoverage.covered}/${completeness.requirementTestCoverage.total}`,
-        description: "This metric counts how many safety requirements in the work item are covered by at least one verification artifact. It looks at functional, technical, hardware, software, hardware safety, and software safety requirements, and checks whether they have supporting test cases, test results, verification reports, validation reports, or proof tests.",
+        description: "This metric counts how many safety requirements in the work item are covered by at least one verification artifact. Requirement concepts include: functional safety requirement, technical safety requirement, hardware requirement, software requirement, hardware safety requirement, and software safety requirement. Verification evidence concepts include: test case, test result, verification report, validation report, and proof test.",
         barColor: SemanticColor.FUNCTIONAL,
       },
       {
@@ -104,7 +104,7 @@ export default function WorkItemCard({
           ? Math.round((completeness.systemBehaviorSafetyGoalCoverage.covered / completeness.systemBehaviorSafetyGoalCoverage.total) * 100)
           : 0,
         totalLabel: `${completeness.systemBehaviorSafetyGoalCoverage.covered}/${completeness.systemBehaviorSafetyGoalCoverage.total}`,
-        description: "This metric counts how many system-behavior safety goal concepts are connected to the work item's safety context. It includes item and architecture concepts, constraints, assumptions, and the same requirement types above, and treats them as the system-level structure that safety goals must relate to.",
+        description: "This metric counts how many system-behavior safety goal concepts are connected to the work item's safety context. System behavior concepts include: item, architecture, constraint, assumption, functional safety requirement, technical safety requirement, hardware requirement, software requirement, hardware safety requirement, and software safety requirement.",
         barColor: SemanticColor.ARGUMENT,
       },
       {
@@ -113,7 +113,7 @@ export default function WorkItemCard({
           ? Math.round((completeness.hazardMitigationCoverage.covered / completeness.hazardMitigationCoverage.total) * 100)
           : 0,
         totalLabel: `${completeness.hazardMitigationCoverage.covered}/${completeness.hazardMitigationCoverage.total}`,
-        description: "This metric counts how many hazard-related concepts in the work item have mitigation evidence linked to them. It reflects whether hazards are backed by safety requirements, tests, and other supporting evidence rather than being left as isolated hazards.",
+        description: "This metric counts how many hazard-related concepts in the work item have mitigation evidence linked to them. Mitigation evidence concepts include: functional safety requirement, technical safety requirement, hardware requirement, software requirement, hardware safety requirement, software safety requirement, test case, test result, verification report, validation report, and proof test.",
         barColor: SemanticColor.RISK,
       },
     ]
