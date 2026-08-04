@@ -353,7 +353,7 @@ function getQueryExplanation(
     case "IMPACT_ANALYSIS":
       return {
         title: `Impact analysis around ${sourceLabel}`,
-        content: `Displays the full connected footprint for ${sourceLabel}. ${sourceCount} related concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relationship${edgeCount === 1 ? "" : "s"} were included. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`,
+        content: `Displays the full connected footprint for ${sourceLabel}. ${sourceCount} related concept${sourceCount === 1 ? "" : "s"} and ${edgeCount} relationship${edgeCount === 1 ? "" : "s"} were included. ${typeSummary ? `Top types returned: ${typeSummary}.` : ""}`,
       }
     case "IMPLEMENTATION_COVERAGE": {
       const covered = visibleNodes.filter((node) =>
@@ -363,7 +363,7 @@ function getQueryExplanation(
       return {
         title: `Implementation coverage for ${sourceLabel}`,
         content: coverageCount
-          ? `Highlights ${coverageCount} implementation or verification artifact${coverageCount === 1 ? "" : "s"} in the related network. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`
+          ? `Highlights ${coverageCount} implementation or verification artifact${coverageCount === 1 ? "" : "s"} in the related network. ${typeSummary ? `Top types returned: ${typeSummary}.` : ""}`
           : `No implementation or verification artifacts were found in the immediate coverage graph for ${sourceLabel}.`,
       }
     }
@@ -375,7 +375,7 @@ function getQueryExplanation(
       return {
         title: `Verification status for ${sourceLabel}`,
         content: verificationCount
-          ? `Shows ${verificationCount} verification-related concept${verificationCount === 1 ? "" : "s"} connected to ${sourceLabel}. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`
+          ? `Shows ${verificationCount} verification-related concept${verificationCount === 1 ? "" : "s"} connected to ${sourceLabel}. ${typeSummary ? `Top types returned: ${typeSummary}.` : ""}`
           : `No verification artifacts were found in the filtered graph for ${sourceLabel}.`,
       }
     }
@@ -387,7 +387,7 @@ function getQueryExplanation(
       return {
         title: `Safety rationale for ${sourceLabel}`,
         content: rationaleCount
-          ? `Surfaces ${rationaleCount} safety rationale artifact${rationaleCount === 1 ? "" : "s"} related to ${sourceLabel}. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`
+          ? `Surfaces ${rationaleCount} safety rationale artifact${rationaleCount === 1 ? "" : "s"} related to ${sourceLabel}. ${typeSummary ? `Top types returned: ${typeSummary}.` : ""}`
           : `No safety rationale nodes were found in the result set for ${sourceLabel}.`,
       }
     }
@@ -399,7 +399,7 @@ function getQueryExplanation(
       return {
         title: `Requirement decomposition for ${sourceLabel}`,
         content: decompositionCount
-          ? `Highlights ${decompositionCount} decomposed requirement or specification concept${decompositionCount === 1 ? "" : "s"}. ${typeSummary ? `Top visible types: ${typeSummary}.` : ""}`
+          ? `Highlights ${decompositionCount} decomposed requirement or specification concept${decompositionCount === 1 ? "" : "s"}. ${typeSummary ? `Top types returned: ${typeSummary}.` : ""}`
           : `No decomposed requirement concepts were found in the filtered graph for ${sourceLabel}.`,
       }
     }
