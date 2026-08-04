@@ -174,6 +174,15 @@ export default function WorkItemCard({
             ))}
           </p>
 
+          <p className="info-row">
+            {workItem.applicationContext && (
+              <span><span className="field-label">Application Context</span> {workItem.applicationContext}</span>
+            )}
+            {workItem.systemBoundary && (
+              <span><span className="field-label">System Boundary</span> {workItem.systemBoundary}</span>
+            )}
+          </p>
+
           {completeness && (
             <div className="completeness-meter" style={{ marginTop: 10 }}>
               {coverageRows.map((row) => (
@@ -197,15 +206,6 @@ export default function WorkItemCard({
               ))}
             </div>
           )}
-
-          <p className="info-row">
-            {workItem.applicationContext && (
-              <span><span className="field-label">Application Context</span> {workItem.applicationContext}</span>
-            )}
-            {workItem.systemBoundary && (
-              <span><span className="field-label">System Boundary</span> {workItem.systemBoundary}</span>
-            )}
-          </p>
         </article>
       ) : (
         <>
