@@ -132,7 +132,6 @@ export function LlmTools({
       .then(data => {
         if (cancelled) return
         const list: Array<{ id: string; createdAt: string }> = Array.isArray(data) ? data : (Array.isArray(data?.evaluationResults) ? data.evaluationResults : [])
-        console.debug("Loaded evaluation results list", list)
         setEvaluationResults(list)
         // auto-select latest report by createdAt desc
         if (list.length > 0) {
