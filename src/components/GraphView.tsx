@@ -548,12 +548,14 @@ export default function GraphView({
     from: string
     to: string
   } | null>(null)
+  const [pendingDeleteRelationId, setPendingDeleteRelationId] = useState<string | null>(null)
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
   const [graphLoading, setGraphLoading] = useState(false)
   const [activeQuery, setActiveQuery] = useState<VisibilityQueryType>("NONE")
   const [activeQuerySourceId, setActiveQuerySourceId] = useState<string | null>(null)
   const [queryModalSourceId, setQueryModalSourceId] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const deleteConfirmRef = useRef<HTMLDivElement>(null)
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 })
   const viewportRef = useRef(viewport)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
@@ -570,6 +572,17 @@ export default function GraphView({
     updateSize()
     window.addEventListener("resize", updateSize)
     return () => window.removeEventListener("resize", updateSize)
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (deleteConfirmRef.current && !deleteConfirmRef.current.contains(e.target as globalThis.Node)) {
+        setPendingDeleteRelationId(null)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
   const deleteRelation = useCallback(
@@ -638,6 +651,24 @@ export default function GraphView({
       }
     })
   }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId])
+
+  const pendingDeleteRelation = pendingDeleteRelationId
+    ? relations.find((r) => r.id === pendingDeleteRelationId)
+    : undefined
+
+  const pendingDeleteSourceLabel = useMemo(() => {
+    if (!pendingDeleteRelation) return ""
+    const fromRevision = revisions.find((r) => r.id === pendingDeleteRelation.fromId)
+    const concept = fromRevision ? conceptMap.get(fromRevision.conceptId) : undefined
+    return concept?.key || ""
+  }, [pendingDeleteRelation, revisions, conceptMap])
+
+  const pendingDeleteTargetLabel = useMemo(() => {
+    if (!pendingDeleteRelation) return ""
+    const toRevision = revisions.find((r) => r.id === pendingDeleteRelation.toId)
+    const concept = toRevision ? conceptMap.get(toRevision.conceptId) : undefined
+    return concept?.key || ""
+  }, [pendingDeleteRelation, revisions, conceptMap])
 
   const edges: Edge[] = useMemo(() => {
     return relations.map((r) => ({
@@ -873,7 +904,7 @@ export default function GraphView({
             onEdgeMouseLeave={() => setHoveredEdgeId(null)}
             onEdgeClick={(_, edge) => {
               if (!graphLoading) {
-                deleteRelation(edge.id)
+                setPendingDeleteRelationId(edge.id)
               }
             }}
             onConnect={(params) => {
@@ -989,6 +1020,79 @@ export default function GraphView({
           }}
           onClose={() => setPendingConnection(null)}
         />
+      )}
+
+      {pendingDeleteRelation && (
+        <div
+          data-agent="delete-relation-confirm"
+          ref={deleteConfirmRef}
+          style={{
+            background: "rgb(233, 237, 233)",
+            position: "fixed",
+            height: "auto",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            border: "2px solid black",
+            borderLeftWidth: 6,
+            borderRadius: 8,
+            fontFamily: "monospace",
+            padding: "2rem",
+            zIndex: 9999,
+            width: 340,
+          }}
+        >
+          <div
+            data-agent="delete-relation-confirm-title"
+            className="title"
+            style={{ marginTop: 0 }}
+          >
+            Delete relation?
+          </div>
+
+          <div style={{ lineHeight: 1.5, marginBottom: 16 }}>
+            Are you sure you want to delete the{" "}
+            <strong>{pendingDeleteRelation.type}</strong> relation from{" "}
+            <strong>{pendingDeleteSourceLabel || "unknown"}</strong> to{" "}
+            <strong>{pendingDeleteTargetLabel || "unknown"}</strong>?
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            <button
+              data-agent="btn-confirm-delete-relation"
+              onClick={async () => {
+                await deleteRelation(pendingDeleteRelation.id)
+                setPendingDeleteRelationId(null)
+              }}
+              disabled={graphLoading}
+              style={{
+                ...brutal.button,
+                flex: 1,
+                margin: 0,
+                background: "#F2B8B5",
+                borderColor: "black",
+                opacity: graphLoading ? 0.6 : 1,
+                cursor: graphLoading ? "not-allowed" : "pointer",
+              }}
+            >
+              {graphLoading ? "Deleting..." : "Delete"}
+            </button>
+            <button
+              data-agent="btn-cancel-delete-relation"
+              onClick={() => setPendingDeleteRelationId(null)}
+              disabled={graphLoading}
+              style={{
+                ...brutal.button,
+                flex: 1,
+                margin: 0,
+                opacity: graphLoading ? 0.6 : 1,
+                cursor: graphLoading ? "not-allowed" : "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </>
   )

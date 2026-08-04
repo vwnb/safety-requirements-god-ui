@@ -289,6 +289,13 @@ header>* {
   background: rgb(233, 237, 237) !important
 }
 
+.react-flow .react-flow__handle {
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  border-color:black;
+}
+
 .user-cursor-circle {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
   cursor: default;
