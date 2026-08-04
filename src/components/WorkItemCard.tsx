@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
-import { type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type WorkItem } from "../App"
+import { type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type WorkItem, type WorkItemCompleteness } from "../App"
+import { SemanticColor } from "../lib/SemanticColor"
+import { InfoButton } from "./InfoButton"
 
 const PHASES = [
   "ITEM_DEFINITION", "HARA", "FUNCTIONAL_SAFETY", "TECHNICAL_SAFETY",
@@ -15,6 +17,7 @@ const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]
 
 export default function WorkItemCard({
   workItem,
+  completeness,
   editName,
   editDescription,
   editPhase,
@@ -38,6 +41,7 @@ export default function WorkItemCard({
   onEditingChange,
 }: {
   workItem: WorkItem | null
+  completeness?: WorkItemCompleteness | null
   editName: string
   editDescription: string
   editPhase: LifecyclePhase | ""
@@ -67,6 +71,53 @@ export default function WorkItemCard({
   }, [isEditing, onEditingChange])
 
   if (!workItem) return null
+
+  const completenessPercent = typeof completeness?.completeness === "number"
+    ? Math.round(completeness.completeness > 1 ? completeness.completeness : completeness.completeness * 100)
+    : null
+
+  const coverageRows = completeness
+    ? [
+      {
+        label: "Overall completeness",
+        percent: completenessPercent ?? 0,
+        totalLabel: null,
+        description: "Overall progress across the work item’s coverage signals.",
+        barColor: completenessPercent != null && completenessPercent >= 80
+          ? SemanticColor.SUCCESS
+          : completenessPercent != null && completenessPercent >= 50
+            ? SemanticColor.METRIC
+            : SemanticColor.DANGER,
+      },
+      {
+        label: "Requirement test coverage",
+        percent: completeness.requirementTestCoverage.total > 0
+          ? Math.round((completeness.requirementTestCoverage.covered / completeness.requirementTestCoverage.total) * 100)
+          : 0,
+        totalLabel: `${completeness.requirementTestCoverage.covered}/${completeness.requirementTestCoverage.total}`,
+        description: "How many requirement tests are tied to the work item.",
+        barColor: SemanticColor.FUNCTIONAL,
+      },
+      {
+        label: "System behavior safety goal coverage",
+        percent: completeness.systemBehaviorSafetyGoalCoverage.total > 0
+          ? Math.round((completeness.systemBehaviorSafetyGoalCoverage.covered / completeness.systemBehaviorSafetyGoalCoverage.total) * 100)
+          : 0,
+        totalLabel: `${completeness.systemBehaviorSafetyGoalCoverage.covered}/${completeness.systemBehaviorSafetyGoalCoverage.total}`,
+        description: "How many system-behavior safety goals are covered.",
+        barColor: SemanticColor.ARGUMENT,
+      },
+      {
+        label: "Hazard mitigation coverage",
+        percent: completeness.hazardMitigationCoverage.total > 0
+          ? Math.round((completeness.hazardMitigationCoverage.covered / completeness.hazardMitigationCoverage.total) * 100)
+          : 0,
+        totalLabel: `${completeness.hazardMitigationCoverage.covered}/${completeness.hazardMitigationCoverage.total}`,
+        description: "How many hazards have mitigation evidence linked to them.",
+        barColor: SemanticColor.RISK,
+      },
+    ]
+    : []
 
   const handleSave = () => {
     onSave(() => {
@@ -122,6 +173,30 @@ export default function WorkItemCard({
               <span key={s} className="tag tag-structure">{s.replace(/_/g, " ")}</span>
             ))}
           </p>
+
+          {completeness && (
+            <div className="completeness-meter" style={{ marginTop: 10 }}>
+              {coverageRows.map((row) => (
+                <div key={row.label} className="completeness-row">
+                  <div className="completeness-row-header">
+                    <div className="completeness-label-group">
+                      <span className="completeness-label">{row.label}</span>
+                      <InfoButton title={row.label} content={row.description} />
+                    </div>
+                    <span className="completeness-value">
+                      {row.totalLabel ?? `${row.percent}%`}
+                    </span>
+                  </div>
+                  <div className="usage-bar-track completeness-track">
+                    <div
+                      className="usage-bar-fill"
+                      style={{ width: `${Math.max(0, Math.min(100, row.percent))}%`, background: row.barColor }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <p className="info-row">
             {workItem.applicationContext && (

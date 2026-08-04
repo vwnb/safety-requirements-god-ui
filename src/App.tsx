@@ -139,6 +139,14 @@ export type WorkItem = {
   systemBoundary?: string
 }
 
+export type WorkItemCompleteness = {
+  workItemId: string
+  completeness: number
+  requirementTestCoverage: { covered: number; total: number }
+  systemBehaviorSafetyGoalCoverage: { covered: number; total: number }
+  hazardMitigationCoverage: { covered: number; total: number }
+}
+
 export const brutal = {
   box: {
     border: "2px solid black",
@@ -470,6 +478,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [editWorkItemStandards, setEditWorkItemStandards] = useState<Standard[]>([])
   const [editWorkItemApplicationContext, setEditWorkItemApplicationContext] = useState("")
   const [editWorkItemSystemBoundary, setEditWorkItemSystemBoundary] = useState("")
+  const [workItemCompleteness, setWorkItemCompleteness] = useState<WorkItemCompleteness | null>(null)
 
   const [graph, setGraph] = useState<any>(null)
 
@@ -580,6 +589,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setBaselines(undefined)
     setSelectedBaseline(null)
     setGraph(null)
+    setWorkItemCompleteness(null)
 
     async function loadWorkItems() {
       try {
@@ -613,6 +623,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     async function load() {
       await Promise.all([
         loadWorkItemDetails(selectedWorkItem),
+        loadWorkItemCompleteness(selectedWorkItem),
         loadConcepts(selectedWorkItem),
         refreshGraph(selectedWorkItem),
         refreshBaselines()
@@ -868,6 +879,21 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setSelectedWorkItemData(data)
   }
 
+  async function loadWorkItemCompleteness(workItemId: string) {
+    try {
+      const res = await apiFetch(`${API}/graph/${workItemId}/completeness`)
+
+      if (!res.ok) {
+        setWorkItemCompleteness(null)
+        return
+      }
+
+      setWorkItemCompleteness(await res.json())
+    } catch {
+      setWorkItemCompleteness(null)
+    }
+  }
+
   async function saveWorkItem(onSuccess?: () => void, force = false) {
     if (!selectedWorkItemData) return
 
@@ -910,6 +936,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       })
 
       await loadWorkItemDetails(selectedWorkItemData.id)
+      await loadWorkItemCompleteness(selectedWorkItemData.id)
       await refreshGraph(selectedWorkItem)
 
       setWorkItems((prev) =>
@@ -1418,6 +1445,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   <section>
                     <WorkItemCard
                       workItem={selectedWorkItemData}
+                      completeness={workItemCompleteness}
                       editName={editWorkItemName}
                       editDescription={editWorkItemDescription}
                       editPhase={editWorkItemPhase}

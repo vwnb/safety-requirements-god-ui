@@ -161,7 +161,14 @@ code,
 .counter {
   font-family: var(--font-mono);
   display: inline-flex;
+  align-items: center;
   border-radius: 4px;
+  padding: 2px 8px;
+  border: 2px solid black;
+  background: white;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 code {
@@ -714,6 +721,64 @@ section,
 
 .tag-structure {
   background: #DCE7F5;
+}
+
+/* Completeness meters */
+.completeness-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.completeness-row {
+  padding: 4px 0;
+  background: transparent;
+}
+
+.completeness-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.completeness-label-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.completeness-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.completeness-info {
+  font-size: 12px;
+  cursor: help;
+}
+
+.completeness-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.completeness-help {
+  margin-top: 4px;
+  font-size: 10px;
+  opacity: 0.7;
+  line-height: 1.4;
+}
+
+.completeness-track {
+  height: 10px;
+  border-width: 1px;
 }
 
 /* Flex utilities */
