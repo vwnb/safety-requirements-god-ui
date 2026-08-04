@@ -471,7 +471,7 @@ export function LlmTools({
             }}
             className="btn btn-generate"
           >
-            Generate new completeness report
+            Generate new refinement report
           </button>
         </div>
         {selectedWorkItem && (
@@ -499,12 +499,12 @@ export function LlmTools({
       <article>
         {latestReportNotFound && (
           <div>
-            No completeness report has been generated yet. Evaluate the work item to see LLM suggestions.
+            No refinement report has been generated yet. Evaluate the work item to see LLM suggestions.
           </div>
         )}
         {!!suggestions && selectedWorkItemData && (
           <>
-            <h1>Completeness report: {selectedWorkItemData.name}</h1>
+            <h1>Refinement report: {selectedWorkItemData.name}</h1>
             {reportCreatedAt && (
               <div className="report-meta">Created: {new Date(reportCreatedAt).toLocaleString()}</div>
             )}
