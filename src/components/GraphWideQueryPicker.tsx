@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { brutal } from "../App"
-import type { ConceptCentricQueryType } from "./GraphView"
+import { GRAPH_WIDE_QUERY_TYPES, type GraphWideQueryType } from "./GraphView"
 
 type QueryOption = {
-  value: ConceptCentricQueryType
+  value: GraphWideQueryType
   label: string
 }
 
@@ -12,14 +12,13 @@ type QueryCategory = {
   options: QueryOption[]
 }
 
-type QueryPickerProps = {
-  sourceName: string
+type GraphWideQueryPickerProps = {
   categories: QueryCategory[]
-  onSelect: (value: ConceptCentricQueryType) => void
+  onSelect: (value: GraphWideQueryType) => void
   onClose: () => void
 }
 
-export default function QueryPicker({ sourceName, categories, onSelect, onClose }: QueryPickerProps) {
+export default function GraphWideQueryPicker({ categories, onSelect, onClose }: GraphWideQueryPickerProps) {
   const [open, setOpen] = useState(true)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -37,9 +36,17 @@ export default function QueryPicker({ sourceName, categories, onSelect, onClose 
 
   if (!open) return null
 
+  // Filter categories to only show graph-wide query types
+  const filteredCategories = categories
+    .map((cat) => ({
+      ...cat,
+      options: cat.options.filter((opt) => GRAPH_WIDE_QUERY_TYPES.has(opt.value as any)),
+    }))
+    .filter((cat) => cat.options.length > 0)
+
   return (
     <div
-      data-agent="query-picker"
+      data-agent="graph-wide-query-picker"
       ref={ref}
       style={{
         background: "rgb(233, 237, 233)",
@@ -58,12 +65,14 @@ export default function QueryPicker({ sourceName, categories, onSelect, onClose 
       }}
     >
       <div className="title" style={{ marginBottom: 16 }}>
-        Query graph from node:
-        <br />
-        {sourceName}
+        Query graph
       </div>
 
-      {categories.map((cat) => (
+      {filteredCategories.length === 0 && (
+        <p style={{ opacity: 0.7, marginBottom: 16 }}>No graph-wide queries available.</p>
+      )}
+
+      {filteredCategories.map((cat) => (
         <div key={cat.category} style={{ marginBottom: 16 }}>
           <div
             style={{
@@ -82,7 +91,7 @@ export default function QueryPicker({ sourceName, categories, onSelect, onClose 
           <div className="list-input">
             {cat.options.map((option) => (
               <div
-                data-agent={`query-option-${option.value}`}
+                data-agent={`graph-wide-query-option-${option.value}`}
                 key={option.value}
                 className="option"
                 onClick={() => {
@@ -98,7 +107,7 @@ export default function QueryPicker({ sourceName, categories, onSelect, onClose 
       ))}
 
       <button
-        data-agent="query-picker-cancel"
+        data-agent="graph-wide-query-picker-cancel"
         onClick={() => {
           setOpen(false)
           onClose()

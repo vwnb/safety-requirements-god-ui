@@ -11,6 +11,7 @@ import "reactflow/dist/style.css"
 import dagre from "dagre"
 import RelationTypePicker from "./RelationTypePicker"
 import QueryPicker from "./QueryPicker"
+import GraphWideQueryPicker from "./GraphWideQueryPicker"
 import { useApiFetch } from "../lib/apiFetchContext"
 import { brutal, typeColor } from "../App"
 import background from "../assets/background.jpg";
@@ -76,6 +77,23 @@ type VisibilityQueryType =
   | "NEIGHBORHOOD"
   | "CONNECTED_COMPONENT"
   | "BREADTH_FIRST"
+
+export type GraphWideQueryType =
+  | "MISSING_VERIFICATION"
+  | "UNVERIFIED_REQUIREMENTS"
+  | "ORPHANED_NODES"
+  | "IMPLEMENTATION_GAP"
+  | "COMPLIANCE_GAPS"
+
+export type ConceptCentricQueryType = Exclude<VisibilityQueryType, GraphWideQueryType>
+
+export const GRAPH_WIDE_QUERY_TYPES: ReadonlySet<VisibilityQueryType> = new Set<VisibilityQueryType>([
+  "MISSING_VERIFICATION",
+  "UNVERIFIED_REQUIREMENTS",
+  "ORPHANED_NODES",
+  "IMPLEMENTATION_GAP",
+  "COMPLIANCE_GAPS",
+])
 
 type QueryCategory = {
   category: string
@@ -233,7 +251,7 @@ function ConceptNode({ data, id }: any) {
               whiteSpace: "nowrap",
             }}
           >
-            Query
+            Query node
           </button>
         </div>
       </div>
@@ -291,6 +309,8 @@ export default function GraphView({
   const [activeQuerySourceId, setActiveQuerySourceId] = useState<string | null>(null)
   const [queryModalSourceId, setQueryModalSourceId] = useState<string | null>(null)
   const [queryCategories, setQueryCategories] = useState<QueryCategory[]>([])
+  const [graphWideQueryModalOpen, setGraphWideQueryModalOpen] = useState(false)
+  const [graphWideQueryCategories, setGraphWideQueryCategories] = useState<QueryCategory[]>([])
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const deleteConfirmRef = useRef<HTMLDivElement>(null)
@@ -479,13 +499,42 @@ export default function GraphView({
     }
   }, [queryModalSourceId, workItemId, API, apiFetch, activeQuery, activeQuerySourceId])
 
+  // Load graph-wide query categories when graph-wide query modal opens
+  useEffect(() => {
+    if (!graphWideQueryModalOpen || !workItemId) return
+    let cancelled = false
+    apiFetch(`${API}/graph/${workItemId}/query?type=NONE`)
+      .then((r) => r.json())
+      .then((data: QueryResult) => {
+        if (!cancelled) {
+          setGraphWideQueryCategories(data.categories || [])
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setGraphWideQueryCategories([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [graphWideQueryModalOpen, workItemId, API, apiFetch])
+
   // Fetch query result from backend whenever active query changes
   const { nodes: visibleNodes, edges: visibleEdges } = useMemo(() => {
-    if (activeQuery === "NONE" || !activeQuerySourceId || !workItemId) {
+    if (activeQuery === "NONE" || !workItemId) {
+      return { nodes, edges }
+    }
+    // Check if this is a graph-wide query (sourceRevisionId is null)
+    const isGraphWide = activeQuerySourceId === null && GRAPH_WIDE_QUERY_TYPES.has(activeQuery)
+    // For node queries, we need a source revision id
+    if (!isGraphWide && !activeQuerySourceId) {
       return { nodes, edges }
     }
     // Use the API-fetched result when available and matching the current source
-    if (queryResult && queryResult.sourceRevisionId === activeQuerySourceId && queryResult.queryType === activeQuery) {
+    if (
+      queryResult &&
+      queryResult.sourceRevisionId === activeQuerySourceId &&
+      queryResult.queryType === activeQuery
+    ) {
       const nodeIds = new Set(queryResult.nodes.map((n) => n.id))
       const edgeIds = new Set(queryResult.edges.map((e) => e.id))
 
@@ -500,12 +549,19 @@ export default function GraphView({
 
   // Fetch query result from backend
   useEffect(() => {
-    if (activeQuery === "NONE" || !activeQuerySourceId || !workItemId) {
+    if (activeQuery === "NONE" || !workItemId) {
+      setQueryResult(null)
+      return
+    }
+    // For graph-wide queries, sourceRevisionId is null
+    const isGraphWide = activeQuerySourceId === null && GRAPH_WIDE_QUERY_TYPES.has(activeQuery)
+    if (!isGraphWide && !activeQuerySourceId) {
       setQueryResult(null)
       return
     }
     let cancelled = false
-    apiFetch(`${API}/graph/${workItemId}/query?type=${activeQuery}&sourceRevisionId=${activeQuerySourceId}`)
+    const sourceParam = activeQuerySourceId ? `&sourceRevisionId=${activeQuerySourceId}` : ""
+    apiFetch(`${API}/graph/${workItemId}/query?type=${activeQuery}${sourceParam}`)
       .then((r) => r.json())
       .then((data: QueryResult) => {
         if (!cancelled) setQueryResult(data)
@@ -519,7 +575,10 @@ export default function GraphView({
   }, [activeQuery, activeQuerySourceId, workItemId, API, apiFetch])
 
   const queryExplanation: QueryExplanation | null = useMemo(() => {
-    if (activeQuery === "NONE" || !activeQuerySourceId) return null
+    if (activeQuery === "NONE") return null
+    // Graph-wide queries don't need an activeQuerySourceId
+    const isGraphWide = activeQuerySourceId === null && GRAPH_WIDE_QUERY_TYPES.has(activeQuery)
+    if (!isGraphWide && !activeQuerySourceId) return null
     return queryResult?.explanations ?? null
   }, [activeQuery, activeQuerySourceId, queryResult])
 
@@ -623,30 +682,49 @@ export default function GraphView({
         )}
 
         {workItemTitle && (
-          <div
-            data-agent="graph-work-item-title"
-            style={{
-              color:"white",
-              position: "absolute",
-              top: 14,
-              left: 14,
-              border: "2px solid black",
-              borderRadius: 8,
-              background: "#FF5A00",
-              padding: "8px 14px",
-              fontFamily: "monospace",
-              fontWeight: "bold",
-              fontSize: 13,
-              boxSizing: "border-box",
-              zIndex: 12,
-              maxWidth: "calc(100% - 160px)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {projectTitle} <span style={{color: "black"}}>›</span> {workItemTitle}
-          </div>
+          <>
+            <div
+              data-agent="graph-work-item-title"
+              style={{
+                color:"white",
+                position: "absolute",
+                top: 14,
+                left: 14,
+                border: "2px solid black",
+                borderRadius: 8,
+                background: "#FF5A00",
+                padding: "8px 14px",
+                fontFamily: "monospace",
+                fontWeight: "bold",
+                fontSize: 13,
+                boxSizing: "border-box",
+                zIndex: 12,
+                maxWidth: "calc(100% - 160px)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {projectTitle} <span style={{color: "black"}}>›</span> {workItemTitle}
+            </div>
+            <button
+              data-agent="graph-wide-query-button"
+              onClick={() => setGraphWideQueryModalOpen(true)}
+              style={{
+                ...brutal.button,
+                position: "absolute",
+                top: 56,
+                left: 14,
+                zIndex: 12,
+                padding: "6px 12px",
+                margin: 0,
+                fontSize: 12,
+                background: "white",
+              }}
+            >
+              Query graph
+            </button>
+          </>
         )}
 
         {(activeQuery !== "NONE" || activeQuerySourceId) && (
@@ -678,7 +756,12 @@ export default function GraphView({
                 nodes.find((n) => n.id === queryModalSourceId)?.data.conceptId || ""
               )?.key || "Unknown"
             }
-            categories={queryCategories}
+            categories={queryCategories
+              .map((cat) => ({
+                ...cat,
+                options: cat.options.filter((opt) => !GRAPH_WIDE_QUERY_TYPES.has(opt.value)),
+              }))
+              .filter((cat) => cat.options.length > 0) as any}
             onSelect={(value) => {
               if (value === "NONE") {
                 setActiveQuery("NONE")
@@ -691,6 +774,19 @@ export default function GraphView({
               setQueryModalSourceId(null)
             }}
             onClose={() => setQueryModalSourceId(null)}
+          />
+        )}
+
+        {graphWideQueryModalOpen && (
+          <GraphWideQueryPicker
+            categories={graphWideQueryCategories as any}
+            onSelect={(value) => {
+              setActiveQuery(value as VisibilityQueryType)
+              setActiveQuerySourceId(null)
+              setQueryResult(null)
+              setGraphWideQueryModalOpen(false)
+            }}
+            onClose={() => setGraphWideQueryModalOpen(false)}
           />
         )}
 
