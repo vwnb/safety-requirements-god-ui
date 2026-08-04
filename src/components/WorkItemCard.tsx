@@ -82,7 +82,7 @@ export default function WorkItemCard({
         label: "Overall completeness",
         percent: completenessPercent ?? 0,
         totalLabel: null,
-        description: "Overall progress across the work item’s coverage signals.",
+        description: "Overall progress across the work item's three coverage indicators: requirement test coverage, system behavior safety goal coverage, and hazard mitigation coverage.",
         barColor: completenessPercent != null && completenessPercent >= 80
           ? SemanticColor.SUCCESS
           : completenessPercent != null && completenessPercent >= 50
@@ -95,7 +95,7 @@ export default function WorkItemCard({
           ? Math.round((completeness.requirementTestCoverage.covered / completeness.requirementTestCoverage.total) * 100)
           : 0,
         totalLabel: `${completeness.requirementTestCoverage.covered}/${completeness.requirementTestCoverage.total}`,
-        description: "How many requirement tests are tied to the work item.",
+        description: "This metric counts how many safety requirements in the work item are covered by at least one verification artifact. It looks at functional, technical, hardware, software, hardware safety, and software safety requirements, and checks whether they have supporting test cases, test results, verification reports, validation reports, or proof tests.",
         barColor: SemanticColor.FUNCTIONAL,
       },
       {
@@ -104,7 +104,7 @@ export default function WorkItemCard({
           ? Math.round((completeness.systemBehaviorSafetyGoalCoverage.covered / completeness.systemBehaviorSafetyGoalCoverage.total) * 100)
           : 0,
         totalLabel: `${completeness.systemBehaviorSafetyGoalCoverage.covered}/${completeness.systemBehaviorSafetyGoalCoverage.total}`,
-        description: "How many system-behavior safety goals are covered.",
+        description: "This metric counts how many system-behavior safety goal concepts are connected to the work item's safety context. It includes item and architecture concepts, constraints, assumptions, and the same requirement types above, and treats them as the system-level structure that safety goals must relate to.",
         barColor: SemanticColor.ARGUMENT,
       },
       {
@@ -113,7 +113,7 @@ export default function WorkItemCard({
           ? Math.round((completeness.hazardMitigationCoverage.covered / completeness.hazardMitigationCoverage.total) * 100)
           : 0,
         totalLabel: `${completeness.hazardMitigationCoverage.covered}/${completeness.hazardMitigationCoverage.total}`,
-        description: "How many hazards have mitigation evidence linked to them.",
+        description: "This metric counts how many hazard-related concepts in the work item have mitigation evidence linked to them. It reflects whether hazards are backed by safety requirements, tests, and other supporting evidence rather than being left as isolated hazards.",
         barColor: SemanticColor.RISK,
       },
     ]

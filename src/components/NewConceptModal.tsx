@@ -69,12 +69,33 @@ export default function NewConceptModal({
           style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
         >
           <option value="">-- Select Type --</option>
+          <option value="ITEM">Item</option>
+          <option value="ARCHITECTURE">Architecture</option>
           <option value="HAZARD">Hazard</option>
+          <option value="HARM">Harm</option>
+          <option value="ANOMALY">Anomaly</option>
+          <option value="FAILURE_RATE">Failure Rate</option>
+          <option value="COMMON_CAUSE_FAILURE">Common Cause Failure</option>
           <option value="SAFETY_GOAL">Safety Goal</option>
-          <option value="FSR">Functional Safety Requirement</option>
-          <option value="TSR">Technical Safety Requirement</option>
-          <option value="SSR">Software Safety Requirement</option>
+          <option value="SAFETY_CASE">Safety Case</option>
+          <option value="FUNCTIONAL_SAFETY_REQUIREMENT">Functional Safety Requirement</option>
+          <option value="TECHNICAL_SAFETY_REQUIREMENT">Technical Safety Requirement</option>
+          <option value="SOFTWARE_REQUIREMENT">Software Requirement</option>
+          <option value="SOFTWARE_SAFETY_REQUIREMENT">Software Safety Requirement</option>
+          <option value="HARDWARE_REQUIREMENT">Hardware Requirement</option>
+          <option value="HARDWARE_SAFETY_REQUIREMENT">Hardware Safety Requirement</option>
+          <option value="ASSUMPTION">Assumption</option>
+          <option value="CONSTRAINT">Constraint</option>
           <option value="TEST_CASE">Test Case</option>
+          <option value="TEST_RESULT">Test Result</option>
+          <option value="PROOF_TEST">Proof Test</option>
+          <option value="VERIFICATION_REPORT">Verification Report</option>
+          <option value="VALIDATION_REPORT">Validation Report</option>
+          <option value="SAFETY_MANUAL">Safety Manual</option>
+          <option value="CHANGE_REQUEST">Change Request</option>
+          <option value="DIAGNOSTIC_COVERAGE">Diagnostic Coverage</option>
+          <option value="IMPLEMENTATION">Implementation</option>
+          <option value="VERIFICATION">Verification</option>
         </select>
       </div>
 
