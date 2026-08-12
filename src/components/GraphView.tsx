@@ -12,6 +12,8 @@ import dagre from "dagre"
 import RelationTypePicker from "./RelationTypePicker"
 import QueryPicker from "./QueryPicker"
 import GraphWideQueryPicker from "./GraphWideQueryPicker"
+import QuerySequencePicker from "./QuerySequencePicker"
+import type { QuerySequenceResult } from "./QuerySequenceTypes"
 import { useApiFetch } from "../lib/apiFetchContext"
 import { brutal, typeColor } from "../App"
 import background from "../assets/background.jpg";
@@ -312,6 +314,11 @@ export default function GraphView({
   const [graphWideQueryModalOpen, setGraphWideQueryModalOpen] = useState(false)
   const [graphWideQueryCategories, setGraphWideQueryCategories] = useState<QueryCategory[]>([])
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
+  const [querySequenceGoal, setQuerySequenceGoal] = useState("")
+  const [querySequenceRunning, setQuerySequenceRunning] = useState(false)
+  const [querySequenceError, setQuerySequenceError] = useState<string | null>(null)
+  const [querySequenceResult, setQuerySequenceResult] = useState<QuerySequenceResult | null>(null)
+  const [querySequenceModalOpen, setQuerySequenceModalOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const deleteConfirmRef = useRef<HTMLDivElement>(null)
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 })
@@ -582,6 +589,55 @@ export default function GraphView({
     return queryResult?.explanations ?? null
   }, [activeQuery, activeQuerySourceId, queryResult])
 
+  const runQuerySequence = async () => {
+    const goal = querySequenceGoal.trim()
+    if (!workItemId || !goal) return
+    setQuerySequenceRunning(true)
+    setQuerySequenceError(null)
+    try {
+      const res = await apiFetch(`${API}/graph/${workItemId}/query-sequence`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: goal }),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => "")
+        throw new Error(text || `Request failed with status ${res.status}`)
+      }
+      const data: QuerySequenceResult = await res.json()
+      setQuerySequenceResult(data)
+      setQuerySequenceModalOpen(true)
+    } catch (e: any) {
+      setQuerySequenceError(e?.message || String(e))
+      setQuerySequenceModalOpen(true)
+    } finally {
+      setQuerySequenceRunning(false)
+    }
+  }
+
+  const viewSequenceStep = (payload: { type: string; sourceRevisionId: string | null }) => {
+    if (payload.type === "NONE") {
+      setActiveQuery("NONE")
+      setActiveQuerySourceId(null)
+      setQueryResult(null)
+    } else {
+      setActiveQuery(payload.type as VisibilityQueryType)
+      setActiveQuerySourceId(payload.sourceRevisionId)
+      setQueryResult(null)
+    }
+    setQuerySequenceModalOpen(false)
+  }
+
+  const resolveSourceLabel = useCallback(
+    (sourceRevisionId: string | null) => {
+      if (!sourceRevisionId) return "graph-wide"
+      const node = nodes.find((n) => n.id === sourceRevisionId)
+      const concept = node ? conceptMap.get((node.data as any).conceptId) : undefined
+      return concept?.key || sourceRevisionId
+    },
+    [nodes, conceptMap]
+  )
+
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
     return layoutGraph(visibleNodes, visibleEdges)
   }, [visibleNodes, visibleEdges])
@@ -724,6 +780,58 @@ export default function GraphView({
             >
               Query graph
             </button>
+            <div
+              data-agent="query-sequence-control"
+              style={{
+                position: "absolute",
+                top: 92,
+                left: 14,
+                zIndex: 12,
+                display: "flex",
+                gap: 6,
+                alignItems: "center",
+                maxWidth: "calc(100% - 28px)",
+              }}
+            >
+              <input
+                data-agent="query-sequence-input"
+                placeholder="Query graph sequence — e.g. show what untested requirements are affected by a change to this item"
+                value={querySequenceGoal}
+                aria-label="Query graph sequence"
+                onChange={(e) => setQuerySequenceGoal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    runQuerySequence()
+                  }
+                }}
+                style={{
+                  ...brutal.input,
+                  flex: 1,
+                  minWidth: 220,
+                  fontSize: 12,
+                  padding: "7px 8px",
+                  opacity: querySequenceRunning ? 0.6 : 1,
+                }}
+              />
+              <button
+                data-agent="run-query-sequence-button"
+                onClick={runQuerySequence}
+                disabled={querySequenceRunning || !querySequenceGoal.trim()}
+                style={{
+                  ...brutal.button,
+                  margin: 0,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  background: "white",
+                  whiteSpace: "nowrap",
+                  opacity: querySequenceRunning || !querySequenceGoal.trim() ? 0.6 : 1,
+                  cursor: querySequenceRunning || !querySequenceGoal.trim() ? "not-allowed" : "pointer",
+                }}
+              >
+                {querySequenceRunning ? "Running…" : "Run"}
+              </button>
+            </div>
           </>
         )}
 
@@ -787,6 +895,18 @@ export default function GraphView({
               setGraphWideQueryModalOpen(false)
             }}
             onClose={() => setGraphWideQueryModalOpen(false)}
+          />
+        )}
+
+        {querySequenceModalOpen && (
+          <QuerySequencePicker
+            goal={querySequenceResult?.goal || querySequenceGoal.trim()}
+            running={querySequenceRunning}
+            error={querySequenceError}
+            result={querySequenceResult}
+            resolveSourceLabel={resolveSourceLabel}
+            onViewStep={viewSequenceStep}
+            onClose={() => setQuerySequenceModalOpen(false)}
           />
         )}
 
