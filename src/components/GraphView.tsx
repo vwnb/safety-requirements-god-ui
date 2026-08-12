@@ -319,6 +319,8 @@ export default function GraphView({
   const [querySequenceError, setQuerySequenceError] = useState<string | null>(null)
   const [querySequenceResult, setQuerySequenceResult] = useState<QuerySequenceResult | null>(null)
   const [querySequenceModalOpen, setQuerySequenceModalOpen] = useState(false)
+  const [sequenceActive, setSequenceActive] = useState(false)
+  const [sequenceIndex, setSequenceIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const deleteConfirmRef = useRef<HTMLDivElement>(null)
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 })
@@ -615,7 +617,7 @@ export default function GraphView({
     }
   }
 
-  const viewSequenceStep = (payload: { type: string; sourceRevisionId: string | null }) => {
+  const applySequenceStep = useCallback((payload: { type: string; sourceRevisionId: string | null }) => {
     if (payload.type === "NONE") {
       setActiveQuery("NONE")
       setActiveQuerySourceId(null)
@@ -625,8 +627,50 @@ export default function GraphView({
       setActiveQuerySourceId(payload.sourceRevisionId)
       setQueryResult(null)
     }
+  }, [])
+
+  const viewSequenceStep = (payload: { type: string; sourceRevisionId: string | null }) => {
+    applySequenceStep(payload)
     setQuerySequenceModalOpen(false)
   }
+
+  // Start the query animation on the graph directly (closing the overview
+  // modal so it doesn't block the view). It starts paused, showing the first
+  // step; the user steps through with the Prev/Next controls in the top menu.
+  const startSequence = () => {
+    const steps = querySequenceResult?.steps
+    if (!steps || steps.length === 0) return
+    setQuerySequenceModalOpen(false)
+    setSequenceActive(true)
+    setSequenceIndex(0)
+  }
+
+  const nextSequenceStep = () => {
+    const len = querySequenceResult?.steps?.length ?? 0
+    if (len === 0) return
+    setSequenceIndex((i) => Math.min(i + 1, len - 1))
+  }
+
+  const prevSequenceStep = () => {
+    const len = querySequenceResult?.steps?.length ?? 0
+    if (len === 0) return
+    setSequenceIndex((i) => Math.max(i - 1, 0))
+  }
+
+  const stopSequence = () => {
+    setSequenceActive(false)
+    setSequenceIndex(0)
+    setActiveQuery("NONE")
+    setActiveQuerySourceId(null)
+    setQueryResult(null)
+  }
+
+  // Apply the step referenced by sequenceIndex onto the graph whenever it changes.
+  useEffect(() => {
+    if (!sequenceActive) return
+    const step = querySequenceResult?.steps?.[sequenceIndex]
+    if (step) applySequenceStep(step.payload)
+  }, [sequenceActive, sequenceIndex, querySequenceResult, applySequenceStep])
 
   const resolveSourceLabel = useCallback(
     (sourceRevisionId: string | null) => {
@@ -738,13 +782,18 @@ export default function GraphView({
         )}
 
         {workItemTitle && (
-          <>
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            position: "absolute",
+            top: 14,
+          }}>
             <div
               data-agent="graph-work-item-title"
               style={{
-                color:"white",
-                position: "absolute",
-                top: 14,
+                color: "white",
+                position: "relative",
                 left: 14,
                 border: "2px solid black",
                 borderRadius: 8,
@@ -755,27 +804,26 @@ export default function GraphView({
                 fontSize: 13,
                 boxSizing: "border-box",
                 zIndex: 12,
-                maxWidth: "calc(100% - 160px)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
               }}
             >
-              {projectTitle} <span style={{color: "black"}}>›</span> {workItemTitle}
+              {projectTitle} <span style={{ color: "black" }}>›</span> {workItemTitle}
             </div>
             <button
               data-agent="graph-wide-query-button"
               onClick={() => setGraphWideQueryModalOpen(true)}
               style={{
                 ...brutal.button,
-                position: "absolute",
-                top: 56,
+                position: "relative",
                 left: 14,
                 zIndex: 12,
                 padding: "6px 12px",
                 margin: 0,
                 fontSize: 12,
                 background: "white",
+                marginRight: "auto"
               }}
             >
               Query graph
@@ -783,8 +831,7 @@ export default function GraphView({
             <div
               data-agent="query-sequence-control"
               style={{
-                position: "absolute",
-                top: 92,
+                position: "relative",
                 left: 14,
                 zIndex: 12,
                 display: "flex",
@@ -795,7 +842,7 @@ export default function GraphView({
             >
               <input
                 data-agent="query-sequence-input"
-                placeholder="Query graph sequence — e.g. show what untested requirements are affected by a change to this item"
+                placeholder="Query graph sequence"
                 value={querySequenceGoal}
                 aria-label="Query graph sequence"
                 onChange={(e) => setQuerySequenceGoal(e.target.value)}
@@ -832,7 +879,83 @@ export default function GraphView({
                 {querySequenceRunning ? "Running…" : "Run"}
               </button>
             </div>
-          </>
+
+            {sequenceActive && (
+              <div
+                data-agent="sequence-controls"
+                style={{
+                  position: "absolute",
+                  top: 126,
+                  left: 14,
+                  zIndex: 12,
+                  display: "flex",
+                  gap: 6,
+                  alignItems: "center",
+                  background: "white",
+                  border: "2px solid black",
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                  fontFamily: "monospace",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+                  pointerEvents: "auto",
+                }}
+              >
+                <span style={{ fontSize: 11, fontWeight: "bold", opacity: 0.7, textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                  Player
+                </span>
+                <button
+                  data-agent="sequence-prev-button"
+                  onClick={prevSequenceStep}
+                  disabled={sequenceIndex <= 0}
+                  style={{
+                    ...brutal.button,
+                    margin: 0,
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    opacity: sequenceIndex <= 0 ? 0.5 : 1,
+                    cursor: sequenceIndex <= 0 ? "not-allowed" : "pointer",
+                  }}
+                  title="Previous step"
+                >
+                  ◀ Prev
+                </button>
+                <span style={{ fontSize: 12, opacity: 0.85, whiteSpace: "nowrap" }}>
+                  Step {sequenceIndex + 1}/{querySequenceResult?.steps?.length ?? 0}
+                </span>
+                <button
+                  data-agent="sequence-next-button"
+                  onClick={nextSequenceStep}
+                  disabled={sequenceIndex >= (querySequenceResult?.steps?.length ?? 0) - 1}
+                  style={{
+                    ...brutal.button,
+                    margin: 0,
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    opacity: sequenceIndex >= (querySequenceResult?.steps?.length ?? 0) - 1 ? 0.5 : 1,
+                    cursor: sequenceIndex >= (querySequenceResult?.steps?.length ?? 0) - 1 ? "not-allowed" : "pointer",
+                  }}
+                  title="Next step"
+                >
+                  Next ▶
+                </button>
+                <button
+                  data-agent="sequence-close-button"
+                  onClick={stopSequence}
+                  style={{
+                    ...brutal.button,
+                    margin: 0,
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    background: "#F2B8B5",
+                  }}
+                  title="End sequence"
+                >
+                  End
+                </button>
+              </div>
+            )}
+
+          </div>
         )}
 
         {(activeQuery !== "NONE" || activeQuerySourceId) && (
@@ -906,6 +1029,7 @@ export default function GraphView({
             result={querySequenceResult}
             resolveSourceLabel={resolveSourceLabel}
             onViewStep={viewSequenceStep}
+            onAnimate={startSequence}
             onClose={() => setQuerySequenceModalOpen(false)}
           />
         )}
