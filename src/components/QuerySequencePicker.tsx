@@ -74,9 +74,6 @@ export default function QuerySequencePicker({
           >
             Animate queries
           </button>
-          <span style={{ alignSelf: "center", fontFamily: "monospace", fontSize: 12, opacity: 0.7 }}>
-            Animates each step on the graph.
-          </span>
         </div>
       )}
 

@@ -600,7 +600,7 @@ export default function GraphView({
       const res = await apiFetch(`${API}/graph/${workItemId}/query-sequence`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: goal }),
+        body: JSON.stringify({ prompt: goal, limit: 50 }),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => "")
