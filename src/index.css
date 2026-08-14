@@ -357,13 +357,9 @@ footer {
     width: 100%;
   }
 
-  main {
-    height: 70vh;
-  }
-
   main>* {
     position: relative;
-    height: calc(100% - 40px);
+    height: calc(100vh - 140px);
   }
 
   .react-flow {
