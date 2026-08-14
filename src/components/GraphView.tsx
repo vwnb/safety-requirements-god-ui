@@ -788,6 +788,7 @@ export default function GraphView({
             gap: 6,
             position: "absolute",
             top: 14,
+            maxWidth: "calc(100% - 140px)",
           }}>
             <div
               data-agent="graph-work-item-title"
@@ -900,9 +901,6 @@ export default function GraphView({
                   pointerEvents: "auto",
                 }}
               >
-                <span style={{ fontSize: 11, fontWeight: "bold", opacity: 0.7, textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                  Player
-                </span>
                 <button
                   data-agent="sequence-prev-button"
                   onClick={prevSequenceStep}
@@ -917,7 +915,7 @@ export default function GraphView({
                   }}
                   title="Previous step"
                 >
-                  ◀ Prev
+                  Prev
                 </button>
                 <span style={{ fontSize: 12, opacity: 0.85, whiteSpace: "nowrap" }}>
                   Step {sequenceIndex + 1}/{querySequenceResult?.steps?.length ?? 0}
@@ -936,7 +934,7 @@ export default function GraphView({
                   }}
                   title="Next step"
                 >
-                  Next ▶
+                  Next
                 </button>
                 <button
                   data-agent="sequence-close-button"
