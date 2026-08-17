@@ -486,6 +486,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [graph, setGraph] = useState<any>(null)
 
+  const graphRequestRef = useRef(0)
+  const selectedWorkItemRef = useRef("")
+
   const [baselines, setBaselines] = useState<any[]>()
   const [selectedBaseline, setSelectedBaseline] = useState<any | null>(null)
   const [loadingCount, setLoadingCount] = useState(0)
@@ -624,6 +627,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   useEffect(() => {
     if (!selectedWorkItem || !selectedProject) return
+
+    selectedWorkItemRef.current = selectedWorkItem
+    // Clear any stale graph from a previously selected work item so we never
+    // render the wrong (or a transiently empty) node set while the new graph
+    // loads. This makes each initial load deterministic: GraphView mounts
+    // ReactFlow once with a complete node set instead of mounting at a
+    // partial/blank state and then remounting via its graph key.
+    setGraph(null)
 
     async function load() {
       await Promise.all([
@@ -969,7 +980,16 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   }
 
   async function refreshGraph(workItemId: string) {
+    const requestId = ++graphRequestRef.current
     const data = await apiFetch(`${API}/graph/${workItemId}`).then((r) => r.json())
+
+    // Stale-response guard: only the most recent request for the currently
+    // selected work item may update the graph. Otherwise an out-of-order or
+    // leftover response from a previous load could overwrite the graph with
+    // empty/wrong data and make the nodes vanish on initial load.
+    if (requestId !== graphRequestRef.current) return
+    if (selectedWorkItemRef.current !== workItemId) return
+
     setGraph(data)
     // Re-fetching the graph should also trigger a completeness refresh
     loadWorkItemCompleteness(workItemId)
