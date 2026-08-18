@@ -30,21 +30,10 @@ export default function QuerySequencePicker({
       </div>
 
       {goal && (
-        <div
-          style={{
-            marginBottom: 16,
-            border: "2px solid black",
-            borderLeftWidth: 6,
-            borderRadius: 8,
-            background: "white",
-            padding: "10px 12px",
-            fontFamily: "monospace",
-            fontSize: 13,
-          }}
-        >
+        <p>
           <span style={{ fontWeight: "bold" }}>Goal: </span>
           {goal}
-        </div>
+        </p>
       )}
 
       {running && (
@@ -65,12 +54,7 @@ export default function QuerySequencePicker({
             data-agent="animate-queries-button"
             onClick={onAnimate}
             disabled={running}
-            style={{
-              ...brutal.button,
-              margin: 0,
-              background: "white",
-              borderLeftColor: "#FF5A00",
-            }}
+            style={brutal.button}
           >
             Animate queries
           </button>
