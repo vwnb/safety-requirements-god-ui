@@ -1,16 +1,5 @@
 import { useState } from "react"
-import { typeColor, type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type Concept } from "../App"
-
-const PHASES = [
-  "ITEM_DEFINITION", "HARA", "FUNCTIONAL_SAFETY", "TECHNICAL_SAFETY",
-  "SYSTEM_DESIGN", "SOFTWARE_DESIGN", "IMPLEMENTATION", "VERIFICATION",
-  "VALIDATION", "PRODUCTION", "OPERATION", "DECOMMISSIONING",
-] as LifecyclePhase[]
-
-const ASIL_OPTIONS = ["QM", "ASIL_A", "ASIL_B", "ASIL_C", "ASIL_D"] as ASIL[]
-const SIL_OPTIONS = ["SIL_1", "SIL_2", "SIL_3", "SIL_4"] as SIL[]
-const PL_OPTIONS = ["PL_A", "PL_B", "PL_C", "PL_D", "PL_E"] as PL[]
-const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]
+import { typeColor, type Concept } from "../App"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL",
@@ -32,19 +21,9 @@ export default function ConceptCard({
   editKey,
   editTitle,
   editType,
-  editPhase,
-  editAsil,
-  editSil,
-  editPl,
-  editStandards,
   onEditKey,
   onEditTitle,
   onEditType,
-  onEditPhase,
-  onEditAsil,
-  onEditSil,
-  onEditPl,
-  onEditStandards,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -53,19 +32,9 @@ export default function ConceptCard({
   editKey: string
   editTitle: string
   editType: string
-  editPhase: string
-  editAsil: string
-  editSil: string
-  editPl: string
-  editStandards: Standard[]
   onEditKey: (v: string) => void
   onEditTitle: (v: string) => void
   onEditType: (v: string) => void
-  onEditPhase: (v: string) => void
-  onEditAsil: (v: string) => void
-  onEditSil: (v: string) => void
-  onEditPl: (v: string) => void
-  onEditStandards: (v: Standard[]) => void
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -120,9 +89,6 @@ export default function ConceptCard({
 
           <p className="info-row">
             <span><span className="field-label">Created by</span> {concept.createdBy?.name || "—"}</span>
-            {concept.phase && (
-              <span><span className="field-label">Phase</span> {concept.phase.replace(/_/g, " ")}</span>
-            )}
           </p>
         </article>
       ) : (
@@ -167,79 +133,6 @@ export default function ConceptCard({
                 <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
               ))}
             </select>
-          </div>
-          <div className="form-row">
-            <div className="field-label">Phase</div>
-            <select
-              data-agent="select-edit-concept-phase"
-              value={editPhase}
-              onChange={(e) => onEditPhase(e.target.value)}
-            >
-              <option value="">-- Select Phase --</option>
-              {PHASES.map((p) => (
-                <option key={p} value={p}>{p.replace(/_/g, " ")}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-row">
-            <div className="field-label">ASIL</div>
-            <select
-              data-agent="select-edit-concept-asil"
-              value={editAsil}
-              onChange={(e) => onEditAsil(e.target.value)}
-            >
-              <option value="">-- Select ASIL --</option>
-              {ASIL_OPTIONS.map((a) => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-row">
-            <div className="field-label">SIL</div>
-            <select
-              data-agent="select-edit-concept-sil"
-              value={editSil}
-              onChange={(e) => onEditSil(e.target.value)}
-            >
-              <option value="">-- Select SIL --</option>
-              {SIL_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s.replace("_", " ")}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-row">
-            <div className="field-label">PL</div>
-            <select
-              data-agent="select-edit-concept-pl"
-              value={editPl}
-              onChange={(e) => onEditPl(e.target.value)}
-            >
-              <option value="">-- Select PL --</option>
-              {PL_OPTIONS.map((p) => (
-                <option key={p} value={p}>{p.replace("_", " ")}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-row">
-            <div className="field-label">Standards</div>
-            <div className="flex-wrap">
-              {STANDARDS.map((s) => (
-                <label key={s} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={editStandards.includes(s)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        onEditStandards([...editStandards, s])
-                      } else {
-                        onEditStandards(editStandards.filter((x) => x !== s))
-                      }
-                    }}
-                  />
-                  {s.replace("_", " ")}
-                </label>
-              ))}
-            </div>
           </div>
           <div className="form-actions">
             <button data-agent="btn-save-concept" className="btn" onClick={handleSave}>Save concept</button>

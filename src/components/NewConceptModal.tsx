@@ -5,17 +5,16 @@ export default function NewConceptModal({
   onCreate,
   onClose,
 }: {
-  onCreate: (key: string, title: string, type: string, phase: string) => void
+  onCreate: (key: string, title: string, type: string) => void
   onClose: () => void
 }) {
   const [key, setKey] = useState("")
   const [title, setTitle] = useState("")
   const [type, setType] = useState("")
-  const [phase, setPhase] = useState("")
 
   const handleCreate = () => {
     if (key.trim() && title.trim() && type) {
-      onCreate(key, title, type, phase)
+      onCreate(key, title, type)
     }
   }
 
@@ -86,28 +85,6 @@ export default function NewConceptModal({
           <option value="DIAGNOSTIC_COVERAGE">Diagnostic Coverage</option>
           <option value="IMPLEMENTATION">Implementation</option>
           <option value="VERIFICATION">Verification</option>
-        </select>
-      </div>
-
-      <div className="form-row">
-        <div className="field-label">Phase</div>
-        <select
-          data-agent="select-new-concept-phase"
-          value={phase}
-          onChange={(e) => setPhase(e.target.value)}
-          className="license-value"
-          style={{ opacity: 1, cursor: 'pointer', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%', flex: 1 }}
-        >
-          <option value="">-- Select Phase --</option>
-          <option value="ITEM_DEFINITION">Item Definition</option>
-          <option value="HARA">HARA</option>
-          <option value="FUNCTIONAL_SAFETY">Functional Safety</option>
-          <option value="TECHNICAL_SAFETY">Technical Safety</option>
-          <option value="SYSTEM_DESIGN">System Design</option>
-          <option value="SOFTWARE_DESIGN">Software Design</option>
-          <option value="IMPLEMENTATION">Implementation</option>
-          <option value="VERIFICATION">Verification</option>
-          <option value="VALIDATION">Validation</option>
         </select>
       </div>
 

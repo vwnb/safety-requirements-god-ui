@@ -1111,7 +1111,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
-  const handleNewConceptCreate = async (key: string, title: string, type: string, phase: string) => {
+  const handleNewConceptCreate = async (key: string, title: string, type: string) => {
     if (!key.trim()) return
 
     return withLoading("Creating concept...", async () => {
@@ -1123,7 +1123,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         key,
         type,
         title,
-        phase: phase || null,
         createdBy: { name: actorForApi }
       }
 
@@ -1225,8 +1224,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
       {showNewConceptModal && (
         <NewConceptModal
-          onCreate={(key, title, type, phase) => {
-            handleNewConceptCreate(key, title, type, phase)
+          onCreate={(key, title, type) => {
+            handleNewConceptCreate(key, title, type)
           }}
           onClose={() => setShowNewConceptModal(false)}
         />
@@ -1565,19 +1564,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       editKey={editConceptKey}
                       editTitle={editConceptTitle}
                       editType={editConceptType}
-                      editPhase={editConceptPhase}
-                      editAsil={editConceptAsil}
-                      editSil={editConceptSil}
-                      editPl={editConceptPl}
-                      editStandards={editConceptStandards}
                       onEditKey={setEditConceptKey}
                       onEditTitle={setEditConceptTitle}
                       onEditType={setEditConceptType}
-                      onEditPhase={setEditConceptPhase}
-                      onEditAsil={setEditConceptAsil}
-                      onEditSil={setEditConceptSil}
-                      onEditPl={setEditConceptPl}
-                      onEditStandards={setEditConceptStandards}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}
