@@ -1815,6 +1815,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                     <LlmTools
                       selectedWorkItem={selectedWorkItem}
                       selectedWorkItemData={selectedWorkItemData}
+                      concepts={concepts}
                       activeRevisionId={activeRevisionId}
                       onSetActiveRevisionId={setActiveRevisionId}
                       onSetEditorValue={setEditorValue}

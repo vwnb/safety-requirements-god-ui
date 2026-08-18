@@ -90,6 +90,7 @@ const importanceColor: Record<SuggestionImportance, string> = {
 interface LlmToolsProps {
   selectedWorkItem: string
   selectedWorkItemData: WorkItem | null
+  concepts: Array<{ id: string; key: string }> | null
   activeRevisionId: string | null
   onSetActiveRevisionId: (id: string | null) => void
   onSetEditorValue: (value: string) => void
@@ -105,6 +106,7 @@ interface LlmToolsProps {
 export function LlmTools({
   selectedWorkItem,
   selectedWorkItemData,
+  concepts,
   activeRevisionId,
   onSetActiveRevisionId,
   onSetEditorValue,
@@ -321,25 +323,30 @@ export function LlmTools({
         return
       }
 
-      case 'Revise':
-      case 'Update': {
+      case 'Revise': {
         if (!selectedWorkItem) return
+
+        if (!payload.conceptKey || !payload.markdown) {
+          console.warn("Revise suggestion is missing conceptKey/markdown", payload)
+          return
+        }
+
+        const concept = (concepts ?? []).find((c) => c.key === payload.conceptKey)
+        if (!concept) {
+          console.warn(`Revise suggestion references unknown concept "${payload.conceptKey}"`, payload)
+          return
+        }
 
         onSetLoading(true)
         onSetLoadingMessage("Revising from suggestion...")
 
         try {
-          const revisions = [{
-            conceptKey: payload.conceptKey,
-            markdown: payload.markdown,
-          }]
-
-          const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
+          const res = await apiFetch(`${API}/workflow/submit-change`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              concepts: [],
-              revisions,
+              conceptId: concept.id,
+              markdown: payload.markdown,
               user: actorForApi,
             }),
           })
@@ -351,7 +358,7 @@ export function LlmTools({
 
           await onLoadConcepts(selectedWorkItem)
           await onRefreshGraph(selectedWorkItem)
-        markSuggestion(suggestion.id, "ACTED_ON")
+          markSuggestion(suggestion.id, "ACTED_ON")
         } finally {
           onSetLoading(false)
         }
@@ -405,7 +412,7 @@ export function LlmTools({
       default:
         break
     }
-  }, [apiFetch, selectedWorkItem, actorForApi, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion])
+  }, [apiFetch, selectedWorkItem, actorForApi, concepts, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion])
 
   const discardSuggestion = useCallback((suggestionId: string | undefined) => {
     markSuggestion(suggestionId, "DISCARDED")
