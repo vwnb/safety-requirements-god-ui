@@ -71,6 +71,19 @@ type EvaluatorSuggestion = {
   actedOnBy?: { name?: string }
 }
 
+// Coerce an unknown suggestions payload (from API responses) into an array.
+// This guards the render path (which spreads `suggestions`) from ever receiving a
+// non-iterable value, which would throw "X is not iterable" and crash the UI.
+function toSuggestionArray(raw: unknown): EvaluatorSuggestion[] {
+  if (Array.isArray(raw)) return raw as EvaluatorSuggestion[]
+  // Some/nested/object-shaped responses may wrap the list under `suggestions`.
+  if (raw && typeof raw === "object") {
+    const wrapped = (raw as { suggestions?: unknown }).suggestions
+    if (Array.isArray(wrapped)) return wrapped as EvaluatorSuggestion[]
+  }
+  return []
+}
+
 const actionColor: Record<string, string> = {
   "Create": SemanticColor.SUCCESS,
   "Revise": SemanticColor.SUCCESS,
@@ -168,7 +181,7 @@ export function LlmTools({
       .then(data => {
         if (data) {
           if (data.suggestions) {
-            setSuggestions(data.suggestions as EvaluatorSuggestion[])
+            setSuggestions(toSuggestionArray(data.suggestions))
           }
           if (data.createdAt) {
             setReportCreatedAt(data.createdAt)
@@ -201,10 +214,35 @@ export function LlmTools({
       if (!res.ok) throw new Error("Failed to generate suggestions")
 
       const suggestionsData = await res.json()
-      if (suggestionsData.suggestions) {
-        setSuggestions(suggestionsData.suggestions as EvaluatorSuggestion[])
+      const newSuggestions = toSuggestionArray(
+        suggestionsData && typeof suggestionsData === "object"
+          ? (Array.isArray(suggestionsData) ? suggestionsData : suggestionsData.suggestions)
+          : suggestionsData
+      )
+      setSuggestions(newSuggestions)
+      
+      const createdAt = (suggestionsData && typeof suggestionsData === "object"
+        ? suggestionsData.createdAt ?? suggestionsData.report?.createdAt
+        : undefined
+      )
+      setReportCreatedAt(createdAt ?? null)
+      setLatestReportNotFound(newSuggestions.length === 0)
+
+      if (createdAt) {
+        const newReport = suggestionsData && typeof suggestionsData === "object"
+          ? suggestionsData.report ?? suggestionsData
+          : null
+        const newReportId = (newReport && typeof newReport === "object"
+          && typeof (newReport.id ?? newReport.reportId) === "string"
+          ? (newReport.id ?? newReport.reportId)
+          : null
+        )
+        const key = newReportId ?? `evaluation-${createdAt}`
+        setEvaluationResults(prev => [
+          { id: key, createdAt },
+          ...(Array.isArray(prev) ? prev.filter(r => r.id !== key) : []),
+        ])
       }
-      setLatestReportNotFound(false)
     } catch (err) {
       console.error(err)
     } finally {
