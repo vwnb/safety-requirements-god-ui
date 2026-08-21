@@ -139,18 +139,23 @@ export function LlmTools({
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
   const [reportCreatedAt, setReportCreatedAt] = useState<string | null>(null)
 
-  // Fetch list of evaluation results for the dropdown
+  // Fetch the full list of evaluation results for the dropdown.
+  // We always read the whole list from the API so newly generated reports
+  // show up reliably instead of relying on merging data from a single POST.
+  const loadEvaluationResults = useCallback(async (): Promise<Array<{ id: string; createdAt: string }>> => {
+    if (!selectedWorkItem) return []
+    const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results`)
+    if (!res.ok) throw new Error("Failed to load evaluation results list")
+    const data = await res.json()
+    return Array.isArray(data) ? data : (Array.isArray(data?.evaluationResults) ? data.evaluationResults : [])
+  }, [selectedWorkItem, API, apiFetch])
+
   useEffect(() => {
     if (!selectedWorkItem) return
     let cancelled = false
-    apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results`)
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to load evaluation results list")
-        return res.json()
-      })
-      .then(data => {
+    loadEvaluationResults()
+      .then(list => {
         if (cancelled) return
-        const list: Array<{ id: string; createdAt: string }> = Array.isArray(data) ? data : (Array.isArray(data?.evaluationResults) ? data.evaluationResults : [])
         setEvaluationResults(list)
         // auto-select latest report by createdAt desc
         if (list.length > 0) {
@@ -162,7 +167,7 @@ export function LlmTools({
         if (!cancelled) console.error(err)
       })
     return () => { cancelled = true }
-  }, [selectedWorkItem, API, apiFetch])
+  }, [selectedWorkItem, loadEvaluationResults])
 
   // Fetch selected report by id
   useEffect(() => {
@@ -228,20 +233,26 @@ export function LlmTools({
       setReportCreatedAt(createdAt ?? null)
       setLatestReportNotFound(newSuggestions.length === 0)
 
-      if (createdAt) {
+      try {
+        const list = await loadEvaluationResults()
+        setEvaluationResults(list)
+
         const newReport = suggestionsData && typeof suggestionsData === "object"
-          ? suggestionsData.report ?? suggestionsData
+          ? (suggestionsData.report ?? suggestionsData)
           : null
-        const newReportId = (newReport && typeof newReport === "object"
+        const newReportId = newReport && typeof newReport === "object"
           && typeof (newReport.id ?? newReport.reportId) === "string"
           ? (newReport.id ?? newReport.reportId)
           : null
-        )
-        const key = newReportId ?? `evaluation-${createdAt}`
-        setEvaluationResults(prev => [
-          { id: key, createdAt },
-          ...(Array.isArray(prev) ? prev.filter(r => r.id !== key) : []),
-        ])
+
+        if (newReportId && list.some(r => r.id === newReportId)) {
+          setSelectedReportId(newReportId)
+        } else if (list.length > 0) {
+          const sorted = [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          setSelectedReportId(sorted[0].id)
+        }
+      } catch (err) {
+        console.error(err)
       }
     } catch (err) {
       console.error(err)
