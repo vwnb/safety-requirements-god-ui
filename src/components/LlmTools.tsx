@@ -58,6 +58,8 @@ type SuggestionPayload = {
   markdown?: string
   // Remove action payload
   relationIds?: string[]
+  // Remove action payload (concept delete)
+  conceptKeys?: string[]
 }
 
 type EvaluatorSuggestion = {
@@ -418,17 +420,36 @@ export function LlmTools({
         if (!selectedWorkItem) return
 
         const relationIds = payload.relationIds ?? []
+        const conceptKeys = payload.conceptKeys ?? []
 
-        if (relationIds.length === 0) {
-          console.warn("Remove suggestion has no relationIds; nothing to remove.", payload)
+        if (relationIds.length === 0 && conceptKeys.length === 0) {
+          console.warn("Remove suggestion has no relationIds or conceptKeys; nothing to remove.", payload)
           markSuggestion(suggestion.id, "ACTED_ON")
           return
         }
 
         onSetLoading(true)
-        onSetLoadingMessage("Removing relation(s) from suggestion...")
+        onSetLoadingMessage("Removing from suggestion...")
 
         try {
+          // Delete concepts by key (removes all of their revisions and related relations)
+          for (const conceptKey of conceptKeys) {
+            const concept = (concepts ?? []).find((c) => c.key === conceptKey)
+            if (!concept) {
+              console.warn(`Remove suggestion references unknown concept "${conceptKey}"`, payload)
+              continue
+            }
+            const res = await apiFetch(`${API}/concepts/${concept.id}`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+            })
+            if (!res.ok) {
+              console.warn("Failed to remove concept", conceptKey, payload)
+              return
+            }
+          }
+
+          // Delete relations by id
           for (const relationId of relationIds) {
             const res = await apiFetch(`${API}/relations/${relationId}`, {
               method: "DELETE",
@@ -471,7 +492,7 @@ export function LlmTools({
     const payloadConcepts = payload.concepts || []
     const payloadRelations = payload.relations || []
     const payloadRevisions = payload.revisions || []
-    const hasPayloadData = payloadConcepts.length > 0 || payloadRelations.length > 0 || payloadRevisions.length > 0 || !!payload.conceptKey || !!payload.markdown || (payload.relationIds?.length ?? 0) > 0
+    const hasPayloadData = payloadConcepts.length > 0 || payloadRelations.length > 0 || payloadRevisions.length > 0 || !!payload.conceptKey || !!payload.markdown || (payload.relationIds?.length ?? 0) > 0 || (payload.conceptKeys?.length ?? 0) > 0
 
     let actionLabel = ""
     let graphDescription = ""
@@ -496,9 +517,17 @@ export function LlmTools({
         break
       case 'Remove':
         actionLabel = "Remove"
-        graphDescription = payload.relationIds?.length
-          ? `${payload.relationIds.length} relation(s) to remove`
-          : "No graph data"
+        {
+          const relationCount = payload.relationIds?.length ?? 0
+          const conceptCount = payload.conceptKeys?.length ?? 0
+          graphDescription = relationCount && conceptCount
+            ? `${relationCount} relation(s) and ${conceptCount} concept(s) to remove`
+            : relationCount
+              ? `${relationCount} relation(s) to remove`
+              : conceptCount
+                ? `${conceptCount} concept(s) to remove`
+                : "No graph data"
+        }
         break
       case 'Discard':
       case 'Cancel':
@@ -520,17 +549,23 @@ export function LlmTools({
     const payloadConcepts = payload.concepts || []
     const payloadRelations = payload.relations || []
     const payloadRevisions = payload.revisions || []
-    const hasPayloadData = payloadConcepts.length > 0 || payloadRelations.length > 0 || payloadRevisions.length > 0 || !!payload.conceptKey || !!payload.markdown
+    const hasPayloadData = payloadConcepts.length > 0 || payloadRelations.length > 0 || payloadRevisions.length > 0 || !!payload.conceptKey || !!payload.markdown || (payload.conceptKeys?.length ?? 0) > 0
 
     if (["Discard", "Cancel", "Reject"].includes(action)) {
       return { confirmMessage: "No updates will be performed. Discard this suggestion?", confirmLabel: "Discard" }
     } else if (["Revise", "Update"].includes(action) && payload.conceptKey) {
       return { confirmMessage: `Revision will be created for concept "${payload.conceptKey}". Continue?`, confirmLabel: "Continue" }
     } else if (action === "Remove") {
-      const count = payload.relationIds?.length ?? 0
-      return count > 0
-        ? { confirmMessage: `${count} relation(s) will be removed from the graph. Continue?`, confirmLabel: "Continue" }
-        : { confirmMessage: "No relations to remove. Discard this suggestion?", confirmLabel: "Discard" }
+      const relationCount = payload.relationIds?.length ?? 0
+      const conceptCount = payload.conceptKeys?.length ?? 0
+      if (conceptCount > 0 && relationCount > 0) {
+        return { confirmMessage: `${conceptCount} concept(s) and ${relationCount} relation(s) will be removed from the graph. Continue?`, confirmLabel: "Continue" }
+      } else if (conceptCount > 0) {
+        return { confirmMessage: `${conceptCount} concept(s) (including all of their revisions and related relations) will be removed from the graph. Continue?`, confirmLabel: "Continue" }
+      } else if (relationCount > 0) {
+        return { confirmMessage: `${relationCount} relation(s) will be removed from the graph. Continue?`, confirmLabel: "Continue" }
+      }
+      return { confirmMessage: "No relations or concepts to remove. Discard this suggestion?", confirmLabel: "Discard" }
     } else if (action === "Create") {
       const parts: string[] = []
       if (payloadConcepts.length > 0) parts.push(`${payloadConcepts.length} concept(s)`)
