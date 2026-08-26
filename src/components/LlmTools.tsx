@@ -24,8 +24,9 @@ type SuggestionImportance = "Very high" | "High" | "Medium" | "Low"
 
 type PayloadConcept = {
   key: string
+  title: string
   type: string
-  title?: string
+  // Legacy / optional enrichment fields still accepted but not part of the schema.
   phase?: string
   asil?: string
   sil?: string
@@ -34,18 +35,16 @@ type PayloadConcept = {
 }
 
 type PayloadRevision = {
-  conceptKey?: string
+  conceptKey: string
   markdown: string
-  versionMajor?: number
-  versionMinor?: number
-  versionPatch?: number
+  versionMajor: number
+  versionMinor: number
+  versionPatch: number
 }
 
 type PayloadRelation = {
-  sourceConceptKey?: string
-  targetConceptKey?: string
-  fromKey?: string
-  toKey?: string
+  fromKey: string
+  toKey: string
   type: string
   rationale?: string
 }
@@ -65,10 +64,10 @@ type SuggestionPayload = {
 type EvaluatorSuggestion = {
   id?: string
   text: string
-  importance?: SuggestionImportance
+  importance: SuggestionImportance
   action: SuggestionAction
   payload: SuggestionPayload
-  reason?: string
+  reason: string
   actedOn?: "ACTED_ON" | "DISCARDED"
   actedOnBy?: { name?: string }
 }
@@ -342,8 +341,8 @@ export function LlmTools({
           }))
 
           const relations = (payload.relations ?? []).map((r: PayloadRelation) => ({
-            sourceConceptKey: r.sourceConceptKey ?? r.fromKey,
-            targetConceptKey: r.targetConceptKey ?? r.toKey,
+            sourceConceptKey: r.fromKey,
+            targetConceptKey: r.toKey,
             fromKey: r.fromKey,
             toKey: r.toKey,
             type: r.type,
