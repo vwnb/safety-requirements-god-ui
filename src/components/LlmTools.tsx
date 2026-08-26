@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { SemanticColor } from "../lib/SemanticColor"
 import { InfoButton } from "./InfoButton"
+import Modal from "./Modal"
 
 type WorkItem = {
   id: string
@@ -139,6 +140,18 @@ export function LlmTools({
   const [evaluationResults, setEvaluationResults] = useState<Array<{ id: string; createdAt: string }>>([])
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
   const [reportCreatedAt, setReportCreatedAt] = useState<string | null>(null)
+
+  // Warnings collected while acting on a suggestion are surfaced in a modal.
+  type CollectedWarning = { message: string; payload?: unknown }
+  const warningsRef = useRef<CollectedWarning[]>([])
+  const [warningsModal, setWarningsModal] = useState<CollectedWarning[] | null>(null)
+
+  // Collect a console.warn so it can be shown to the user in a modal.
+  // The textual message and the JSON payload are stored separately.
+  const collectWarning = useCallback((message: string, payload?: unknown) => {
+    console.warn(message, payload ?? "")
+    warningsRef.current.push({ message, payload })
+  }, [])
 
   // Fetch the full list of evaluation results for the dropdown.
   // We always read the whole list from the API so newly generated reports
@@ -307,181 +320,189 @@ export function LlmTools({
   }, [actOnSuggestionApi])
 
   const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion) => {
-    const { action, payload } = suggestion
+    warningsRef.current = []
 
-    const normalizedAction =
-      action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
+    try {
+      const { action, payload } = suggestion
 
-    switch (normalizedAction) {
-      case 'Create': {
-        if (!selectedWorkItem) return
+      const normalizedAction =
+        action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
 
-        onSetLoading(true)
-        onSetLoadingMessage("Creating from suggestion...")
+      switch (normalizedAction) {
+        case 'Create': {
+          if (!selectedWorkItem) return
 
-        try {
-          const concepts = (payload.concepts ?? []).map((c: PayloadConcept) => ({
-            key: c.key,
-            type: c.type,
-            title: c.title || "",
-            phase: c.phase || undefined,
-            asil: c.asil || undefined,
-            sil: c.sil || undefined,
-            pl: c.pl || undefined,
-            standards: c.standards || undefined,
-            createdBy: { name: actorForApi },
-          }))
+          onSetLoading(true)
+          onSetLoadingMessage("Creating from suggestion...")
 
-          const revisions = (payload.revisions ?? []).map((r: PayloadRevision) => ({
-            conceptKey: r.conceptKey,
-            markdown: r.markdown,
-            versionMajor: r.versionMajor,
-            versionMinor: r.versionMinor,
-            versionPatch: r.versionPatch,
-          }))
+          try {
+            const concepts = (payload.concepts ?? []).map((c: PayloadConcept) => ({
+              key: c.key,
+              type: c.type,
+              title: c.title || "",
+              phase: c.phase || undefined,
+              asil: c.asil || undefined,
+              sil: c.sil || undefined,
+              pl: c.pl || undefined,
+              standards: c.standards || undefined,
+              createdBy: { name: actorForApi },
+            }))
 
-          const relations = (payload.relations ?? []).map((r: PayloadRelation) => ({
-            sourceConceptKey: r.fromKey,
-            targetConceptKey: r.toKey,
-            fromKey: r.fromKey,
-            toKey: r.toKey,
-            type: r.type,
-          }))
+            const revisions = (payload.revisions ?? []).map((r: PayloadRevision) => ({
+              conceptKey: r.conceptKey,
+              markdown: r.markdown,
+              versionMajor: r.versionMajor,
+              versionMinor: r.versionMinor,
+              versionPatch: r.versionPatch,
+            }))
 
-          const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              concepts,
-              revisions,
-              relations,
-              user: actorForApi,
-            }),
-          })
+            const relations = (payload.relations ?? []).map((r: PayloadRelation) => ({
+              sourceConceptKey: r.fromKey,
+              targetConceptKey: r.toKey,
+              fromKey: r.fromKey,
+              toKey: r.toKey,
+              type: r.type,
+            }))
 
-          if (!res.ok) {
-            console.warn("Failed to create from suggestion", payload)
-            return
+            const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                concepts,
+                revisions,
+                relations,
+                user: actorForApi,
+              }),
+            })
+
+            if (!res.ok) {
+              collectWarning("Failed to create from suggestion", payload)
+              return
+            }
+
+            await onLoadConcepts(selectedWorkItem)
+            await onRefreshGraph(selectedWorkItem)
+            markSuggestion(suggestion.id, "ACTED_ON")
+          } finally {
+            onSetLoading(false)
           }
-
-          await onLoadConcepts(selectedWorkItem)
-          await onRefreshGraph(selectedWorkItem)
-        markSuggestion(suggestion.id, "ACTED_ON")
-        } finally {
-          onSetLoading(false)
-        }
-        return
-      }
-
-      case 'Revise': {
-        if (!selectedWorkItem) return
-
-        if (!payload.conceptKey || !payload.markdown) {
-          console.warn("Revise suggestion is missing conceptKey/markdown", payload)
           return
         }
 
-        const concept = (concepts ?? []).find((c) => c.key === payload.conceptKey)
-        if (!concept) {
-          console.warn(`Revise suggestion references unknown concept "${payload.conceptKey}"`, payload)
-          return
-        }
+        case 'Revise': {
+          if (!selectedWorkItem) return
 
-        onSetLoading(true)
-        onSetLoadingMessage("Revising from suggestion...")
-
-        try {
-          const res = await apiFetch(`${API}/workflow/submit-change`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              conceptId: concept.id,
-              markdown: payload.markdown,
-              user: actorForApi,
-            }),
-          })
-
-          if (!res.ok) {
-            console.warn("Failed to revise from suggestion", payload)
+          if (!payload.conceptKey || !payload.markdown) {
+            collectWarning("Revise suggestion is missing conceptKey/markdown", payload)
             return
           }
 
-          await onLoadConcepts(selectedWorkItem)
-          await onRefreshGraph(selectedWorkItem)
-          markSuggestion(suggestion.id, "ACTED_ON")
-        } finally {
-          onSetLoading(false)
+          const concept = (concepts ?? []).find((c) => c.key === payload.conceptKey)
+          if (!concept) {
+            collectWarning(`Revise suggestion references unknown concept "${payload.conceptKey}"`, payload)
+            return
+          }
+
+          onSetLoading(true)
+          onSetLoadingMessage("Revising from suggestion...")
+
+          try {
+            const res = await apiFetch(`${API}/workflow/submit-change`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                conceptId: concept.id,
+                markdown: payload.markdown,
+                user: actorForApi,
+              }),
+            })
+
+            if (!res.ok) {
+              collectWarning("Failed to revise from suggestion", payload)
+              return
+            }
+
+            await onLoadConcepts(selectedWorkItem)
+            await onRefreshGraph(selectedWorkItem)
+            markSuggestion(suggestion.id, "ACTED_ON")
+          } finally {
+            onSetLoading(false)
+          }
+          return
         }
-        return
-      }
 
       case 'Remove': {
-        if (!selectedWorkItem) return
+          if (!selectedWorkItem) return
 
-        const relationIds = payload.relationIds ?? []
-        const conceptKeys = payload.conceptKeys ?? []
+          const relationIds = payload.relationIds ?? []
+          const conceptKeys = payload.conceptKeys ?? []
 
-        if (relationIds.length === 0 && conceptKeys.length === 0) {
-          console.warn("Remove suggestion has no relationIds or conceptKeys; nothing to remove.", payload)
-          markSuggestion(suggestion.id, "ACTED_ON")
+          if (relationIds.length === 0 && conceptKeys.length === 0) {
+            collectWarning("Remove suggestion has no relationIds or conceptKeys; nothing to remove.", payload)
+            markSuggestion(suggestion.id, "ACTED_ON")
+            return
+          }
+
+          onSetLoading(true)
+          onSetLoadingMessage("Removing from suggestion...")
+
+          try {
+            // Delete concepts by key (removes all of their revisions and related relations)
+            for (const conceptKey of conceptKeys) {
+              const concept = (concepts ?? []).find((c) => c.key === conceptKey)
+              if (!concept) {
+                collectWarning(`Remove suggestion references unknown concept "${conceptKey}"`, payload)
+                continue
+              }
+              const res = await apiFetch(`${API}/concepts/${concept.id}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+              })
+              if (!res.ok) {
+                collectWarning(`Failed to remove concept "${conceptKey}"`, payload)
+                return
+              }
+            }
+
+            // Delete relations by id
+            for (const relationId of relationIds) {
+              const res = await apiFetch(`${API}/relations/${relationId}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+              })
+              if (!res.ok) {
+                collectWarning(`Failed to remove relation "${relationId}"`, payload)
+                return
+              }
+            }
+
+            await onLoadConcepts(selectedWorkItem)
+            await onRefreshGraph(selectedWorkItem)
+            markSuggestion(suggestion.id, "ACTED_ON")
+          } finally {
+            onSetLoading(false)
+          }
           return
         }
 
-        onSetLoading(true)
-        onSetLoadingMessage("Removing from suggestion...")
-
-        try {
-          // Delete concepts by key (removes all of their revisions and related relations)
-          for (const conceptKey of conceptKeys) {
-            const concept = (concepts ?? []).find((c) => c.key === conceptKey)
-            if (!concept) {
-              console.warn(`Remove suggestion references unknown concept "${conceptKey}"`, payload)
-              continue
-            }
-            const res = await apiFetch(`${API}/concepts/${concept.id}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-            })
-            if (!res.ok) {
-              console.warn("Failed to remove concept", conceptKey, payload)
-              return
-            }
-          }
-
-          // Delete relations by id
-          for (const relationId of relationIds) {
-            const res = await apiFetch(`${API}/relations/${relationId}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-            })
-            if (!res.ok) {
-              console.warn("Failed to remove relation", relationId, payload)
-              return
-            }
-          }
-
-          await onLoadConcepts(selectedWorkItem)
-          await onRefreshGraph(selectedWorkItem)
-          markSuggestion(suggestion.id, "ACTED_ON")
-        } finally {
-          onSetLoading(false)
+        case 'Discard':
+        case 'Cancel':
+        case 'Reject': {
+          onSetActiveRevisionId(null)
+          onSetEditorValue("")
+          markSuggestion(suggestion.id, "DISCARDED")
+          break
         }
-        return
-      }
 
-      case 'Discard':
-      case 'Cancel':
-      case 'Reject': {
-        onSetActiveRevisionId(null)
-        onSetEditorValue("")
-        markSuggestion(suggestion.id, "DISCARDED")
-        break
+        default:
+          break
       }
-
-      default:
-        break
+    } finally {
+      if (warningsRef.current.length > 0) {
+        setWarningsModal([...warningsRef.current])
+      }
     }
-  }, [apiFetch, selectedWorkItem, actorForApi, concepts, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion])
+  }, [apiFetch, selectedWorkItem, actorForApi, concepts, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion, collectWarning])
 
   const discardSuggestion = useCallback((suggestionId: string | undefined) => {
     markSuggestion(suggestionId, "DISCARDED")
@@ -752,6 +773,49 @@ export function LlmTools({
           })
         )}
       </article>
+
+      {warningsModal && (
+        <Modal
+          title="LLM action stopped"
+          onClose={() => setWarningsModal(null)}
+          width={520}
+        >
+          <article>
+            {warningsModal.map((w, i) => (
+              <section key={i}>
+                <p>{w.message}</p>
+                {w.payload !== undefined && (
+                  <pre
+                    style={{
+                      margin: 0,
+                      fontFamily: "var(--font-mono, monospace)",
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      background: "#fff",
+                      border: "2px solid black",
+                      borderRadius: 4,
+                      padding: "10px 12px",
+                    }}
+                  >
+                    {JSON.stringify(w.payload, null, 2)}
+                  </pre>
+                )}
+              </section>
+            ))}
+          </article>
+          <div className="mt-16">
+            <button
+              data-agent="btn-close-llm-warnings"
+              onClick={() => setWarningsModal(null)}
+              className="btn btn-danger"
+            >
+              Close
+            </button>
+          </div>
+        </Modal>
+      )}
     </section>
   )
 }
