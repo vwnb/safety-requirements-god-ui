@@ -656,7 +656,6 @@ export function LlmTools({
               return (order[b.importance ?? "Low"] ?? 0) - (order[a.importance ?? "Low"] ?? 0);
             })
             .map((suggestion, index) => {
-            const suggestionKey = suggestion.text.slice(0, 64).replaceAll(" ", "-")
             const { actionLabel, graphDescription, hasPayloadData } = actionLabelForAction(suggestion.action, suggestion.payload)
             const suggestionStatus = suggestion.actedOn
 
@@ -664,11 +663,11 @@ export function LlmTools({
 
             return (
               <div
-                key={suggestionKey}
+                key={suggestion.id}
                 className={cardClass}
               >
                 <>
-                  <p data-agent={`suggestion-${suggestionKey}`}>
+                  <p data-agent={`suggestion-${suggestion.id}`}>
                     {suggestion.importance && (
                       <span
                         className="tag suggestion-importance"
