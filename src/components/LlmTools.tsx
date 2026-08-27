@@ -86,6 +86,15 @@ function toSuggestionArray(raw: unknown): EvaluatorSuggestion[] {
   return []
 }
 
+// Convert a thrown error (e.g. the ApiError thrown by apiFetch on non-2xx) into
+// readable text so it can be surfaced in the warnings modal instead of silently
+// choking the "Act on suggestion" handler.
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (typeof err === "string") return err
+  return String(err)
+}
+
 const actionColor: Record<string, string> = {
   "Create": SemanticColor.SUCCESS,
   "Revise": SemanticColor.SUCCESS,
@@ -364,19 +373,25 @@ export function LlmTools({
               type: r.type,
             }))
 
-            const res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                concepts,
-                revisions,
-                relations,
-                user: actorForApi,
-              }),
-            })
+            let res: Response
+            try {
+              res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  concepts,
+                  revisions,
+                  relations,
+                  user: actorForApi,
+                }),
+              })
 
-            if (!res.ok) {
-              collectWarning("Failed to create from suggestion", payload)
+              if (!res.ok) {
+                collectWarning(`Failed to create from suggestion (HTTP ${res.status})`, payload)
+                return
+              }
+            } catch (err) {
+              collectWarning(`Failed to create from suggestion: ${describeError(err)}`, payload)
               return
             }
 
@@ -407,18 +422,24 @@ export function LlmTools({
           onSetLoadingMessage("Revising from suggestion...")
 
           try {
-            const res = await apiFetch(`${API}/workflow/submit-change`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                conceptId: concept.id,
-                markdown: payload.markdown,
-                user: actorForApi,
-              }),
-            })
+            let res: Response
+            try {
+              res = await apiFetch(`${API}/workflow/submit-change`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  conceptId: concept.id,
+                  markdown: payload.markdown,
+                  user: actorForApi,
+                }),
+              })
 
-            if (!res.ok) {
-              collectWarning("Failed to revise from suggestion", payload)
+              if (!res.ok) {
+                collectWarning(`Failed to revise from suggestion (HTTP ${res.status})`, payload)
+                return
+              }
+            } catch (err) {
+              collectWarning(`Failed to revise from suggestion: ${describeError(err)}`, payload)
               return
             }
 
@@ -454,24 +475,34 @@ export function LlmTools({
                 collectWarning(`Remove suggestion references unknown concept "${conceptKey}"`, payload)
                 continue
               }
-              const res = await apiFetch(`${API}/concepts/${concept.id}`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-              })
-              if (!res.ok) {
-                collectWarning(`Failed to remove concept "${conceptKey}"`, payload)
+              try {
+                const res = await apiFetch(`${API}/concepts/${concept.id}`, {
+                  method: "DELETE",
+                  headers: { "Content-Type": "application/json" },
+                })
+                if (!res.ok) {
+                  collectWarning(`Failed to remove concept "${conceptKey}" (HTTP ${res.status})`, payload)
+                  return
+                }
+              } catch (err) {
+                collectWarning(`Failed to remove concept "${conceptKey}": ${describeError(err)}`, payload)
                 return
               }
             }
 
             // Delete relations by id
             for (const relationId of relationIds) {
-              const res = await apiFetch(`${API}/relations/${relationId}`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-              })
-              if (!res.ok) {
-                collectWarning(`Failed to remove relation "${relationId}"`, payload)
+              try {
+                const res = await apiFetch(`${API}/relations/${relationId}`, {
+                  method: "DELETE",
+                  headers: { "Content-Type": "application/json" },
+                })
+                if (!res.ok) {
+                  collectWarning(`Failed to remove relation "${relationId}" (HTTP ${res.status})`, payload)
+                  return
+                }
+              } catch (err) {
+                collectWarning(`Failed to remove relation "${relationId}": ${describeError(err)}`, payload)
                 return
               }
             }
