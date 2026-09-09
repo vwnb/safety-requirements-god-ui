@@ -1042,7 +1042,6 @@ export default function GraphView({
             nodeTypes={nodeTypes}
             fitView
             fitViewOptions={fitViewOptions}
-            nodeExtent={[[0, 0], [3000, 3000]]}
             onInit={(instance) => {
               reactFlowInstanceRef.current = instance
             }}
