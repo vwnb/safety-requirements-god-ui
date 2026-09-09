@@ -1,5 +1,6 @@
 import { marked } from "marked"
 import { useMemo } from "react"
+import { brutal } from "../App"
 
 type RelationWithCreatedBy = {
   id: string
@@ -8,6 +9,9 @@ type RelationWithCreatedBy = {
   toId: string
   fromConceptKey?: string
   toConceptKey?: string
+  relatedConceptId?: string
+  latestRevisionId?: string
+  relatedEndpoint?: "from" | "to"
   createdBy?: { name: string }
 }
 
@@ -15,10 +19,12 @@ export function BrutalistMarkdownEditor({
   value,
   onChange,
   relations,
+  onEditRelatedConcept,
 }: {
   value: string
   onChange: (v: string) => void
   relations?: RelationWithCreatedBy[]
+  onEditRelatedConcept?: (conceptId: string, revisionId: string) => void
 }) {
   const html = useMemo(() => marked.parse(value || ""), [value])
 
@@ -77,11 +83,32 @@ export function BrutalistMarkdownEditor({
               return (
                 <div
                   key={rel.id}
-                  className="option2"
-                  style={{ fontSize: 11, padding: "4px 8px", marginBottom: 2, cursor: "default" }}
+                  className="option"
+                  style={{ cursor: "default" }}
                 >
                   <span style={{ fontWeight: "bold" }}>{rel.type}</span>
-                  : {fromLabel} → {toLabel}
+                  : {fromLabel}
+                  {rel.relatedEndpoint === "from" && rel.relatedConceptId && rel.latestRevisionId && onEditRelatedConcept && (
+                    <button
+                      data-agent="btn-edit-related-concept"
+                      type="button"
+                      onClick={() => onEditRelatedConcept(rel.relatedConceptId!, rel.latestRevisionId!)}
+                      style={{ ...brutal.button, marginLeft: 8, padding: "2px 6px", fontSize: 10 }}
+                    >
+                      Edit related concept
+                    </button>
+                  )}
+                  {" → "}{toLabel}
+                  {rel.relatedEndpoint === "to" && rel.relatedConceptId && rel.latestRevisionId && onEditRelatedConcept && (
+                    <button
+                      data-agent="btn-edit-related-concept"
+                      type="button"
+                      onClick={() => onEditRelatedConcept(rel.relatedConceptId!, rel.latestRevisionId!)}
+                      style={{ ...brutal.button, marginLeft: 8, padding: "2px 6px", fontSize: 10 }}
+                    >
+                      Edit related concept
+                    </button>
+                  )}
                   {rel.createdBy?.name && (
                     <span style={{ opacity: 0.6, marginLeft: 8 }}>
                       (by {rel.createdBy.name})

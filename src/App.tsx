@@ -1882,13 +1882,31 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </div>
           )}
           {activeRevisionId && (() => {
-            const allRevisions = Object.values(revisionsByConcept).flat()
+            const allRevisions = [...(graph?.revisions ?? []), ...Object.values(revisionsByConcept).flat()]
+              .filter((revision, index, revisions) => revisions.findIndex((candidate) => candidate.id === revision.id) === index)
             const activeRev = allRevisions.find(r => r.id === activeRevisionId)
             const conceptRevisions = allRevisions.filter(r => r.conceptId === selectedConcept)
             const conceptRevisionIds = new Set(conceptRevisions.map(r => r.id))
             const conceptRelations = (graph?.relations ?? []).filter(
               (rel: any) => conceptRevisionIds.has(rel.fromId) || conceptRevisionIds.has(rel.toId)
-            )
+            ).map((rel: any) => {
+              const relatedRevisionId = conceptRevisionIds.has(rel.fromId) ? rel.toId : rel.fromId
+              const relatedRevision = allRevisions.find((revision) => revision.id === relatedRevisionId)
+              const latestRelatedRevision = relatedRevision
+                ? allRevisions
+                  .filter((revision) => revision.conceptId === relatedRevision.conceptId)
+                  .reduce((latest, current) =>
+                    new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                  )
+                : undefined
+
+              return {
+                ...rel,
+                relatedConceptId: relatedRevision?.conceptId,
+                latestRevisionId: latestRelatedRevision?.id,
+                relatedEndpoint: conceptRevisionIds.has(rel.fromId) ? "to" : "from",
+              }
+            })
 
             return (
               <div data-agent="revise-panel" className="revise-panel">
@@ -1908,6 +1926,30 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   value={editorValue}
                   onChange={setEditorValue}
                   relations={conceptRelations}
+                  onEditRelatedConcept={async (conceptId, revisionId) => {
+                    const action = async () => {
+                      setNodeClickLoading(true)
+                      setSelectedConcept(conceptId)
+                      try {
+                        const revisions = await loadRevisions(conceptId)
+                        const revision = revisions.find((candidate: Revision) => candidate.id === revisionId) ?? revisions[0]
+                        setActiveRevisionId(revision?.id || null)
+                        setEditorValue(revision?.markdown || "")
+                        scrollToEditConcept()
+                      } finally {
+                        setNodeClickLoading(false)
+                      }
+                    }
+
+                    if (activeRevisionId) {
+                      setPendingConfirm({
+                        message: "You have an active revision in progress. Discard it and open this concept?",
+                        onConfirm: action,
+                      })
+                    } else {
+                      await action()
+                    }
+                  }}
                 />
                 <div style={{ display: "inline-flex", gap: 8, width: "fit-content" }}>
                   <button data-agent="btn-save-revision" onClick={() => { revise() }} style={{ ...brutal.button, background: SemanticColor.SUCCESS }}>
