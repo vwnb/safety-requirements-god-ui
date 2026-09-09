@@ -5,6 +5,7 @@ import { parseDiff, Diff, Hunk, type HunkData, type DiffType } from "react-diff-
 import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
 import GraphView from "./components/GraphView"
+import GraphErrorBoundary from "./components/GraphErrorBoundary"
 import { LlmTools } from "./components/LlmTools"
 import NewWorkItemModal from "./components/NewWorkItemModal"
 import NewConceptModal from "./components/NewConceptModal"
@@ -488,6 +489,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const graphRequestRef = useRef(0)
   const selectedWorkItemRef = useRef("")
+  const graphCrashRecoveryWorkItemRef = useRef<string | null>(null)
+  const [graphReloadKey, setGraphReloadKey] = useState(0)
 
   const [baselines, setBaselines] = useState<any[]>()
   const [selectedBaseline, setSelectedBaseline] = useState<any | null>(null)
@@ -629,12 +632,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     if (!selectedWorkItem || !selectedProject) return
 
     selectedWorkItemRef.current = selectedWorkItem
-    // Clear any stale graph from a previously selected work item so we never
-    // render the wrong (or a transiently empty) node set while the new graph
-    // loads. This makes each initial load deterministic: GraphView mounts
-    // ReactFlow once with a complete node set instead of mounting at a
-    // partial/blank state and then remounting via its graph key.
-    setGraph(null)
+    graphCrashRecoveryWorkItemRef.current = null
 
     async function load() {
       await Promise.all([
@@ -994,6 +992,19 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     // Re-fetching the graph should also trigger a completeness refresh
     loadWorkItemCompleteness(workItemId)
   }
+
+  const recoverGraphAfterCrash = useCallback(async (force = false) => {
+    if (!selectedWorkItem) return
+    if (!force && graphCrashRecoveryWorkItemRef.current === selectedWorkItem) return
+
+    graphCrashRecoveryWorkItemRef.current = selectedWorkItem
+    try {
+      await refreshGraph(selectedWorkItem)
+      setGraphReloadKey((key) => key + 1)
+    } catch (error) {
+      console.error("Failed to reload graph after render crash", error)
+    }
+  }, [selectedWorkItem])
 
   async function importConceptsFromTemplate(workItemId: string) {
     return withLoading("Importing concepts from template...", async () => {
@@ -1915,52 +1926,58 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               </div>
             )
           })()}
-          <GraphView
-            loading={!!user && graph === null && !!selectedWorkItem}
-            revisions={user ? (graph?.revisions ?? []).filter((r: Revision) => {
-              const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
-              const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
-                new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-                , revisionsForConcept[0])
+          <GraphErrorBoundary
+            resetKey={`${selectedWorkItem}:${graphReloadKey}`}
+            onCrash={() => recoverGraphAfterCrash()}
+            onRetry={() => recoverGraphAfterCrash(true)}
+          >
+            <GraphView
+              loading={!!user && graph === null && !!selectedWorkItem}
+              revisions={user ? (graph?.revisions ?? []).filter((r: Revision) => {
+                const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
+                const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
+                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                  , revisionsForConcept[0])
 
-              return r.id === latestRevision.id
-            }) : []}
-            concepts={user ? (graph?.concepts ?? []) : []}
-            relations={user ? (graph?.relations ?? []) : []}
-            onRelationCreated={user ? () => { refreshGraph(selectedWorkItem) } : () => { }}
-            onNodeClick={user ? async (conceptId) => {
-              const action = async () => {
-                setNodeClickLoading(true)
-                setSelectedConcept(conceptId)
-                try {
-                  const revisions = await loadRevisions(conceptId)
-                  setActiveRevisionId(revisions?.[0]?.id || null)
-                  setEditorValue(revisions?.[0]?.markdown || "")
-                  scrollToEditConcept()
-                } finally {
-                  setNodeClickLoading(false)
+                return r.id === latestRevision.id
+              }) : []}
+              concepts={user ? (graph?.concepts ?? []) : []}
+              relations={user ? (graph?.relations ?? []) : []}
+              onRelationCreated={user ? () => { refreshGraph(selectedWorkItem) } : () => { }}
+              onNodeClick={user ? async (conceptId) => {
+                const action = async () => {
+                  setNodeClickLoading(true)
+                  setSelectedConcept(conceptId)
+                  try {
+                    const revisions = await loadRevisions(conceptId)
+                    setActiveRevisionId(revisions?.[0]?.id || null)
+                    setEditorValue(revisions?.[0]?.markdown || "")
+                    scrollToEditConcept()
+                  } finally {
+                    setNodeClickLoading(false)
+                  }
                 }
-              }
 
-              if (activeRevisionId) {
-                setPendingConfirm({
-                  message: "You have an active revision in progress. Discard it and open this concept?",
-                  onConfirm: action,
-                })
-              } else {
-                action()
-              }
-            } : undefined}
-            API={API}
-            presences={collab.presences}
-            currentUserId={actorForApi}
-            projectTitle={selectedProject?.key}
-            workItemId={selectedWorkItem}
-            workItemTitle={selectedWorkItemData ? `${selectedWorkItemData.key} - ${selectedWorkItemData.name}` : undefined}
-            onViewportChange={(viewport) => {
-              collab.sendViewportCoordinates({ x: viewport.x, y: viewport.y })
-            }}
-          />
+                if (activeRevisionId) {
+                  setPendingConfirm({
+                    message: "You have an active revision in progress. Discard it and open this concept?",
+                    onConfirm: action,
+                  })
+                } else {
+                  action()
+                }
+              } : undefined}
+              API={API}
+              presences={collab.presences}
+              currentUserId={actorForApi}
+              projectTitle={selectedProject?.key}
+              workItemId={selectedWorkItem}
+              workItemTitle={selectedWorkItemData ? `${selectedWorkItemData.key} - ${selectedWorkItemData.name}` : undefined}
+              onViewportChange={(viewport) => {
+                collab.sendViewportCoordinates({ x: viewport.x, y: viewport.y })
+              }}
+            />
+          </GraphErrorBoundary>
         </main>
       )}
     </>
