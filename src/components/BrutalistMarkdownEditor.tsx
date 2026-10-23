@@ -86,29 +86,29 @@ export function BrutalistMarkdownEditor({
                   className="option"
                   style={{ cursor: "default" }}
                 >
-                  <span style={{ fontWeight: "bold" }}>{rel.type}</span>
-                  : {fromLabel}
-                  {rel.relatedEndpoint === "from" && rel.relatedConceptId && rel.latestRevisionId && onEditRelatedConcept && (
+                  {rel.relatedEndpoint === "from" && rel.relatedConceptId && rel.latestRevisionId && onEditRelatedConcept ? (
                     <button
                       data-agent="btn-edit-related-concept"
                       type="button"
                       onClick={() => onEditRelatedConcept(rel.relatedConceptId!, rel.latestRevisionId!)}
                       style={{ ...brutal.button, marginLeft: 8, padding: "2px 6px", fontSize: 10 }}
                     >
-                      Edit related concept
+                      {fromLabel}
                     </button>
-                  )}
-                  {" → "}{toLabel}
-                  {rel.relatedEndpoint === "to" && rel.relatedConceptId && rel.latestRevisionId && onEditRelatedConcept && (
+                  ) : fromLabel}
+                  {" "}
+                  <span style={{ fontWeight: "bold", fontStyle: "italic" }}>{rel.type}</span>
+                  {" "}
+                  {rel.relatedEndpoint === "to" && rel.relatedConceptId && rel.latestRevisionId && onEditRelatedConcept ? (
                     <button
                       data-agent="btn-edit-related-concept"
                       type="button"
                       onClick={() => onEditRelatedConcept(rel.relatedConceptId!, rel.latestRevisionId!)}
                       style={{ ...brutal.button, marginLeft: 8, padding: "2px 6px", fontSize: 10 }}
                     >
-                      Edit related concept
+                      {toLabel}
                     </button>
-                  )}
+                  ) : toLabel}
                   {rel.createdBy?.name && (
                     <span style={{ opacity: 0.6, marginLeft: 8 }}>
                       (by {rel.createdBy.name})
