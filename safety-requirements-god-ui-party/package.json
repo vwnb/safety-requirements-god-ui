@@ -3,14 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "partykit dev --live",
-    "deploy": "partykit deploy"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "partysocket": "^1.0.2"
+    "partysocket": "^1.0.2",
+    "partyserver": "latest"
   },
   "devDependencies": {
-    "partykit": "^0.0.110",
-    "typescript": "^5.5.4"
+    "wrangler": "latest",
+    "typescript": "^5.5.4",
+    "@cloudflare/workers-types": "latest"
   }
 }

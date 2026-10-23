@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import PartySocket from "partysocket"
 import type { UserPresence, UserStatus, ViewportCoordinates } from "../types/collaboration"
 
-const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST
+const PARTYSERVER_HOST = import.meta.env.VITE_PARTYSERVER_HOST
 
 export type CollaborationState = {
   connected: boolean
@@ -38,7 +38,8 @@ export function useCollaboration() {
       socketRef.current?.close()
 
       const socket = new PartySocket({
-        host: PARTYKIT_HOST,
+        host: PARTYSERVER_HOST,
+        party: "collaboration-server",
         room: roomId,
         query: {
           userId,

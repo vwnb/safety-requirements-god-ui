@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.wrangler.dev/config/v3",
+  "name": "safety-requirements-god-ui-party",
+  "main": "src/server.ts",
+  "compatibility_date": "2026-06-10",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CollaborationServer",
+        "class_name": "CollaborationServer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CollaborationServer"]
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

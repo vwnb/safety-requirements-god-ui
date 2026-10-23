@@ -1,24 +1,23 @@
-import type * as Party from "partykit/server"
+import { routePartykitRequest, Server } from "partyserver"
+import type { Connection, ConnectionContext } from "partyserver"
 import type { UserPresence } from "./types/collaboration"
 
-export default class Server implements Party.Server {
+export class CollaborationServer extends Server {
   presences = new Map<string, UserPresence>()
 
-  constructor(readonly party: Party.Party) {}
-
-  onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
-    const url = new URL(ctx.request.url)
+  onConnect(connection: Connection, context: ConnectionContext) {
+    const url = new URL(context.request.url)
 
     const userId = url.searchParams.get("userId")
     const userName = url.searchParams.get("userName") ?? undefined
     const userEmail = url.searchParams.get("userEmail") ?? undefined
 
     if (!userId) {
-      conn.close(1008, "Missing userId")
+      connection.close(1008, "Missing userId")
       return
     }
 
-    this.presences.set(conn.id, {
+    this.presences.set(connection.id, {
       userId,
       userName,
       userEmail,
@@ -31,14 +30,14 @@ export default class Server implements Party.Server {
     this.broadcastPresence()
   }
 
-  onMessage(message: string, conn: Party.Connection) {
+  onMessage(connection: Connection, message: string) {
     const data = JSON.parse(message)
-    const presence = this.presences.get(conn.id)
+    const presence = this.presences.get(connection.id)
 
     if (!presence) return
 
     if (data.type === "status") {
-      this.presences.set(conn.id, {
+      this.presences.set(connection.id, {
         ...presence,
         status: data.status,
         contextId: data.contextId,
@@ -49,7 +48,7 @@ export default class Server implements Party.Server {
     }
 
     if (data.type === "viewport") {
-      this.presences.set(conn.id, {
+      this.presences.set(connection.id, {
         ...presence,
         viewportX: data.viewportX,
         viewportY: data.viewportY,
@@ -59,7 +58,7 @@ export default class Server implements Party.Server {
     }
 
     if (data.type === "event_ended") {
-      this.presences.set(conn.id, {
+      this.presences.set(connection.id, {
         ...presence,
         status: null,
         contextId: null,
@@ -70,19 +69,28 @@ export default class Server implements Party.Server {
     }
   }
 
-  onClose(conn: Party.Connection) {
-    this.presences.delete(conn.id)
+  onClose(connection: Connection) {
+    this.presences.delete(connection.id)
     this.broadcastPresence()
   }
 
   broadcastPresence() {
     const presences = [...this.presences.values()]
 
-    this.party.broadcast(
+    this.broadcast(
       JSON.stringify({
         type: "presence",
         presences,
       }),
+    )
+  }
+}
+
+export default {
+  async fetch(request: Request, env: Record<string, unknown>): Promise<Response> {
+    return (
+      (await routePartykitRequest(request, env)) ??
+      new Response("Not Found", { status: 404 })
     )
   }
 }
