@@ -17,7 +17,7 @@ const steps: TourStep[] = [
     selector: "graph-view",
     title: "⁉️ Live traceability graph",
     body:
-      "Visualize relationships between hazards, safety goals, requirements, revisions, and evidence. Engineers can downstream on compliance from the early stages of manufacturing.",
+      "Visualize relationships between hazards, safety goals, requirements, revisions, and evidence. Run deterministic queries to find gaps, inconsistencies, and missing evidence in your safety case.",
     placement: "left",
   },
 
@@ -33,15 +33,15 @@ const steps: TourStep[] = [
     selector: "import-concepts-section",
     title: "🤯 Kinda like Lego for safety",
     body:
-      "Building blocks of safe automotives, robotics et cetera.",
+      "Import and reuse concept graph templates that essential certification artifacts are built from. Build your own templates to share with your team and across projects.",
     placement: "bottom",
   },
 
   {
     selector: "llm-suggestions-section",
-    title: "🧯 AI tools backed by full ISO standards",
+    title: "🧯 AI evaluation engine",
     body:
-      "Evaluate work items against ISO standards and iterate on details powerfully.",
+      "LLMs are impressive at evaluating work items against state-of-the-art functional safety practices. Get AI-generated suggestions for missing evidence, inconsistencies, gaps and logical errors in your safety case.",
     placement: "top",
   },
 
