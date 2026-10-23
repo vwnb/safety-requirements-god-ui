@@ -145,13 +145,6 @@ export default function TemplateList({
                         <div className="list-id">{wi.key} - {wi.name}</div>
                         <div className="list-tooltip" style={{ marginTop: 6 }}>{wi.description ?? "No description :("}</div>
                       </div>
-                      {manifest && manifest.tags && manifest.tags.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                          {(manifest.tags ?? []).map((tag) => (
-                            <span key={tag} style={{ ...brutal.tag, backgroundColor: SemanticColor.ARGUMENT }}>{tag}</span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                     {manifest && (
                       <div>
@@ -164,24 +157,22 @@ export default function TemplateList({
                               ))}
                             </div>
                           )}
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                            <strong>Phases:</strong>
-                            {(manifest.phases ?? []).map((phase) => (
-                              <span key={phase} style={{ ...brutal.tag, backgroundColor: SemanticColor.STRUCTURE }}>{phase}</span>
-                            ))}
-                          </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                            <strong>Concepts:</strong>
-                            {(manifest.requiredConcepts ?? []).map((concept) => (
-                              <span key={concept} style={{ ...brutal.tag, backgroundColor: SemanticColor.FUNCTIONAL }}>{concept}</span>
-                            ))}
-                          </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                            <strong>Relations:</strong>
-                            {(manifest.relationPatterns ?? []).map((relation) => (
-                              <span key={relation} style={{ ...brutal.tag, backgroundColor: SemanticColor.PROCESS }}>{relation}</span>
-                            ))}
-                          </div>
+                          {manifest.phases && manifest.phases.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                              <strong>Phases:</strong>
+                              {manifest.phases.map((phase) => (
+                                <span key={phase} style={{ ...brutal.tag, backgroundColor: SemanticColor.STRUCTURE }}>{phase}</span>
+                              ))}
+                            </div>
+                          )}
+                          {manifest && manifest.tags && manifest.tags.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                               <strong>Tags:</strong>
+                              {(manifest.tags ?? []).map((tag) => (
+                                <span key={tag} style={{ ...brutal.tag, backgroundColor: SemanticColor.ARGUMENT }}>{tag}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
