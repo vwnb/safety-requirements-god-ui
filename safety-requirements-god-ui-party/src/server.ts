@@ -37,11 +37,16 @@ export class CollaborationServer extends Server {
     if (!presence) return
 
     if (data.type === "status") {
+      // Clear viewport coordinates when the work item context changes so stale
+      // location data from a previously browsed graph does not leak into the
+      // new context (e.g. when switching between work items).
+      const contextChanged = presence.contextId !== data.contextId
       this.presences.set(connection.id, {
         ...presence,
         status: data.status,
         contextId: data.contextId,
         contextName: data.contextName,
+        ...(contextChanged ? { viewportX: null, viewportY: null } : {}),
       })
 
       this.broadcastPresence()
@@ -63,6 +68,8 @@ export class CollaborationServer extends Server {
         status: null,
         contextId: null,
         contextName: null,
+        viewportX: null,
+        viewportY: null,
       })
 
       this.broadcastPresence()
