@@ -184,6 +184,8 @@ export function LlmTools({
         if (list.length > 0) {
           const sorted = [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           setSelectedReportId(sorted[0].id)
+        } else {
+          setSelectedReportId(null)
         }
       })
       .catch(err => {
