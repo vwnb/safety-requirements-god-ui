@@ -362,17 +362,20 @@ export function LlmTools({
             const revisions = (payload.revisions ?? []).map((r: PayloadRevision) => ({
               conceptKey: r.conceptKey,
               markdown: r.markdown,
-              versionMajor: r.versionMajor,
-              versionMinor: r.versionMinor,
-              versionPatch: r.versionPatch,
+              versionMajor: r.versionMajor ?? 1,
+              versionMinor: r.versionMinor ?? 0,
+              versionPatch: r.versionPatch ?? 0,
             }))
 
             const relations = (payload.relations ?? []).map((r: PayloadRelation) => ({
-              sourceConceptKey: r.fromKey,
-              targetConceptKey: r.toKey,
+              fromConceptKey: r.fromKey,
+              toConceptKey: r.toKey,
               fromKey: r.fromKey,
               toKey: r.toKey,
+              sourceConceptKey: r.fromKey,
+              targetConceptKey: r.toKey,
               type: r.type,
+              rationale: r.rationale,
             }))
 
             let res: Response
