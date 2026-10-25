@@ -19,6 +19,7 @@ import { runOnboardingTour } from "./lib/demoRunner"
 import { SemanticColor } from "./lib/SemanticColor"
 import { InfoButton } from "./components/InfoButton"
 import { LicenseModal } from "./components/LicenseModal"
+import { UserSettingsModal } from "./components/UserSettingsModal"
 import { AdminLicenses } from "./components/AdminLicenses"
 import { CreateProjectModal } from "./components/CreateProjectModal"
 import { EditProjectModal } from "./components/EditProjectModal"
@@ -266,11 +267,13 @@ function Auth0UserBar({
   onActorResolved,
   onOpenLicense,
   onOpenAdminLicenses,
+  onOpenSettings,
 }: {
   isAdmin: boolean
   onActorResolved: (sub: string) => void
   onOpenLicense: () => void
   onOpenAdminLicenses: () => void
+  onOpenSettings: () => void
 }) {
   const { isAuthenticated, user, loginWithRedirect, logout, isLoading } = useAuth0()
 
@@ -303,6 +306,13 @@ function Auth0UserBar({
               style={brutal.button}
             >
               License
+            </button>
+            <button
+              data-agent="btn-settings"
+              onClick={onOpenSettings}
+              style={brutal.button}
+            >
+              Settings
             </button>
             {isAdmin && (
               <button
@@ -471,6 +481,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [showNewConceptModal, setShowNewConceptModal] = useState(false)
   const [showLicenseModal, setShowLicenseModal] = useState(false)
   const [showAdminLicenses, setShowAdminLicenses] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -1252,6 +1263,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         />
       )}
 
+      {showSettingsModal && (
+        <UserSettingsModal
+          apiFetch={apiFetch}
+          onClose={() => setShowSettingsModal(false)}
+        />
+      )}
+
       {showAdminLicenses && (
         <AdminLicenses
           apiFetch={apiFetch}
@@ -1292,6 +1310,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                 onActorResolved={onActorResolved}
                 onOpenLicense={() => setShowLicenseModal(true)}
                 onOpenAdminLicenses={() => setShowAdminLicenses(true)}
+                onOpenSettings={() => setShowSettingsModal(true)}
               />
             </>
           ) : (
