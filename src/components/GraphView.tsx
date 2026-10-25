@@ -24,6 +24,9 @@ type Revision = {
   conceptId: string
   markdown: string
   createdAt: string
+  versionMajor?: number
+  versionMinor?: number
+  versionPatch?: number
 }
 
 type Concept = {
@@ -379,7 +382,12 @@ export default function GraphView({
     const m = new Map<string, Revision>()
     revisions.forEach((r) => {
       const existing = m.get(r.conceptId)
-      if (!existing || new Date(r.createdAt) > new Date(existing.createdAt)) {
+      const compareVersions = (a: Revision, b: Revision) => {
+        if ((a.versionMajor ?? 0) !== (b.versionMajor ?? 0)) return (a.versionMajor ?? 0) - (b.versionMajor ?? 0)
+        if ((a.versionMinor ?? 0) !== (b.versionMinor ?? 0)) return (a.versionMinor ?? 0) - (b.versionMinor ?? 0)
+        return (a.versionPatch ?? 0) - (b.versionPatch ?? 0)
+      }
+      if (!existing || compareVersions(r, existing) > 0) {
         m.set(r.conceptId, r)
       }
     })

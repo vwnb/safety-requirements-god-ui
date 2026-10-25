@@ -124,6 +124,9 @@ type Revision = {
   markdown: string
   createdBy: { name: string }
   createdAt: string
+  versionMajor?: number
+  versionMinor?: number
+  versionPatch?: number
 }
 
 export type WorkItem = {
@@ -1977,8 +1980,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               loading={!!user && graph === null && !!selectedWorkItem}
               revisions={user ? (graph?.revisions ?? []).filter((r: Revision) => {
                 const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
+                const compareVersions = (a: Revision, b: Revision) => {
+                  if ((a.versionMajor ?? 0) !== (b.versionMajor ?? 0)) return (a.versionMajor ?? 0) - (b.versionMajor ?? 0)
+                  if ((a.versionMinor ?? 0) !== (b.versionMinor ?? 0)) return (a.versionMinor ?? 0) - (b.versionMinor ?? 0)
+                  return (a.versionPatch ?? 0) - (b.versionPatch ?? 0)
+                }
                 const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
-                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                  compareVersions(current, latest) > 0 ? current : latest
                   , revisionsForConcept[0])
 
                 return r.id === latestRevision.id
