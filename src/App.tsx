@@ -146,12 +146,38 @@ export type WorkItem = {
   systemBoundary?: string
 }
 
+export interface EntropyResult {
+  workItemId: string
+  /** Shannon entropy of the concept-type distribution, in bits */
+  entropy: number
+  /** Maximum possible entropy = log2(number of distinct concept types) */
+  maxEntropy: number
+  /** Entropy normalised to the 0..1 range */
+  normalizedEntropy: number
+  totalConcepts: number
+  typeCounts: Record<string, number>
+}
+
+export interface BreadthResult {
+  workItemId: string
+  /** Fraction of the work item's concepts that participate in at least one relation */
+  breadthScore: number
+  totalConcepts: number
+  connectedConcepts: number
+  orphanedConcepts: number
+  totalRelations: number
+  distinctRelationTypes: number
+  relationTypeCounts: Record<string, number>
+}
+
 export type WorkItemCompleteness = {
   workItemId: string
   completeness: number
   requirementTestCoverage: { covered: number; total: number }
   systemBehaviorSafetyGoalCoverage: { covered: number; total: number }
   hazardMitigationCoverage: { covered: number; total: number }
+  entropy: EntropyResult
+  breadth: BreadthResult
 }
 
 export const brutal = {
@@ -945,7 +971,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         return
       }
 
-      setWorkItemCompleteness(await res.json())
+      const data = await res.json() as WorkItemCompleteness
+      setWorkItemCompleteness(data)
     } catch {
       setWorkItemCompleteness(null)
     } finally {

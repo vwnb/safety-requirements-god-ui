@@ -85,6 +85,11 @@ export default function WorkItemCard({
     ? Math.round(completeness.completeness > 1 ? completeness.completeness : completeness.completeness * 100)
     : null
 
+  const normalizedEntropy = typeof completeness?.entropy?.normalizedEntropy === "number" ? completeness.entropy.normalizedEntropy : null
+
+  const maxEntropy = typeof completeness?.entropy?.maxEntropy === "number" ? completeness.entropy.maxEntropy : null
+
+  const breadthScore = typeof completeness?.breadth?.breadthScore === "number" ? completeness.breadth.breadthScore : null
   const coverageRows = completeness
     ? [
       {
@@ -124,6 +129,20 @@ export default function WorkItemCard({
         totalLabel: `${completeness.hazardMitigationCoverage.covered}/${completeness.hazardMitigationCoverage.total}`,
         description: "This metric counts how many hazard-related concepts in the work item have mitigation evidence linked to them. Mitigation evidence concepts include: functional safety requirement, technical safety requirement, hardware requirement, software requirement, hardware safety requirement, software safety requirement, test case, test result, verification report, validation report, and proof test.",
         barColor: SemanticColor.RISK,
+      },
+      {
+        label: "Entropy",
+        percent: normalizedEntropy !== null ? Math.round((normalizedEntropy * 100)) : 0,
+        totalLabel: normalizedEntropy !== null ? `${(normalizedEntropy * 100).toFixed(1)}% of ${maxEntropy?.toFixed(0) ?? "?"} max` : null,
+        description: "Shannon entropy of the concept-type distribution, in bits. Measures the randomness/concept diversity.",
+        barColor: SemanticColor.METRIC,
+      },
+      {
+        label: "Breadth",
+        percent: breadthScore !== null ? Math.round((breadthScore * 100)) : 0,
+        totalLabel: breadthScore !== null ? `${(breadthScore * 100).toFixed(1)}% connected` : null,
+        description: "Fraction of the work item's concepts that participate in at least one relation. Measures concept connectivity.",
+        barColor: SemanticColor.METRIC,
       },
     ]
     : []
@@ -231,6 +250,8 @@ export default function WorkItemCard({
             )}
           </p>
 
+          <hr />
+
           {completeness && (
             <>
               <div className="completeness-meter" style={{ marginTop: 10 }}>
@@ -254,21 +275,22 @@ export default function WorkItemCard({
                   </div>
                 ))}
               </div>
-              <div style={{ paddingTop: "1em", paddingBottom: "1em" }}>
-                <button
-                  data-agent="btn-export-hf-dataset"
-                  className="btn"
-                  onClick={() => {
-                    setHfRepoId("")
-                    setHfRepoIdModalOpen(true)
-                  }}
-                  disabled={hfExporting}
-                >
-                  Export work item to Hugging Face Dataset
-                </button>
-              </div>
+              <hr />
             </>
           )}
+          <div style={{ paddingTop: "1em", paddingBottom: "1em" }}>
+            <button
+              data-agent="btn-export-hf-dataset"
+              className="btn"
+              onClick={() => {
+                setHfRepoId("")
+                setHfRepoIdModalOpen(true)
+              }}
+              disabled={hfExporting}
+            >
+              Export work item to Hugging Face Dataset
+            </button>
+          </div>
         </article>
       ) : (
         <>

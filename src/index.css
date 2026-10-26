@@ -61,6 +61,10 @@ hr {
   width: calc(100% - 40px);
 }
 
+.card hr {
+  margin: 1em 0;
+}
+
 main {
   grid-area: main;
   padding: 20px;
@@ -1186,20 +1190,23 @@ section,
   box-sizing: border-box;
 }
 
-/* Offline banner */
-.offline-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 10000;
-  background: #FF5A00;
-  color: white;
-  font-family: monospace;
-  padding: 1em;
-  text-align: center;
-  border-top: 2px solid black;
-  font-weight: bold;
+/* Metric styles for entropy and breadth */
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted-color);
+}
+
+.metric-percentage {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted-color);
+}
+
+.metric-detail {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted-color);
 }
 
 /* Modal */
