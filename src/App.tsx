@@ -509,18 +509,28 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [baselines, setBaselines] = useState<any[]>()
   const [selectedBaseline, setSelectedBaseline] = useState<any | null>(null)
   const [loadingCount, setLoadingCount] = useState(0)
+  const loadingCountRef = useRef(0)
   const loading = loadingCount > 0
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
+  const [loadingFunFact, setLoadingFunFact] = useState("")
 
   const pushLoading = (message?: string) => {
-    setLoadingCount((c) => c + 1)
+    setLoadingCount((c) => {
+      const next = c + 1
+      loadingCountRef.current = next
+      return next
+    })
     if (message) setLoadingMessage(message)
   }
 
   const popLoading = () => {
     setLoadingCount((c) => {
       const next = Math.max(0, c - 1)
-      if (next === 0) setLoadingMessage("")
+      loadingCountRef.current = next
+      if (next === 0) {
+        setLoadingMessage("")
+        setLoadingFunFact("")
+      }
       return next
     })
   }
@@ -1285,6 +1295,11 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             }}
           >
             {loadingMessage}
+            {loadingFunFact && (
+              <p style={{ margin: "10px 0 0", fontSize: 13, fontStyle: "italic", opacity: 0.75 }}>
+                {loadingFunFact}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -1911,6 +1926,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onSetPendingConfirm={setPendingConfirm}
                       onSetLoading={handleSetLoading}
                       onSetLoadingMessage={setLoadingMessage}
+                      onSetLoadingFunFact={(fact) => {
+                        if (loadingCountRef.current > 0) setLoadingFunFact(fact)
+                      }}
                     />
                   </>
                 )}
