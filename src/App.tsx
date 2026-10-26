@@ -160,13 +160,35 @@ export interface EntropyResult {
 
 export interface BreadthResult {
   workItemId: string
-  /** Fraction of the work item's concepts that participate in at least one relation */
+  /** Scientific breadth score normalized to 0-1 range (1 = maximum breadth) */
   breadthScore: number
+  /** Total number of concepts in the work item graph */
   totalConcepts: number
+  /** Number of concepts that participate in at least one relation */
   connectedConcepts: number
+  /** Number of orphaned concepts (no relations) */
   orphanedConcepts: number
+  /** Total number of relations in the graph */
   totalRelations: number
+  /** Number of distinct relation types used */
   distinctRelationTypes: number
+  /** Shannon entropy of relation type distribution (bits) */
+  relationEntropy: number
+  /** Relation entropy normalized to 0-1 range */
+  normalizedEntropy: number
+  /** Average shortest path length across reachable concept pairs */
+  averagePathLength: number
+  /** Maximum shortest path length (graph diameter) */
+  diameter: number
+  /** Average clustering coefficient (how neighbors of a concept connect to each other) */
+  averageClustering: number
+  /** Reachability: percentage of concepts reachable within 1 hop */
+  reachability1Hop: number
+  /** Reachability: percentage of concepts reachable within 2 hops */
+  reachability2Hop: number
+  /** Reachability: percentage of concepts reachable within 3 hops */
+  reachability3Hop: number
+  /** Relation type counts */
   relationTypeCounts: Record<string, number>
 }
 

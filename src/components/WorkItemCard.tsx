@@ -90,6 +90,18 @@ export default function WorkItemCard({
   const maxEntropy = typeof completeness?.entropy?.maxEntropy === "number" ? completeness.entropy.maxEntropy : null
 
   const breadthScore = typeof completeness?.breadth?.breadthScore === "number" ? completeness.breadth.breadthScore : null
+  const totalConcepts = typeof completeness?.breadth?.totalConcepts === "number" ? completeness.breadth.totalConcepts : null
+  const connectedConcepts = typeof completeness?.breadth?.connectedConcepts === "number" ? completeness.breadth.connectedConcepts : null
+  const orphanedConcepts = typeof completeness?.breadth?.orphanedConcepts === "number" ? completeness.breadth.orphanedConcepts : null
+  const totalRelations = typeof completeness?.breadth?.totalRelations === "number" ? completeness.breadth.totalRelations : null
+  const distinctRelationTypes = typeof completeness?.breadth?.distinctRelationTypes === "number" ? completeness.breadth.distinctRelationTypes : null
+  const relationEntropy = typeof completeness?.breadth?.relationEntropy === "number" ? completeness.breadth.relationEntropy : null
+  const averagePathLength = typeof completeness?.breadth?.averagePathLength === "number" ? completeness.breadth.averagePathLength : null
+  const diameter = typeof completeness?.breadth?.diameter === "number" ? completeness.breadth.diameter : null
+  const averageClustering = typeof completeness?.breadth?.averageClustering === "number" ? completeness.breadth.averageClustering : null
+  const reachability1Hop = typeof completeness?.breadth?.reachability1Hop === "number" ? completeness.breadth.reachability1Hop : null
+  const reachability2Hop = typeof completeness?.breadth?.reachability2Hop === "number" ? completeness.breadth.reachability2Hop : null
+  const reachability3Hop = typeof completeness?.breadth?.reachability3Hop === "number" ? completeness.breadth.reachability3Hop : null
   const coverageRows = completeness
     ? [
       {
@@ -142,6 +154,20 @@ export default function WorkItemCard({
         percent: breadthScore !== null ? Math.round((breadthScore * 100)) : 0,
         totalLabel: breadthScore !== null ? `${(breadthScore * 100).toFixed(1)}% connected` : null,
         description: "Fraction of the work item's concepts that participate in at least one relation. Measures concept connectivity.",
+        barColor: SemanticColor.METRIC,
+      },
+      {
+        label: "Reachability",
+        percent: reachability1Hop !== null ? Math.round(reachability1Hop * 100) : 0,
+        totalLabel: reachability1Hop !== null ? `${(reachability1Hop * 100).toFixed(0)}% / ${(reachability2Hop ?? 0 * 100).toFixed(0)}% / ${(reachability3Hop ?? 0 * 100).toFixed(0)}%` : null,
+        description: "Reachability: 1-hop, 2-hop, 3-hop percentages",
+        barColor: SemanticColor.METRIC,
+      },
+      {
+        label: "Average path length",
+        percent: averagePathLength !== null ? Math.round((1 / Math.max(averagePathLength, 1)) * 100) : 0,
+        totalLabel: averagePathLength !== null ? `${averagePathLength.toFixed(2)} avg path` : null,
+        description: "Average path length between connected concepts in the work item.",
         barColor: SemanticColor.METRIC,
       },
     ]
