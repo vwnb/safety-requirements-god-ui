@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type WorkItem, type WorkItemCompleteness } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 import { InfoButton } from "./InfoButton"
+import Modal from "./Modal"
 
 const PHASES = [
   "ITEM_DEFINITION", "HARA", "FUNCTIONAL_SAFETY", "TECHNICAL_SAFETY",
@@ -67,6 +68,12 @@ export default function WorkItemCard({
   apiFetch: (url: string, options?: RequestInit) => Promise<Response>
 }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [hfRepoIdModalOpen, setHfRepoIdModalOpen] = useState(false)
+  const [hfRepoId, setHfRepoId] = useState("")
+  const [hfExporting, setHfExporting] = useState(false)
+  const [hfPreviewData, setHfPreviewData] = useState<any>(null)
+  const [hfSuccessUrl, setHfSuccessUrl] = useState<string | null>(null)
+  const [hfError, setHfError] = useState<string | null>(null)
 
   useEffect(() => {
     onEditingChange?.(isEditing)
@@ -137,13 +144,13 @@ export default function WorkItemCard({
     })
   }
 
-  const handleExportHfDataset = async () => {
+  const runHfExport = async (repoId: string) => {
     if (!workItem) return
-    const repoId = window.prompt(
-      "Enter Hugging Face repo ID (e.g. your-username/work-item-name):",
-      ""
-    )
-    if (!repoId) return
+    const trimmed = repoId.trim()
+    if (!trimmed) return
+
+    setHfExporting(true)
+    setHfRepoIdModalOpen(false)
 
     try {
       const res = await apiFetch(`${import.meta.env.VITE_API_URL}/work-items/${workItem.id}/huggingface-dataset`, {
@@ -151,7 +158,7 @@ export default function WorkItemCard({
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ repoId, private: true })
+        body: JSON.stringify({ repoId: trimmed, private: true })
       })
 
       if (!res.ok) {
@@ -163,28 +170,16 @@ export default function WorkItemCard({
 
       if (data.push === false || !data.success) {
         // Push not possible (no token), show preview
-        const previewWindow = window.open(
-          "",
-          "Hugging Face Dataset Preview",
-          "width=800,height=600"
-        )
-        if (previewWindow) {
-          previewWindow.document.write(`<h3>Hugging Face Dataset export preview</h3>`)
-          previewWindow.document.write(
-            `<pre style="margin: 0; font-size: 12; white-space: pre-wrap;">${JSON.stringify(data, null, 2)}</pre>`
-          )
-        }
+        setHfPreviewData(data)
       } else {
         // Push successful - show the dataset link
-        const datasetUrl = data.url || `https://huggingface.co/datasets/${repoId}`
-        window.alert(
-          `Dataset successfully pushed to Hugging Face Hub!\n\nDataset link: ${datasetUrl}\n\nFiles uploaded: data.json, dataset_info.json, README.md, refinement-report-grid.svg`
-        )
-        // Open the dataset page in a new tab
-        window.open(datasetUrl, "_blank")
+        const datasetUrl = data.url || `https://huggingface.co/datasets/${trimmed}`
+        setHfSuccessUrl(datasetUrl)
       }
     } catch (error: any) {
-      window.alert(`Failed to export dataset: ${error.message}`)
+      setHfError(error?.message || String(error))
+    } finally {
+      setHfExporting(false)
     }
   }
 
@@ -263,7 +258,11 @@ export default function WorkItemCard({
                 <button
                   data-agent="btn-export-hf-dataset"
                   className="btn"
-                  onClick={handleExportHfDataset}
+                  onClick={() => {
+                    setHfRepoId("")
+                    setHfRepoIdModalOpen(true)
+                  }}
+                  disabled={hfExporting}
                 >
                   Export work item to Hugging Face Dataset
                 </button>
@@ -405,6 +404,70 @@ export default function WorkItemCard({
             <button data-agent="btn-cancel-edit-work-item" className="btn btn-danger" onClick={handleCancel}>Cancel</button>
           </div>
         </>
+      )}
+
+      {hfRepoIdModalOpen && (
+        <Modal onClose={() => setHfRepoIdModalOpen(false)} width={480} title="Export to Hugging Face Dataset">
+          <p style={{ margin: "0 0 12px 0" }}>Enter Hugging Face repo ID (e.g. your-username/work-item-name):</p>
+          <input
+            data-agent="input-hf-repo-id"
+            value={hfRepoId}
+            onChange={(e) => setHfRepoId(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                runHfExport(hfRepoId)
+              }
+            }}
+            className="license-value"
+            style={{ opacity: 1, cursor: "text", background: "white", border: "2px solid black", padding: "6px", fontFamily: "monospace", width: "100%" }}
+            autoFocus
+          />
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 12 }}>
+            <button className="btn" onClick={() => setHfRepoIdModalOpen(false)} disabled={hfExporting}>Cancel</button>
+            <button
+              data-agent="btn-confirm-hf-export"
+              className="btn"
+              onClick={() => runHfExport(hfRepoId)}
+              disabled={hfExporting || !hfRepoId.trim()}
+            >
+              {hfExporting ? "Exporting..." : "Export"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {hfPreviewData && (
+        <Modal onClose={() => setHfPreviewData(null)} width={800} title="Hugging Face Dataset export preview">
+          <div style={{ maxHeight: 400, overflow: "auto" }}>
+            <pre style={{ margin: 0, fontSize: 12, whiteSpace: "pre-wrap" }}>{JSON.stringify(hfPreviewData, null, 2)}</pre>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+            <button className="btn" onClick={() => setHfPreviewData(null)}>Close</button>
+          </div>
+        </Modal>
+      )}
+
+      {hfSuccessUrl && (
+        <Modal onClose={() => setHfSuccessUrl(null)} width={480} title="Export successful">
+          <p style={{ margin: "0 0 8px 0" }}>Dataset successfully pushed to Hugging Face Hub!</p>
+          <p style={{ margin: "0 0 8px 0", wordBreak: "break-all" }}>
+            Dataset link: <a href={hfSuccessUrl} target="_blank" rel="noreferrer">{hfSuccessUrl}</a>
+          </p>
+          <p style={{ margin: "0 0 12px 0" }}>Files uploaded: data.json, dataset_info.json, README.md, refinement-report-grid.svg</p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button className="btn" onClick={() => setHfSuccessUrl(null)}>Close</button>
+          </div>
+        </Modal>
+      )}
+
+      {hfError && (
+        <Modal onClose={() => setHfError(null)} width={480} title="Export failed">
+          <p style={{ margin: "0 0 12px 0" }}>{hfError}</p>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button className="btn" onClick={() => setHfError(null)}>Close</button>
+          </div>
+        </Modal>
       )}
     </div>
   )
