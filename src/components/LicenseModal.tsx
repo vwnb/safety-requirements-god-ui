@@ -191,29 +191,12 @@ export function LicenseModal({
             </div>
           )}
 
-          <div className="license-form-row">
-            <div className="license-label">LLM Calls</div>
-            <div className="license-value" style={{ whiteSpace: "normal" }}>
-              <span>{license.llmUsed} / {license.llmLimit} used</span>
-              {remaining && remaining.remaining > 0 && (
-                <span className="license-nowrap-hint" style={{ marginLeft: 8 }}>
-                  ({remaining.remaining} remaining)
-                </span>
-              )}
-              {remaining && remaining.remaining <= 0 && (
-                <span className="license-nowrap-hint" style={{ marginLeft: 8, color: SemanticColor.DANGER }}>
-                  (limit reached)
-                </span>
-              )}
-            </div>
-          </div>
-
           {/* Usage bar */}
           {remaining && (
             <div className="usage-bar-container">
               <div className="usage-bar-header">
-                <span>Usage</span>
-                <span>{usagePercent}%</span>
+                <span>LLM usage</span>
+                <span>{license.llmUsed} / {license.llmLimit} API calls used ({usagePercent}%)</span>
               </div>
               <div className="usage-bar-track">
                 <div
