@@ -1853,6 +1853,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onSetActiveRevisionId={setActiveRevisionId}
                       onSetEditorValue={setEditorValue}
                       actorForApi={actorForApi}
+                      actorName={user?.name || actorForApi}
                       apiFetch={apiFetch}
                       onLoadConcepts={loadConcepts}
                       onRefreshGraph={refreshGraph}

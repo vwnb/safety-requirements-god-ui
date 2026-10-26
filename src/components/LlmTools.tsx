@@ -119,6 +119,7 @@ interface LlmToolsProps {
   onSetActiveRevisionId: (id: string | null) => void
   onSetEditorValue: (value: string) => void
   actorForApi: string
+  actorName?: string
   apiFetch: (url: string, options?: RequestInit) => Promise<Response>
   onLoadConcepts: (workItemId?: string) => Promise<void>
   onRefreshGraph: (workItemId: string) => Promise<void>
@@ -135,6 +136,7 @@ export function LlmTools({
   onSetActiveRevisionId,
   onSetEditorValue,
   actorForApi,
+  actorName,
   apiFetch,
   onLoadConcepts,
   onRefreshGraph,
@@ -143,6 +145,7 @@ export function LlmTools({
   onSetLoadingMessage,
 }: LlmToolsProps) {
   const API = import.meta.env.VITE_API_URL || ""
+  const displayName = actorName || actorForApi
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
@@ -154,6 +157,16 @@ export function LlmTools({
   type CollectedWarning = { message: string; payload?: unknown }
   const warningsRef = useRef<CollectedWarning[]>([])
   const [warningsModal, setWarningsModal] = useState<CollectedWarning[] | null>(null)
+
+  const [runnerActive, setRunnerActive] = useState(false)
+  const [runnerCurrent, setRunnerCurrent] = useState(0)
+  const [runnerTotal, setRunnerTotal] = useState(0)
+  const [runnerResults, setRunnerResults] = useState<{
+    acted: EvaluatorSuggestion[]
+    discarded: EvaluatorSuggestion[]
+    errors: { suggestion: EvaluatorSuggestion; message: string }[]
+  } | null>(null)
+  const [runnerModalOpen, setRunnerModalOpen] = useState(false)
 
   // Collect a console.warn so it can be shown to the user in a modal.
   // The textual message and the JSON payload are stored separately.
@@ -360,7 +373,8 @@ export function LlmTools({
     })
   }, [actOnSuggestionApi])
 
-  const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion) => {
+  const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion, options?: { silent?: boolean }) => {
+    const silent = !!options?.silent
     warningsRef.current = []
 
     try {
@@ -371,9 +385,9 @@ export function LlmTools({
 
       switch (normalizedAction) {
         case 'Create': {
-          if (!selectedWorkItem) return
+          if (!selectedWorkItem) { collectWarning("No work item selected", undefined); return { warnings: [...warningsRef.current] } }
 
-          onSetLoading(true)
+          if (!silent) onSetLoading(true)
           onSetLoadingMessage("Creating from suggestion...")
 
           try {
@@ -386,7 +400,7 @@ export function LlmTools({
               sil: c.sil || undefined,
               pl: c.pl || undefined,
               standards: c.standards || undefined,
-              createdBy: { name: actorForApi },
+              createdBy: { name: displayName },
             }))
 
             const revisions = (payload.revisions ?? []).map((r: PayloadRevision) => ({
@@ -423,37 +437,37 @@ export function LlmTools({
 
               if (!res.ok) {
                 collectWarning(`Failed to create from suggestion (HTTP ${res.status})`, payload)
-                return
+                return { warnings: [...warningsRef.current] }
               }
             } catch (err) {
               collectWarning(`Failed to create from suggestion: ${describeError(err)}`, payload)
-              return
+              return { warnings: [...warningsRef.current] }
             }
 
             await onLoadConcepts(selectedWorkItem)
             await onRefreshGraph(selectedWorkItem)
-            markSuggestion(suggestion.id, "ACTED_ON")
+            if (warningsRef.current.length === 0) markSuggestion(suggestion.id, "ACTED_ON")
           } finally {
-            onSetLoading(false)
+            if (!silent) onSetLoading(false)
           }
-          return
+          return { warnings: [...warningsRef.current] }
         }
 
         case 'Revise': {
-          if (!selectedWorkItem) return
+          if (!selectedWorkItem) { collectWarning("No work item selected", undefined); return { warnings: [...warningsRef.current] } }
 
           if (!payload.conceptKey || !payload.markdown) {
             collectWarning("Revise suggestion is missing conceptKey/markdown", payload)
-            return
+            return { warnings: [...warningsRef.current] }
           }
 
           const concept = (concepts ?? []).find((c) => c.key === payload.conceptKey)
           if (!concept) {
             collectWarning(`Revise suggestion references unknown concept "${payload.conceptKey}"`, payload)
-            return
+            return { warnings: [...warningsRef.current] }
           }
 
-          onSetLoading(true)
+          if (!silent) onSetLoading(true)
           onSetLoadingMessage("Revising from suggestion...")
 
           try {
@@ -471,35 +485,34 @@ export function LlmTools({
 
               if (!res.ok) {
                 collectWarning(`Failed to revise from suggestion (HTTP ${res.status})`, payload)
-                return
+                return { warnings: [...warningsRef.current] }
               }
             } catch (err) {
               collectWarning(`Failed to revise from suggestion: ${describeError(err)}`, payload)
-              return
+              return { warnings: [...warningsRef.current] }
             }
 
             await onLoadConcepts(selectedWorkItem)
             await onRefreshGraph(selectedWorkItem)
-            markSuggestion(suggestion.id, "ACTED_ON")
+            if (warningsRef.current.length === 0) markSuggestion(suggestion.id, "ACTED_ON")
           } finally {
-            onSetLoading(false)
+            if (!silent) onSetLoading(false)
           }
-          return
+          return { warnings: [...warningsRef.current] }
         }
 
       case 'Remove': {
-          if (!selectedWorkItem) return
+          if (!selectedWorkItem) { collectWarning("No work item selected", undefined); return { warnings: [...warningsRef.current] } }
 
           const relationIds = payload.relationIds ?? []
           const conceptKeys = payload.conceptKeys ?? []
 
           if (relationIds.length === 0 && conceptKeys.length === 0) {
             collectWarning("Remove suggestion has no relationIds or conceptKeys; nothing to remove.", payload)
-            markSuggestion(suggestion.id, "ACTED_ON")
-            return
+            return { warnings: [...warningsRef.current] }
           }
 
-          onSetLoading(true)
+          if (!silent) onSetLoading(true)
           onSetLoadingMessage("Removing from suggestion...")
 
           try {
@@ -517,11 +530,11 @@ export function LlmTools({
                 })
                 if (!res.ok) {
                   collectWarning(`Failed to remove concept "${conceptKey}" (HTTP ${res.status})`, payload)
-                  return
+                  return { warnings: [...warningsRef.current] }
                 }
               } catch (err) {
                 collectWarning(`Failed to remove concept "${conceptKey}": ${describeError(err)}`, payload)
-                return
+                return { warnings: [...warningsRef.current] }
               }
             }
 
@@ -534,21 +547,21 @@ export function LlmTools({
                 })
                 if (!res.ok) {
                   collectWarning(`Failed to remove relation "${relationId}" (HTTP ${res.status})`, payload)
-                  return
+                  return { warnings: [...warningsRef.current] }
                 }
               } catch (err) {
                 collectWarning(`Failed to remove relation "${relationId}": ${describeError(err)}`, payload)
-                return
+                return { warnings: [...warningsRef.current] }
               }
             }
 
             await onLoadConcepts(selectedWorkItem)
             await onRefreshGraph(selectedWorkItem)
-            markSuggestion(suggestion.id, "ACTED_ON")
+            if (warningsRef.current.length === 0) markSuggestion(suggestion.id, "ACTED_ON")
           } finally {
-            onSetLoading(false)
+            if (!silent) onSetLoading(false)
           }
-          return
+          return { warnings: [...warningsRef.current] }
         }
 
         case 'Discard':
@@ -563,12 +576,15 @@ export function LlmTools({
         default:
           break
       }
+    } catch (err) {
+      collectWarning("Failed to act on suggestion: " + describeError(err), (suggestion && suggestion.payload) || undefined)
     } finally {
-      if (warningsRef.current.length > 0) {
+      if (!silent && warningsRef.current.length > 0) {
         setWarningsModal([...warningsRef.current])
       }
     }
-  }, [apiFetch, selectedWorkItem, actorForApi, concepts, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion, collectWarning])
+    return { warnings: [...warningsRef.current] }
+  }, [apiFetch, selectedWorkItem, actorForApi, actorName, concepts, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion, collectWarning])
 
   const discardSuggestion = useCallback((suggestionId: string | undefined) => {
     markSuggestion(suggestionId, "DISCARDED")
@@ -734,6 +750,63 @@ export function LlmTools({
             {reportCreatedAt && (
               <div className="report-meta">Created: {new Date(reportCreatedAt).toLocaleString()}</div>
             )}
+            {!!suggestions && (
+              <button
+                data-agent="btn-runner-mode"
+                disabled={runnerActive}
+                onClick={async () => {
+                  if (!suggestions) return
+                  const candidates = suggestions.filter((sug) => !sug.actedOn)
+                  if (candidates.length === 0) {
+                    setRunnerResults({ acted: [], discarded: [], errors: [] })
+                    setRunnerModalOpen(true)
+                    return
+                  }
+                  setRunnerActive(true)
+                  setRunnerCurrent(0)
+                  setRunnerTotal(candidates.length)
+                  const acted: EvaluatorSuggestion[] = []
+                  const discarded: EvaluatorSuggestion[] = []
+                  const errors: { suggestion: EvaluatorSuggestion; message: string }[] = []
+                  for (let i = 0; i < candidates.length; i++) {
+                    const sug = candidates[i]
+                    setRunnerCurrent(i)
+                    const isDiscardAction = ["Discard", "Cancel", "Reject"].includes(sug.action)
+                    try {
+                      const res = await actOnSuggestion(sug, { silent: true })
+                      const warnings = res?.warnings ?? []
+                      if (warnings.length > 0) {
+                        errors.push({ suggestion: sug, message: warnings.map((w) => w.message).join("; ") })
+                      } else if (isDiscardAction) {
+                        discarded.push(sug)
+                      } else {
+                        acted.push(sug)
+                      }
+                    } catch (err) {
+                      errors.push({ suggestion: sug, message: describeError(err) })
+                    }
+                    setRunnerCurrent(i + 1)
+                  }
+                  setRunnerActive(false)
+                  setRunnerResults({ acted, discarded, errors })
+                  setRunnerModalOpen(true)
+                  if (selectedWorkItem) {
+                    try { await onLoadConcepts(selectedWorkItem) } catch {}
+                    try { await onRefreshGraph(selectedWorkItem) } catch {}
+                  }
+                }}
+                className="btn btn-success"
+                style={{ marginTop: 8 }}
+              >
+                Act on all suggestions
+              </button>
+            )}
+            {runnerActive && (
+              <div data-agent="runner-progress" style={{ marginTop: 8 }}>
+                <div>Running suggestions... {runnerCurrent}/{runnerTotal}</div>
+                <progress data-agent="runner-progress-bar" value={runnerCurrent} max={runnerTotal} />
+              </div>
+            )}
           </>
         )}
         {!!suggestions && (
@@ -839,6 +912,50 @@ export function LlmTools({
           })
         )}
       </article>
+
+      {runnerModalOpen && runnerResults && (
+        <Modal
+          title="Runner results"
+          onClose={() => setRunnerModalOpen(false)}
+          width={560}
+        >
+          <article>
+            <p><strong>Acted on {runnerResults.acted.length} suggestions.</strong></p>
+            {runnerResults.acted.length > 0 && (
+              <ul>
+                {runnerResults.acted.map((s) => (
+                  <li key={s.id}>{s.text}</li>
+                ))}
+              </ul>
+            )}
+            {runnerResults.discarded.length > 0 && (
+              <p>Discarded {runnerResults.discarded.length} suggestions.</p>
+            )}
+            {runnerResults.errors.length > 0 && (
+              <div>
+                <p>Errors:</p>
+                <ul>
+                  {runnerResults.errors.map((e, i) => (
+                    <li key={i}>{e.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p>
+              All changes above were signed in your name: {displayName}
+            </p>
+          </article>
+          <div className="mt-16">
+            <button
+              data-agent="btn-close-runner-results"
+              onClick={() => setRunnerModalOpen(false)}
+              className="btn btn-danger"
+            >
+              Close
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {warningsModal && (
         <Modal
