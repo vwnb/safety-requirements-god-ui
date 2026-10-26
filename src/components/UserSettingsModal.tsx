@@ -112,7 +112,7 @@ export function UserSettingsModal({
       const res = await apiFetch(`${API}/user-settings/me`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, model }),
+        body: JSON.stringify({ provider, model: effectiveModel }),
       });
       if (res.ok) {
         onClose();
@@ -129,10 +129,16 @@ export function UserSettingsModal({
     }
   };
 
+  const selectedOption = provider === null
+    ? null
+    : availableOptions.find((o) => o.key === provider) ?? null;
+  const modelIsValid =
+    model !== null && (selectedOption?.modelOptions.includes(model) ?? false);
+  const effectiveModel = modelIsValid ? model : null;
   const currentModel =
     provider === null
       ? null
-      : model ?? availableOptions.find((o) => o.key === provider)?.defaultModel ?? null;
+      : effectiveModel ?? selectedOption?.defaultModel ?? null;
 
   return (
     <Modal title="Settings" onClose={onClose}>
@@ -150,9 +156,11 @@ export function UserSettingsModal({
             <label style={labelStyle}>LLM Provider</label>
             <select
               value={provider ?? ""}
-              onChange={(e) =>
-                setProvider(e.target.value as LLMProviderName || null)
-              }
+              onChange={(e) => {
+                const next = e.target.value as LLMProviderName | "";
+                setProvider(next === "" ? null : next);
+                setModel(null);
+              }}
               style={selectStyle}
             >
               <option value="">System default</option>
@@ -167,7 +175,7 @@ export function UserSettingsModal({
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={labelStyle}>Main Model</label>
             <select
-              value={model ?? ""}
+              value={effectiveModel ?? ""}
               onChange={(e) => setModel(e.target.value || null)}
               disabled={!provider}
               style={selectStyle}
