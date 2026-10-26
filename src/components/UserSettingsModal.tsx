@@ -11,46 +11,6 @@ export interface ProviderOption {
   modelOptions: string[];
 }
 
-/** Provider + model options surfaced to the UI (mirrors the backend's
- * `LLM_PROVIDER_OPTIONS` so the UI contract stays in sync with the API). */
-export const LLM_PROVIDER_OPTIONS: ProviderOption[] = [
-  {
-    key: "google",
-    label: "Google Gemini",
-    defaultModel: "gemini-3.5-flash",
-    modelOptions: ["gemini-3.5-flash"],
-  },
-  {
-    key: "opper",
-    label: "Opper.ai",
-    defaultModel: "openai/gpt-4o-mini",
-    modelOptions: ["openai/gpt-4o-mini"],
-  },
-  {
-    key: "reflection",
-    label: "Reflection / Beam",
-    defaultModel: "Beam-1.0-501B-A23B",
-    modelOptions: ["Beam-1.0-501B-A23B"],
-  },
-  {
-    key: "openapi",
-    label: "OpenAPI",
-    defaultModel: "gpt-4o-mini",
-    modelOptions: ["gpt-4o-mini"],
-  },
-  {
-    key: "openrouter",
-    label: "OpenRouter",
-    defaultModel: "upstage/solar-mini4:free",
-    modelOptions: [
-      "upstage/solar-mini4:free",
-      "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-      "recursive/flint-v1.0:free",
-      "nvidia/nemotron-3-ultra",
-    ],
-  },
-];
-
 type UserSettingResponse = {
   id: string;
   userId: string;
@@ -107,17 +67,29 @@ export function UserSettingsModal({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [availableOptions, setAvailableOptions] = useState<ProviderOption[]>([]);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       setError(null);
       try {
+        const optionsRes = await apiFetch(`${API}/user-settings/available`);
+        if (optionsRes.ok) {
+          const optionsData = await optionsRes.json();
+          setAvailableOptions((optionsData as { providers: ProviderOption[] }).providers ?? []);
+        }
+
         const res = await apiFetch(`${API}/user-settings/me`);
         if (res.ok) {
-          const data = (await res.json()) as UserSettingResponse;
-          setProvider(data.provider ?? null);
-          setModel(data.model ?? null);
+          const data = (await res.json()) as UserSettingResponse | null;
+          if (data) {
+            setProvider(data.provider ?? null);
+            setModel(data.model ?? null);
+          } else {
+            setProvider(null);
+            setModel(null);
+          }
         } else if (res.status === 403) {
           setProvider(null);
           setModel(null);
@@ -160,7 +132,7 @@ export function UserSettingsModal({
   const currentModel =
     provider === null
       ? null
-      : model ?? LLM_PROVIDER_OPTIONS.find((o) => o.key === provider)?.defaultModel ?? null;
+      : model ?? availableOptions.find((o) => o.key === provider)?.defaultModel ?? null;
 
   return (
     <Modal title="Settings" onClose={onClose}>
@@ -172,30 +144,7 @@ export function UserSettingsModal({
         </div>
       )}
 
-      {!loading && !error && provider === null && (
-        <div>
-          <div
-            style={{
-              background: SemanticColor.ARGUMENT,
-              border: "2px solid black",
-              padding: "8px 12px",
-              borderRadius: 4,
-              fontFamily: "monospace",
-              fontSize: 13,
-              color: "#fff",
-              marginBottom: 8,
-            }}
-          >
-            No provider override
-          </div>
-          <p style={{ margin: 0, marginBottom: 8 }}>
-            Your LLM provider and model will use the system default. Use the
-            selectors below to override for your account.
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && provider !== null && (
+      {!loading && !error && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={labelStyle}>LLM Provider</label>
@@ -207,7 +156,7 @@ export function UserSettingsModal({
               style={selectStyle}
             >
               <option value="">System default</option>
-              {LLM_PROVIDER_OPTIONS.map((opt) => (
+              {availableOptions.map((opt) => (
                 <option key={opt.key} value={opt.key}>
                   {opt.label}
                 </option>
@@ -228,7 +177,7 @@ export function UserSettingsModal({
               ) : (
                 <>
                   <option value="">Default ({currentModel})</option>
-                  {LLM_PROVIDER_OPTIONS
+                  {availableOptions
                     .find((o) => o.key === provider)
                     ?.modelOptions.map((m) => (
                       <option key={m} value={m}>
@@ -256,7 +205,7 @@ export function UserSettingsModal({
               onClick={handleSave}
               style={{
                 ...buttonStyle,
-                background: provider !== null ? "rgb(255, 90, 0)" : "rgb(200, 200, 200)",
+                background: provider !== null ? SemanticColor.DANGER : "rgb(200, 200, 200)",
               }}
               disabled={saving || !provider}
             >
