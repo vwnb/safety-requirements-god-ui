@@ -1032,7 +1032,22 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       if (requestId !== graphRequestRef.current) return
       if (selectedWorkItemRef.current !== workItemId) return
 
-      setGraph(data ?? { concepts: [], relations: [], revisions: [] })
+      const normalized = {
+        concepts: Array.isArray(data?.concepts) ? data.concepts : [],
+        relations: Array.isArray(data?.relations) ? data.relations : [],
+        revisions: Array.isArray(data?.revisions) ? data.revisions : [],
+      }
+      // Never clobber an existing non-empty graph with an unexpectedly empty
+      // response (can happen during rapid stress operations).
+      setGraph((prev: any) => {
+        const prevHasNodes = (prev?.revisions?.length ?? 0) > 0
+        const nextHasNodes = normalized.revisions.length > 0
+        if (prevHasNodes && !nextHasNodes) {
+          console.warn("refreshGraph returned empty revisions; keeping previous graph")
+          return prev
+        }
+        return normalized
+      })
       // Re-fetching the graph should also trigger a completeness refresh
       loadWorkItemCompleteness(workItemId)
     } catch (error) {
@@ -2064,11 +2079,12 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   if ((a.versionMinor ?? 0) !== (b.versionMinor ?? 0)) return (a.versionMinor ?? 0) - (b.versionMinor ?? 0)
                   return (a.versionPatch ?? 0) - (b.versionPatch ?? 0)
                 }
+                if (revisionsForConcept.length === 0) return false
                 const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
                   compareVersions(current, latest) > 0 ? current : latest
                   , revisionsForConcept[0])
 
-                return r.id === latestRevision.id
+                return !!latestRevision && r.id === latestRevision.id
               }) : []}
               concepts={user ? (graph?.concepts ?? []) : []}
               relations={user ? (graph?.relations ?? []) : []}

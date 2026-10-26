@@ -110,31 +110,50 @@ function layoutGraph(nodes: Node[], edges: Edge[]) {
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({ rankdir: "LR", nodesep: 120, ranksep: 140 })
 
+  const nodeIds = new Set(nodes.map((n) => n.id))
+
   nodes.forEach((n) => {
     g.setNode(n.id, { width: nodeWidth, height: nodeHeight })
   })
 
-  edges.forEach((e) => {
-    g.setEdge(e.source, e.target)
-  })
+  const validEdges = edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
 
-  dagre.layout(g)
-
-  const layoutedNodes = nodes.map((n) => {
-    const pos = g.node(n.id)
-
-    return {
-      ...n,
-      position: pos
-        ? {
-          x: pos.x - nodeWidth / 2,
-          y: pos.y - nodeHeight / 2,
-        }
-        : n.position,
+  validEdges.forEach((e) => {
+    try {
+      g.setEdge(e.source, e.target)
+    } catch {
+      // ignore duplicate/invalid edges
     }
   })
 
-  return { nodes: layoutedNodes, edges }
+  try {
+    dagre.layout(g)
+  } catch (error) {
+    console.error("dagre layout failed, falling back to grid", error)
+  }
+
+  const layoutedNodes = nodes.map((n, index) => {
+    const pos = g.node(n.id)
+    if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+      return {
+        ...n,
+        position: {
+          x: pos.x - nodeWidth / 2,
+          y: pos.y - nodeHeight / 2,
+        },
+      }
+    }
+    const cols = Math.max(1, Math.ceil(Math.sqrt(nodes.length)))
+    return {
+      ...n,
+      position: {
+        x: (index % cols) * (nodeWidth + 40),
+        y: Math.floor(index / cols) * (nodeHeight + 40),
+      },
+    }
+  })
+
+  return { nodes: layoutedNodes, edges: validEdges }
 }
 
 type GraphNode = {
@@ -165,7 +184,7 @@ type QueryResult = {
 
 function ConceptNode({ data, id }: any) {
   const [showActions, setShowActions] = useState(false)
-  const typeLabel = data.type
+  const typeLabel = (data.type || "Concept")
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (l: any) => l.toUpperCase())
@@ -404,8 +423,8 @@ export default function GraphView({
         id: r.id,
         type: "concept",
         data: {
-          label: concept?.key + " - " + concept?.title,
-          type: concept?.type,
+          label: (concept?.key || "?") + " - " + (concept?.title || "Untitled"),
+          type: concept?.type || "Concept",
           color: typeColor[concept?.type || ""],
           conceptId: r.conceptId,
           excerpt: latestRev?.markdown?.slice(0, 120) + "...",
@@ -560,8 +579,9 @@ export default function GraphView({
         edges: edges.filter((e) => edgeIds.has(e.id)),
       }
     }
-    // Fallback: nothing until API responds
-    return { nodes: [], edges: [] }
+    // Fallback: keep the full graph visible until the query result arrives,
+    // instead of blanking the canvas (which looked like a loading failure).
+    return { nodes, edges }
   }, [activeQuery, activeQuerySourceId, workItemId, nodes, edges, queryResult])
 
   // Fetch query result from backend
