@@ -39,6 +39,7 @@ export default function WorkItemCard({
   onSave,
   onPendingConfirm,
   onEditingChange,
+  apiFetch,
 }: {
   workItem: WorkItem | null
   completeness?: WorkItemCompleteness | null
@@ -63,6 +64,7 @@ export default function WorkItemCard({
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
+  apiFetch: (url: string, options?: RequestInit) => Promise<Response>
 }) {
   const [isEditing, setIsEditing] = useState(false)
 
@@ -135,6 +137,57 @@ export default function WorkItemCard({
     })
   }
 
+  const handleExportHfDataset = async () => {
+    if (!workItem) return
+    const repoId = window.prompt(
+      "Enter Hugging Face repo ID (e.g. your-username/work-item-name):",
+      ""
+    )
+    if (!repoId) return
+
+    try {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/work-items/${workItem.id}/huggingface-dataset`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ repoId, private: true })
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || `HTTP ${res.status}`)
+      }
+
+      const data = await res.json()
+
+      if (data.push === false || !data.success) {
+        // Push not possible (no token), show preview
+        const previewWindow = window.open(
+          "",
+          "Hugging Face Dataset Preview",
+          "width=800,height=600"
+        )
+        if (previewWindow) {
+          previewWindow.document.write(`<h3>Hugging Face Dataset export preview</h3>`)
+          previewWindow.document.write(
+            `<pre style="margin: 0; font-size: 12; white-space: pre-wrap;">${JSON.stringify(data, null, 2)}</pre>`
+          )
+        }
+      } else {
+        // Push successful - show the dataset link
+        const datasetUrl = data.url || `https://huggingface.co/datasets/${repoId}`
+        window.alert(
+          `Dataset successfully pushed to Hugging Face Hub!\n\nDataset link: ${datasetUrl}\n\nFiles uploaded: data.json, dataset_info.json, README.md, refinement-report-grid.svg`
+        )
+        // Open the dataset page in a new tab
+        window.open(datasetUrl, "_blank")
+      }
+    } catch (error: any) {
+      window.alert(`Failed to export dataset: ${error.message}`)
+    }
+  }
+
   return (
     <div data-agent="work-item-card" className="card">
       {!isEditing ? (
@@ -184,27 +237,38 @@ export default function WorkItemCard({
           </p>
 
           {completeness && (
-            <div className="completeness-meter" style={{ marginTop: 10 }}>
-              {coverageRows.map((row) => (
-                <div key={row.label} className="completeness-row">
-                  <div className="completeness-row-header">
-                    <div className="completeness-label-group">
-                      <span className="completeness-label">{row.label}</span>
-                      <InfoButton title={row.label} content={row.description} />
+            <>
+              <div className="completeness-meter" style={{ marginTop: 10 }}>
+                {coverageRows.map((row) => (
+                  <div key={row.label} className="completeness-row">
+                    <div className="completeness-row-header">
+                      <div className="completeness-label-group">
+                        <span className="completeness-label">{row.label}</span>
+                        <InfoButton title={row.label} content={row.description} />
+                      </div>
+                      <span className="completeness-value">
+                        {row.totalLabel ?? `${row.percent}%`}
+                      </span>
                     </div>
-                    <span className="completeness-value">
-                      {row.totalLabel ?? `${row.percent}%`}
-                    </span>
+                    <div className="usage-bar-track completeness-track">
+                      <div
+                        className="usage-bar-fill"
+                        style={{ width: `${Math.max(0, Math.min(100, row.percent))}%`, background: row.barColor }}
+                      />
+                    </div>
                   </div>
-                  <div className="usage-bar-track completeness-track">
-                    <div
-                      className="usage-bar-fill"
-                      style={{ width: `${Math.max(0, Math.min(100, row.percent))}%`, background: row.barColor }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <div style={{ paddingTop: "1em", paddingBottom: "1em" }}>
+                <button
+                  data-agent="btn-export-hf-dataset"
+                  className="btn"
+                  onClick={handleExportHfDataset}
+                >
+                  Export work item to Hugging Face Dataset
+                </button>
+              </div>
+            </>
           )}
         </article>
       ) : (

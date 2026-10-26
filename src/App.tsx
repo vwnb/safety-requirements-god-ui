@@ -1588,6 +1588,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onSave={saveWorkItem}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingWorkItemFields}
+                      apiFetch={apiFetch}
                     />
                   </section>
                 )}
