@@ -209,6 +209,7 @@ export function LlmTools({
 
   const reportHeadingRef = useRef<HTMLHeadingElement>(null)
   const lastScrolledReportIdRef = useRef<string | null>(null)
+  const pendingScrollRef = useRef(false)
 
   // Scroll to the refinement report heading whenever a (new) report finishes
   // loading, so the heading stays in view even when its full-height children
@@ -216,11 +217,13 @@ export function LlmTools({
   useEffect(() => {
     if (!suggestions) return
     if (!selectedReportId) return
+    if (!pendingScrollRef.current) return
     if (lastScrolledReportIdRef.current === selectedReportId) return
     lastScrolledReportIdRef.current = selectedReportId
+    pendingScrollRef.current = false
     const timeoutId = window.setTimeout(() => {
       reportHeadingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 0)
+    }, 100)
     return () => window.clearTimeout(timeoutId)
   }, [suggestions, selectedReportId])
 
@@ -330,6 +333,7 @@ export function LlmTools({
           ? (newReport.id ?? newReport.reportId)
           : null
 
+        pendingScrollRef.current = true
         if (newReportId && list.some(r => r.id === newReportId)) {
           setSelectedReportId(newReportId)
         } else if (list.length > 0) {
