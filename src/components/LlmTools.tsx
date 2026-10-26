@@ -95,41 +95,6 @@ function describeError(err: unknown): string {
   return String(err)
 }
 
-async function fetchFunFact(modelName: string): Promise<string | null> {
-  if (modelName && modelName !== "LLM") {
-    try {
-      const searchRes = await fetch(
-        `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(
-          modelName
-        )}&limit=1&namespace=0&format=json&origin=*`
-      )
-      if (searchRes.ok) {
-        const searchData = await searchRes.json()
-        const title =
-          Array.isArray(searchData) && Array.isArray(searchData[1])
-            ? searchData[1][0]
-            : null
-        if (typeof title === "string" && title.length > 0) {
-          const summaryRes = await fetch(
-            `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
-          )
-          if (summaryRes.ok) {
-            const summary = await summaryRes.json()
-            const extract = typeof summary?.extract === "string" ? summary.extract : null
-            if (extract) {
-              const firstSentence = extract.split(/(?<=[.!?])\s/)[0]
-              return firstSentence || extract
-            }
-          }
-        }
-      }
-    } catch {
-      // fall through to generic fact
-    }
-  }
-  return null
-}
-
 const actionColor: Record<string, string> = {
   "Create": SemanticColor.SUCCESS,
   "Revise": SemanticColor.SUCCESS,
@@ -161,7 +126,6 @@ interface LlmToolsProps {
   onSetPendingConfirm: (confirm: { message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string } | null) => void
   onSetLoading: (loading: boolean) => void
   onSetLoadingMessage: (message: string) => void
-  onSetLoadingFunFact?: (fact: string) => void
 }
 
 export function LlmTools({
@@ -179,10 +143,8 @@ export function LlmTools({
   onSetPendingConfirm,
   onSetLoading,
   onSetLoadingMessage,
-  onSetLoadingFunFact,
 }: LlmToolsProps) {
   const API = import.meta.env.VITE_API_URL || ""
-  const funFactRunRef = useRef(0)
   const displayName = actorName || actorForApi
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
@@ -311,13 +273,6 @@ export function LlmTools({
     }
 
     onSetLoadingMessage(`👺 Generating suggestions with ${modelName}...`)
-
-    onSetLoadingFunFact?.("")
-    const runId = ++funFactRunRef.current
-    fetchFunFact(modelName).then((fact) => {
-      if (funFactRunRef.current !== runId) return
-      if (fact) onSetLoadingFunFact?.(fact)
-    })
 
     try {
       const res = await apiFetch(`${API}/evaluate-work-item/${workItemId}`, {
@@ -841,7 +796,7 @@ export function LlmTools({
                   }
                 }}
                 className="btn btn-success"
-                style={{ marginTop: 8 }}
+                style={{ marginTop: "2em", marginBottom: "1em" }}
               >
                 Act on all suggestions
               </button>

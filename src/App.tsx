@@ -512,7 +512,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const loadingCountRef = useRef(0)
   const loading = loadingCount > 0
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
-  const [loadingFunFact, setLoadingFunFact] = useState("")
 
   const pushLoading = (message?: string) => {
     setLoadingCount((c) => {
@@ -529,7 +528,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       loadingCountRef.current = next
       if (next === 0) {
         setLoadingMessage("")
-        setLoadingFunFact("")
       }
       return next
     })
@@ -1295,11 +1293,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             }}
           >
             {loadingMessage}
-            {loadingFunFact && (
-              <p style={{ margin: "10px 0 0", fontSize: 13, fontStyle: "italic", opacity: 0.75 }}>
-                {loadingFunFact}
-              </p>
-            )}
           </div>
         </div>
       )}
@@ -1926,9 +1919,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onSetPendingConfirm={setPendingConfirm}
                       onSetLoading={handleSetLoading}
                       onSetLoadingMessage={setLoadingMessage}
-                      onSetLoadingFunFact={(fact) => {
-                        if (loadingCountRef.current > 0) setLoadingFunFact(fact)
-                      }}
                     />
                   </>
                 )}
