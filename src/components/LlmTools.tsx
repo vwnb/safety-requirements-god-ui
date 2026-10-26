@@ -207,6 +207,23 @@ export function LlmTools({
     return () => { cancelled = true }
   }, [selectedWorkItem, loadEvaluationResults])
 
+  const reportHeadingRef = useRef<HTMLHeadingElement>(null)
+  const lastScrolledReportIdRef = useRef<string | null>(null)
+
+  // Scroll to the refinement report heading whenever a (new) report finishes
+  // loading, so the heading stays in view even when its full-height children
+  // (the suggestion cards) push the page down.
+  useEffect(() => {
+    if (!suggestions) return
+    if (!selectedReportId) return
+    if (lastScrolledReportIdRef.current === selectedReportId) return
+    lastScrolledReportIdRef.current = selectedReportId
+    const timeoutId = window.setTimeout(() => {
+      reportHeadingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+    return () => window.clearTimeout(timeoutId)
+  }, [suggestions, selectedReportId])
+
   // Fetch selected report by id
   useEffect(() => {
     if (!selectedWorkItem) return
@@ -746,7 +763,7 @@ export function LlmTools({
         )}
         {!!suggestions && selectedWorkItemData && (
           <>
-            <h1>Refinement report: {selectedWorkItemData.name}</h1>
+            <h1 ref={reportHeadingRef} id='refinement-report-heading' data-agent='refinement-report-heading'>Refinement report: {selectedWorkItemData.name}</h1>
             {reportCreatedAt && (
               <div className="report-meta">Created: {new Date(reportCreatedAt).toLocaleString()}</div>
             )}
