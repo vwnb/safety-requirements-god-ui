@@ -649,11 +649,18 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     graphCrashRecoveryWorkItemRef.current = null
 
     async function load() {
-      await Promise.all([
+      const results = await Promise.allSettled([
         loadWorkItemDetails(selectedWorkItem),
         loadConcepts(selectedWorkItem),
-        refreshGraph(selectedWorkItem)
+        refreshGraph(selectedWorkItem),
       ])
+
+      if (results[0].status === "rejected") {
+        console.error("Failed to load work item details", results[0].reason)
+      }
+      if (results[1].status === "rejected") {
+        console.error("Failed to load concepts", results[1].reason)
+      }
 
       setTimeout(() => {
         setLoadingCount(0)
@@ -703,6 +710,9 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         : `${API}/concepts`
 
       const res = await apiFetch(url)
+      if (!res.ok) {
+        throw new Error(`Failed to load concepts: ${res.status} ${res.statusText}`)
+      }
       const data = await res.json()
 
       setConcepts(data)
@@ -902,6 +912,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       `${API}/work-items/${workItemId}`
     )
 
+    if (!res.ok) {
+      throw new Error(`Failed to load work item details: ${res.status} ${res.statusText}`)
+    }
+
     const data = await res.json()
 
     setSelectedWorkItemData(data)
@@ -993,18 +1007,33 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   async function refreshGraph(workItemId: string) {
     const requestId = ++graphRequestRef.current
-    const data = await apiFetch(`${API}/graph/${workItemId}`).then((r) => r.json())
 
-    // Stale-response guard: only the most recent request for the currently
-    // selected work item may update the graph. Otherwise an out-of-order or
-    // leftover response from a previous load could overwrite the graph with
-    // empty/wrong data and make the nodes vanish on initial load.
-    if (requestId !== graphRequestRef.current) return
-    if (selectedWorkItemRef.current !== workItemId) return
+    try {
+      const res = await apiFetch(`${API}/graph/${workItemId}`)
 
-    setGraph(data)
-    // Re-fetching the graph should also trigger a completeness refresh
-    loadWorkItemCompleteness(workItemId)
+      if (!res.ok) {
+        throw new Error(`Failed to refresh graph: ${res.status} ${res.statusText}`)
+      }
+
+      const data = await res.json()
+
+      // Stale-response guard: only the most recent request for the currently
+      // selected work item may update the graph. Otherwise an out-of-order or
+      // leftover response from a previous load could overwrite the graph with
+      // empty/wrong data and make the nodes vanish on initial load.
+      if (requestId !== graphRequestRef.current) return
+      if (selectedWorkItemRef.current !== workItemId) return
+
+      setGraph(data ?? { concepts: [], relations: [], revisions: [] })
+      // Re-fetching the graph should also trigger a completeness refresh
+      loadWorkItemCompleteness(workItemId)
+    } catch (error) {
+      if (requestId === graphRequestRef.current && selectedWorkItemRef.current === workItemId) {
+        console.error("Failed to refresh graph", error)
+        setGraph((prev: any) => prev ?? { concepts: [], relations: [], revisions: [] })
+      }
+      throw error
+    }
   }
 
   const recoverGraphAfterCrash = useCallback(async (force = false) => {
@@ -1025,13 +1054,35 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       const res = await apiFetch(`${API}/graph/${workItemId}`)
       const { concepts: importedConcepts, relations: importedRelations, revisions: importedRevisions } = await res.json()
 
+      const conceptKeyById = new Map((importedConcepts ?? []).map((c: any) => [c.id, c.key]))
+
       await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          concepts: importedConcepts,
-          relations: importedRelations,
-          revisions: importedRevisions,
+          concepts: (importedConcepts ?? []).map((c: any) => ({
+            key: c.key,
+            type: c.type,
+            title: c.title || "",
+            phase: c.phase || undefined,
+            asil: c.asil || undefined,
+            sil: c.sil || undefined,
+            pl: c.pl || undefined,
+            standards: c.standards || undefined,
+          })),
+          relations: (importedRelations ?? []).map((r: any) => ({
+            fromKey: r.fromConceptKey ?? r.fromKey,
+            toKey: r.toConceptKey ?? r.toKey,
+            type: r.type,
+            rationale: r.rationale,
+          })),
+          revisions: (importedRevisions ?? []).map((r: any) => ({
+            conceptKey: r.conceptKey ?? conceptKeyById.get(r.conceptId) ?? r.conceptId,
+            markdown: r.markdown,
+            versionMajor: r.versionMajor ?? 1,
+            versionMinor: r.versionMinor ?? 0,
+            versionPatch: r.versionPatch ?? 0,
+          })),
           user: actorForApi
         }),
       })
