@@ -145,7 +145,7 @@ export default function WorkItemCard({
         label: "Breadth",
         percent: breadthScore !== null ? Math.round((breadthScore * 100)) : 0,
         totalLabel: breadthScore !== null ? `${(breadthScore * 100).toFixed(1)}% connected` : null,
-        description: "Weighted combination: 25% relation typeentropy, 40% average reachability, 35% inverse diameter (smaller diameter = more breadth, normalized)",
+        description: "Weighted combination: 25% relation type entropy, 40% average reachability, 35% inverse diameter. Measures the diversity of relations and how well concepts are connected in the work item.",
         barColor: SemanticColor.METRIC,
       },
       {
