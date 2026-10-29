@@ -152,9 +152,10 @@ export function LlmTools({
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
-  const [evaluationResults, setEvaluationResults] = useState<Array<{ id: string; createdAt: string }>>([])
+  const [evaluationResults, setEvaluationResults] = useState<Array<{ id: string; createdAt: string; userPrompt?: string }>>([])
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
   const [reportCreatedAt, setReportCreatedAt] = useState<string | null>(null)
+  const [reportUserPrompt, setReportUserPrompt] = useState<string | null>(null)
 
   // Warnings collected while acting on a suggestion are surfaced in a modal.
   type CollectedWarning = { message: string; payload?: unknown }
@@ -251,6 +252,7 @@ export function LlmTools({
           }
           if (data.createdAt) {
             setReportCreatedAt(data.createdAt)
+            setReportUserPrompt(data.userPrompt ?? (data as { report?: { userPrompt?: string } }).report?.userPrompt ?? null)
           }
           setLatestReportNotFound(false)
         }
@@ -317,7 +319,7 @@ export function LlmTools({
           : suggestionsData
       )
       setSuggestions(newSuggestions)
-      
+
       const createdAt = (suggestionsData && typeof suggestionsData === "object"
         ? suggestionsData.createdAt ?? suggestionsData.report?.createdAt
         : undefined
@@ -526,7 +528,7 @@ export function LlmTools({
           return { warnings: [...warningsRef.current] }
         }
 
-      case 'Remove': {
+        case 'Remove': {
           if (!selectedWorkItem) { collectWarning("No work item selected", undefined); return { warnings: [...warningsRef.current] } }
 
           const relationIds = payload.relationIds ?? []
@@ -712,7 +714,7 @@ export function LlmTools({
 
   return (
     <section data-agent="llm-suggestions-section">
-      <div className="title llm-tools-header">
+      <div className="llm-tools-header title">
         Modify work item with LLM
         <InfoButton
           title="Modify work item with LLM"
@@ -742,26 +744,6 @@ export function LlmTools({
             Generate new refinement report
           </button>
         </div>
-        {selectedWorkItem && (
-          <div className="report-archive">
-            <label htmlFor="report-select">Select report: </label>
-            <select
-              id="report-select"
-              value={selectedReportId ?? ""}
-              onChange={e => {
-                const val = e.target.value
-                setSelectedReportId(val ? val : null)
-              }}
-            >
-              <option value="">-- Select report --</option>
-              {evaluationResults.map(r => (
-                <option key={r.id} value={r.id}>
-                  {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       <article>
@@ -774,7 +756,10 @@ export function LlmTools({
           <>
             <h1 ref={reportHeadingRef} id='refinement-report-heading' data-agent='refinement-report-heading'>Refinement report: {selectedWorkItemData.name}</h1>
             {reportCreatedAt && (
-              <div className="report-meta">Created: {new Date(reportCreatedAt).toLocaleString()}</div>
+              <div className="report-meta">
+                Created: {new Date(reportCreatedAt).toLocaleString()}{' '}
+                {reportUserPrompt ? <span>· {reportUserPrompt}</span> : null}
+              </div>
             )}
             {!!suggestions && (
               <button
@@ -817,8 +802,8 @@ export function LlmTools({
                   setRunnerResults({ acted, discarded, errors })
                   setRunnerModalOpen(true)
                   if (selectedWorkItem) {
-                    try { await onLoadConcepts(selectedWorkItem) } catch {}
-                    try { await onRefreshGraph(selectedWorkItem) } catch {}
+                    try { await onLoadConcepts(selectedWorkItem) } catch { }
+                    try { await onRefreshGraph(selectedWorkItem) } catch { }
                   }
                 }}
                 className="btn btn-success"
@@ -842,102 +827,123 @@ export function LlmTools({
               return (order[b.importance ?? "Low"] ?? 0) - (order[a.importance ?? "Low"] ?? 0);
             })
             .map((suggestion, index) => {
-            const { actionLabel, graphDescription, hasPayloadData } = actionLabelForAction(suggestion.action, suggestion.payload)
-            const suggestionStatus = suggestion.actedOn
+              const { actionLabel, graphDescription, hasPayloadData } = actionLabelForAction(suggestion.action, suggestion.payload)
+              const suggestionStatus = suggestion.actedOn
 
-            const cardClass = suggestionStatus ? "card suggestion-card suggestion-card-processed" : "card suggestion-card"
+              const cardClass = suggestionStatus ? "card suggestion-card suggestion-card-processed" : "card suggestion-card"
 
-            return (
-              <div
-                key={suggestion.id}
-                className={cardClass}
-              >
-                <>
-                  <p data-agent={`suggestion-${suggestion.id}`}>
-                    {suggestion.importance && (
+              return (
+                <div
+                  key={suggestion.id}
+                  className={cardClass}
+                >
+                  <>
+                    <p data-agent={`suggestion-${suggestion.id}`}>
+                      {suggestion.importance && (
+                        <span
+                          className="tag suggestion-importance"
+                          style={{ background: importanceColor[suggestion.importance] || "#999" }}
+                        >
+                          {suggestion.importance}
+                        </span>
+                      )}
+                      {suggestion.text}
+                    </p>
+
+                    <div className="suggestion-meta">
                       <span
-                        className="tag suggestion-importance"
-                        style={{ background: importanceColor[suggestion.importance] || "#999" }}
+                        className="tag"
+                        style={{ background: actionColor[actionLabel] || "#999" }}
                       >
-                        {suggestion.importance}
+                        {actionLabel}
                       </span>
+                      <span
+                        className={hasPayloadData ? "suggestion-graph-description" : "suggestion-graph-description-empty"}
+                      >
+                        {graphDescription}
+                      </span>
+                    </div>
+
+                    {suggestion.reason && (
+                      <p>Reason: {suggestion.reason}</p>
                     )}
-                    {suggestion.text}
-                  </p>
+                  </>
+                  <hr className="suggestion-divider" />
+                  {!suggestionStatus && (
+                    <div className="suggestion-actions">
+                      <button
+                        data-agent={`btn-act-on-suggestion-${index}`}
+                        onClick={() => {
+                          const { confirmMessage, confirmLabel } = buildConfirmMessage(suggestion)
 
-                  <div className="suggestion-meta">
-                    <span
-                      className="tag"
-                      style={{ background: actionColor[actionLabel] || "#999" }}
-                    >
-                      {actionLabel}
-                    </span>
-                    <span
-                      className={hasPayloadData ? "suggestion-graph-description" : "suggestion-graph-description-empty"}
-                    >
-                      {graphDescription}
-                    </span>
-                  </div>
-
-                  {suggestion.reason && (
-                    <p>Reason: {suggestion.reason}</p>
+                          if (activeRevisionId) {
+                            onSetPendingConfirm({
+                              message: `You have an active revision in progress. ${confirmMessage}`,
+                              onConfirm: () => actOnSuggestion(suggestion),
+                              confirmLabel,
+                              cancelLabel: "Cancel",
+                            })
+                          } else {
+                            onSetPendingConfirm({
+                              message: confirmMessage,
+                              onConfirm: () => actOnSuggestion(suggestion),
+                              confirmLabel,
+                              cancelLabel: "Cancel",
+                            })
+                          }
+                        }}
+                        className="btn btn-success"
+                      >
+                        Act on
+                      </button>
+                      <button
+                        data-agent={`btn-discard-suggestion-${index}`}
+                        onClick={() => discardSuggestion(suggestion.id)}
+                        className="btn btn-danger"
+                      >
+                        Discard
+                      </button>
+                    </div>
                   )}
-                </>
-                <hr className="suggestion-divider" />
-                {!suggestionStatus && (
-                  <div className="suggestion-actions">
-                    <button
-                      data-agent={`btn-act-on-suggestion-${index}`}
-                      onClick={() => {
-                        const { confirmMessage, confirmLabel } = buildConfirmMessage(suggestion)
-
-                        if (activeRevisionId) {
-                          onSetPendingConfirm({
-                            message: `You have an active revision in progress. ${confirmMessage}`,
-                            onConfirm: () => actOnSuggestion(suggestion),
-                            confirmLabel,
-                            cancelLabel: "Cancel",
-                          })
-                        } else {
-                          onSetPendingConfirm({
-                            message: confirmMessage,
-                            onConfirm: () => actOnSuggestion(suggestion),
-                            confirmLabel,
-                            cancelLabel: "Cancel",
-                          })
-                        }
-                      }}
-                      className="btn btn-success"
+                  {suggestionStatus && (
+                    <span
+                      className="tag suggestion-status"
+                      style={{ background: suggestionStatus === "ACTED_ON" ? SemanticColor.SUCCESS : SemanticColor.DANGER }}
                     >
-                      Act on
-                    </button>
-                    <button
-                      data-agent={`btn-discard-suggestion-${index}`}
-                      onClick={() => discardSuggestion(suggestion.id)}
-                      className="btn btn-danger"
-                    >
-                      Discard
-                    </button>
-                  </div>
-                )}
-                {suggestionStatus && (
-                  <span
-                    className="tag suggestion-status"
-                    style={{ background: suggestionStatus === "ACTED_ON" ? SemanticColor.SUCCESS : SemanticColor.DANGER }}
-                  >
-                    {suggestionStatus === "ACTED_ON" ? "Acted on" : "Discarded"}
-                    {suggestion.actedOnBy?.name && (
-                      <span className="suggestion-status-name">
-                        by {suggestion.actedOnBy.name}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </div>
-            )
-          })
+                      {suggestionStatus === "ACTED_ON" ? "Acted on" : "Discarded"}
+                      {suggestion.actedOnBy?.name && (
+                        <span className="suggestion-status-name">
+                          by {suggestion.actedOnBy.name}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+              )
+            })
         )}
       </article>
+
+      {selectedWorkItem && (
+        <div className="report-archive">
+          <label htmlFor="report-select">Select report: </label>
+          <select
+            id="report-select"
+            value={selectedReportId ?? ""}
+            onChange={e => {
+              const val = e.target.value
+              setSelectedReportId(val ? val : null)
+            }}
+          >
+            <option value="">-- Select report --</option>
+            {evaluationResults.map(r => (
+              <option key={r.id} value={r.id}>
+                {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {r.userPrompt ?? ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {runnerModalOpen && runnerResults && (
         <Modal
