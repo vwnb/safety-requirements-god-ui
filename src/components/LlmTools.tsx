@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { SemanticColor } from "../lib/SemanticColor"
 import { InfoButton } from "./InfoButton"
 import Modal from "./Modal"
+import { brutal } from "../App"
 
 type WorkItem = {
   id: string
@@ -146,6 +147,8 @@ export function LlmTools({
 }: LlmToolsProps) {
   const API = import.meta.env.VITE_API_URL || ""
   const displayName = actorName || actorForApi
+
+  const [llmPrompt, setLlmPrompt] = useState("")
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
@@ -301,6 +304,7 @@ export function LlmTools({
         body: JSON.stringify({
           demo: false,
           user: actorForApi,
+          prompt: llmPrompt,
         }),
       })
 
@@ -709,15 +713,16 @@ export function LlmTools({
   return (
     <section data-agent="llm-suggestions-section">
       <div className="title llm-tools-header">
-        Evaluate work item with LLM
+        Modify work item with LLM
         <InfoButton
-          title="Evaluate work item with LLM"
-          content="LLM evaluation gives you a quick safety review of a work item. It helps spot missing links, overlooked hazards, and gaps in safety requirements."
+          title="Modify work item with LLM"
+          content="LLM free prompting can be used to insert, modify or delete graph data. Refinement reports help spot missing links, overlooked hazards, and gaps in safety requirements. The prompt for the refinement report is optional."
         />
       </div>
 
       <div className="llm-actions cms-layout">
         <div>
+          <input type="text" placeholder="Prompt for refinement report" value={llmPrompt} onChange={e => setLlmPrompt(e.target.value)} style={{ ...brutal.input, marginBottom: 10 }} />
           <button
             data-agent="btn-llm-suggestions"
             onClick={() => {

@@ -871,9 +871,9 @@ export default function GraphView({
             >
               <input
                 data-agent="query-sequence-input"
-                placeholder="Query graph sequence"
+                placeholder="Prompted query sequence"
                 value={querySequenceGoal}
-                aria-label="Query graph sequence"
+                aria-label="Prompted query sequence"
                 onChange={(e) => setQuerySequenceGoal(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {

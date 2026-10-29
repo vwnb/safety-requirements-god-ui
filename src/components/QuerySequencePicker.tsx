@@ -26,7 +26,7 @@ export default function QuerySequencePicker({
   return (
     <Modal onClose={onClose} width={520}>
       <div className="title" style={{ marginBottom: 16 }}>
-        Query graph sequence
+        Prompted query sequence
       </div>
 
       {goal && (
