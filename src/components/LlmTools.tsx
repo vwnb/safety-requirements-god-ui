@@ -127,6 +127,8 @@ interface LlmToolsProps {
   onSetPendingConfirm: (confirm: { message: string; onConfirm: () => void; confirmLabel?: string; cancelLabel?: string } | null) => void
   onSetLoading: (loading: boolean) => void
   onSetLoadingMessage: (message: string) => void
+  llmPrompt: string
+  onSetLlmPrompt: (prompt: string) => void
 }
 
 export function LlmTools({
@@ -144,11 +146,11 @@ export function LlmTools({
   onSetPendingConfirm,
   onSetLoading,
   onSetLoadingMessage,
+  llmPrompt,
+  onSetLlmPrompt,
 }: LlmToolsProps) {
   const API = import.meta.env.VITE_API_URL || ""
   const displayName = actorName || actorForApi
-
-  const [llmPrompt, setLlmPrompt] = useState("")
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
@@ -723,7 +725,7 @@ export function LlmTools({
       </div>
 
       <div>
-        <input type="text" placeholder="Prompt for refinement report" value={llmPrompt} onChange={e => setLlmPrompt(e.target.value)} style={{ ...brutal.input, marginBottom: 10 }} />
+        <input type="text" placeholder="Prompt for refinement report" value={llmPrompt} onChange={e => onSetLlmPrompt(e.target.value)} style={{ ...brutal.input, marginBottom: 10 }} />
         <button
           data-agent="btn-llm-suggestions"
           onClick={() => {

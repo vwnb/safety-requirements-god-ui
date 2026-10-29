@@ -503,6 +503,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [activeRevisionId, setActiveRevisionId] = useState<string | null>(null)
   const [editorValue, setEditorValue] = useState("")
+  const [llmPrompt, setLlmPrompt] = useState("")
 
   const [baselineName, setBaselineName] = useState("")
 
@@ -1931,6 +1932,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onSetPendingConfirm={setPendingConfirm}
                       onSetLoading={handleSetLoading}
                       onSetLoadingMessage={setLoadingMessage}
+                      llmPrompt={llmPrompt}
+                      onSetLlmPrompt={setLlmPrompt}
                     />
                   </>
                 )}
@@ -2118,6 +2121,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               onViewportChange={(viewport) => {
                 collab.sendViewportCoordinates({ x: viewport.x, y: viewport.y })
               }}
+              onSetLlmPrompt={setLlmPrompt}
             />
           </GraphErrorBoundary>
         </main>

@@ -306,6 +306,7 @@ export default function GraphView({
   projectTitle,
   workItemId,
   workItemTitle,
+  onSetLlmPrompt,
 }: {
   concepts: Concept[]
   revisions: Revision[]
@@ -320,6 +321,7 @@ export default function GraphView({
   projectTitle?: string
   workItemId?: string
   workItemTitle?: string
+  onSetLlmPrompt?: (prompt: string) => void
 }) {
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
@@ -619,6 +621,17 @@ export default function GraphView({
     return queryResult?.explanations ?? null
   }, [activeQuery, activeQuerySourceId, queryResult])
 
+  const [copiedQueryExplanation, setCopiedQueryExplanation] = useState(false)
+
+  const copyQueryExplanation = useCallback(() => {
+    if (!queryExplanation) return
+    if (onSetLlmPrompt) {
+      onSetLlmPrompt(queryExplanation.content)
+      setCopiedQueryExplanation(true)
+      setTimeout(() => setCopiedQueryExplanation(false), 2000)
+    }
+  }, [queryExplanation, onSetLlmPrompt])
+
   const runQuerySequence = async () => {
     const goal = querySequenceGoal.trim()
     if (!workItemId || !goal) return
@@ -871,9 +884,9 @@ export default function GraphView({
             >
               <input
                 data-agent="query-sequence-input"
-                placeholder="Prompted query sequence"
+                placeholder="Prompt for query sequence"
                 value={querySequenceGoal}
-                aria-label="Prompted query sequence"
+                aria-label="Prompt for query sequence"
                 onChange={(e) => setQuerySequenceGoal(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -1057,6 +1070,7 @@ export default function GraphView({
             onViewStep={viewSequenceStep}
             onAnimate={startSequence}
             onClose={() => setQuerySequenceModalOpen(false)}
+            onSetLlmPrompt={onSetLlmPrompt}
           />
         )}
 
@@ -1178,7 +1192,31 @@ export default function GraphView({
               zIndex: 6,
             }}
           >
-            <div style={{ fontWeight: "bold", marginBottom: 8 }}>{queryExplanation.title}</div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: 12,
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ fontWeight: "bold" }}>{queryExplanation.title}</div>
+              <button
+                data-agent="copy-graph-explanation-prompt"
+                onClick={copyQueryExplanation}
+                style={{
+                  ...brutal.button,
+                  padding: "4px 10px",
+                  fontSize: 11,
+                  margin: 0,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                {copiedQueryExplanation ? "Copied!" : "Copy as refinement prompt"}
+              </button>
+            </div>
             <div style={{ opacity: 0.85, lineHeight: 1.5 }}>{queryExplanation.content}</div>
           </div>
         )}

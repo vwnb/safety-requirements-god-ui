@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { brutal } from "../App"
 import Modal from "./Modal"
 import type { QuerySequenceResult, QuerySequenceStep } from "./QuerySequenceTypes"
@@ -11,6 +12,7 @@ type QuerySequencePickerProps = {
   onViewStep: (payload: { type: string; sourceRevisionId: string | null }) => void
   onAnimate: () => void
   onClose: () => void
+  onSetLlmPrompt?: (prompt: string) => void
 }
 
 export default function QuerySequencePicker({
@@ -22,7 +24,20 @@ export default function QuerySequencePicker({
   onViewStep,
   onAnimate,
   onClose,
+  onSetLlmPrompt,
 }: QuerySequencePickerProps) {
+  const [copiedStep, setCopiedStep] = useState<number | null>(null)
+
+  const copyStepExplanation = (index: number, step: QuerySequenceStep) => {
+    const explanations = step.result?.explanations
+    if (!explanations) return
+    if (onSetLlmPrompt) {
+      onSetLlmPrompt(explanations.content)
+      setCopiedStep(index)
+      setTimeout(() => setCopiedStep(null), 2000)
+    }
+  }
+
   return (
     <Modal onClose={onClose} width={520}>
       <div className="title" style={{ marginBottom: 16 }}>
@@ -112,8 +127,26 @@ export default function QuerySequencePicker({
 
               {step.result?.explanations && (
                 <div style={{ padding: "8px 10px", opacity: 0.85, lineHeight: 1.4, fontSize: 12 }}>
-                  <strong>{step.result.explanations.title}</strong>
-                  <div>{step.result.explanations.content}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <div>
+                      <strong>{step.result.explanations.title}</strong>
+                      <div>{step.result.explanations.content}</div>
+                    </div>
+                    <button
+                      data-agent={`copy-sequence-step-prompt-${index}`}
+                      onClick={() => copyStepExplanation(index, step)}
+                      style={{
+                        ...brutal.button,
+                        padding: "4px 10px",
+                        fontSize: 11,
+                        margin: 0,
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {copiedStep === index ? "Copied!" : "Copy as refinement prompt"}
+                    </button>
+                  </div>
                 </div>
               )}
 
