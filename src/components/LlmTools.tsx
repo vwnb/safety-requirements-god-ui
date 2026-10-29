@@ -722,29 +722,48 @@ export function LlmTools({
         />
       </div>
 
-      <div className="llm-actions cms-layout">
-        <div>
-          <input type="text" placeholder="Prompt for refinement report" value={llmPrompt} onChange={e => setLlmPrompt(e.target.value)} style={{ ...brutal.input, marginBottom: 10 }} />
-          <button
-            data-agent="btn-llm-suggestions"
-            onClick={() => {
-              const action = () => { suggestWithLLM(selectedWorkItem) }
+      <div>
+        <input type="text" placeholder="Prompt for refinement report" value={llmPrompt} onChange={e => setLlmPrompt(e.target.value)} style={{ ...brutal.input, marginBottom: 10 }} />
+        <button
+          data-agent="btn-llm-suggestions"
+          onClick={() => {
+            const action = () => { suggestWithLLM(selectedWorkItem) }
 
-              if (activeRevisionId) {
-                onSetPendingConfirm({
-                  message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
-                  onConfirm: action,
-                })
-              } else {
-                action()
-              }
-            }}
-            className="btn btn-generate"
-          >
-            Generate new refinement report
-          </button>
-        </div>
+            if (activeRevisionId) {
+              onSetPendingConfirm({
+                message: "You have an active revision in progress. Discard it and generate suggestions with LLM?",
+                onConfirm: action,
+              })
+            } else {
+              action()
+            }
+          }}
+          className="btn btn-generate"
+        >
+          Generate new refinement report
+        </button>
       </div>
+
+      {selectedWorkItem && (
+        <div style={{ marginTop: 10 }}>
+          <label htmlFor="report-select">Report archive: </label>
+          <select
+            id="report-select"
+            value={selectedReportId ?? ""}
+            onChange={e => {
+              const val = e.target.value
+              setSelectedReportId(val ? val : null)
+            }}
+          >
+            <option value="">-- Select report --</option>
+            {evaluationResults.map(r => (
+              <option key={r.id} value={r.id}>
+                {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {r.userPrompt ?? ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <article>
         {latestReportNotFound && (
@@ -757,11 +776,11 @@ export function LlmTools({
             <h1 ref={reportHeadingRef} id='refinement-report-heading' data-agent='refinement-report-heading'>Refinement report: {selectedWorkItemData.name}</h1>
             {reportCreatedAt && (
               <div className="report-meta">
-                Created: {new Date(reportCreatedAt).toLocaleString()}{' '}
-                {reportUserPrompt ? <span>· {reportUserPrompt}</span> : null}
+                Created: {new Date(reportCreatedAt).toLocaleString()}<br />
+                User prompt: {reportUserPrompt ? <span>{reportUserPrompt}</span> : "(No user prompt)"}
               </div>
             )}
-            {!!suggestions && (
+            {!!suggestions && suggestions.length > 0 && (
               <button
                 data-agent="btn-runner-mode"
                 disabled={runnerActive}
@@ -819,6 +838,11 @@ export function LlmTools({
               </div>
             )}
           </>
+        )}
+        {!suggestions || suggestions.length === 0 && (
+          <p>
+            This refinement report is empty.
+          </p>
         )}
         {!!suggestions && (
           [...suggestions]
@@ -923,27 +947,6 @@ export function LlmTools({
             })
         )}
       </article>
-
-      {selectedWorkItem && (
-        <div className="report-archive">
-          <label htmlFor="report-select">Select report: </label>
-          <select
-            id="report-select"
-            value={selectedReportId ?? ""}
-            onChange={e => {
-              const val = e.target.value
-              setSelectedReportId(val ? val : null)
-            }}
-          >
-            <option value="">-- Select report --</option>
-            {evaluationResults.map(r => (
-              <option key={r.id} value={r.id}>
-                {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {r.userPrompt ?? ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {runnerModalOpen && runnerResults && (
         <Modal

@@ -490,9 +490,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [templates, setTemplates] = useState<(WorkItem & { templateManifest?: TemplateManifest })[]>()
   const [filterText, setFilterText] = useState("")
-  const [templateSearchResults, setTemplateSearchResults] = useState<(WorkItem & { templateManifest?: TemplateManifest })[] | null>(null)
-  const [templateSearchLoading, setTemplateSearchLoading] = useState(false)
-  const [templateSearchError, setTemplateSearchError] = useState<string | null>(null)
 
   const [concepts, setConcepts] = useState<Concept[] | null>(null)
   const [conceptsInitialized, setConceptsInitialized] = useState(false)
@@ -1184,45 +1181,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       .map((value) => value?.toString().toLowerCase() ?? "")
       .some((value) => value.includes(search))
   }) ?? [])
-
-  async function searchTemplatesWithPrompt() {
-    const prompt = filterText.trim()
-    if (!prompt) return
-
-    setTemplateSearchLoading(true)
-    setTemplateSearchError(null)
-
-    try {
-      const remainingRes = await apiFetch(`${API}/me/license/remaining`)
-      if (!remainingRes.ok) {
-        throw new Error(remainingRes.status === 403 ? "You need an active license to use prompt search." : "Unable to check remaining license points.")
-      }
-
-      const remainingData = await remainingRes.json()
-      const remaining = typeof remainingData?.remaining === "number" ? remainingData.remaining : 0
-      if (remaining <= 0) {
-        throw new Error("You have no remaining license points for prompt search.")
-      }
-
-      const res = await apiFetch(`${API}/templates/search`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, limit: 8 }),
-      })
-      if (!res.ok) {
-        throw new Error("Failed to search templates")
-      }
-
-      const data = await res.json()
-      const results = Array.isArray(data) ? data : data.templates ?? []
-      setTemplateSearchResults(results as (WorkItem & { templateManifest?: TemplateManifest })[])
-    } catch (error) {
-      setTemplateSearchResults(null)
-      setTemplateSearchError(error instanceof Error ? error.message : "Failed to search templates")
-    } finally {
-      setTemplateSearchLoading(false)
-    }
-  }
 
   async function refreshBaselines(projectId?: string) {
     const id = projectId?.trim() || selectedProject?.id
@@ -1950,9 +1908,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   filteredTemplates={filteredTemplates}
                   filterText={filterText}
                   onFilterTextChange={setFilterText}
-                  templateSearchLoading={templateSearchLoading}
-                  templateSearchError={templateSearchError}
-                  onSearchTemplatesWithPrompt={searchTemplatesWithPrompt}
                   onImportConceptsFromTemplate={importConceptsFromTemplate}
                   activeRevisionId={activeRevisionId}
                   onPendingConfirm={setPendingConfirm}

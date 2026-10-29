@@ -9,9 +9,6 @@ export default function TemplateList({
   filteredTemplates,
   filterText,
   onFilterTextChange,
-  templateSearchLoading,
-  templateSearchError,
-  onSearchTemplatesWithPrompt,
   onImportConceptsFromTemplate,
   activeRevisionId,
   onPendingConfirm,
@@ -20,9 +17,6 @@ export default function TemplateList({
   filteredTemplates: TemplateItem[]
   filterText: string
   onFilterTextChange: (value: string) => void
-  templateSearchLoading: boolean
-  templateSearchError: string | null
-  onSearchTemplatesWithPrompt: () => void
   onImportConceptsFromTemplate: (workItemId: string) => void
   activeRevisionId: string | null
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void } | null) => void
@@ -54,24 +48,7 @@ export default function TemplateList({
               value={filterText}
               onChange={(e) => onFilterTextChange(e.target.value)}
             />
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={onSearchTemplatesWithPrompt}
-                style={{ ...brutal.button, margin: 0 }}
-                disabled={templateSearchLoading}
-              >
-                {templateSearchLoading ? "Searching..." : "Search"}
-              </button>
-              <span style={{ fontSize: 12, fontFamily: "monospace" }}>
-                Note: Prompt mode consumes LLM calls.
-              </span>
-            </div>
           </div>
-
-          {templateSearchError && (
-            <p style={{ color: "#b42318", marginBottom: 12 }}>{templateSearchError}</p>
-          )}
 
           {filteredTemplates.length === 0 ? (
             <p>No matching templates.</p>
