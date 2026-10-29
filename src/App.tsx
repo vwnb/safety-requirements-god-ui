@@ -490,7 +490,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
   const [templates, setTemplates] = useState<(WorkItem & { templateManifest?: TemplateManifest })[]>()
   const [filterText, setFilterText] = useState("")
-  const [templateSearchMode, setTemplateSearchMode] = useState<"browse" | "prompt">("browse")
   const [templateSearchResults, setTemplateSearchResults] = useState<(WorkItem & { templateManifest?: TemplateManifest })[] | null>(null)
   const [templateSearchLoading, setTemplateSearchLoading] = useState(false)
   const [templateSearchError, setTemplateSearchError] = useState<string | null>(null)
@@ -1164,29 +1163,27 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
-  const filteredTemplates = templateSearchMode === "prompt"
-    ? (templateSearchResults ?? templates ?? [])
-    : (templates?.filter((wi) => {
-      const search = filterText.trim().toLowerCase()
-      const manifest = wi.templateManifest
-      return !search || [
-        wi.key,
-        wi.name,
-        wi.description || "",
-        ...(wi.standards ?? []),
-        ...(manifest?.tags ?? []),
-        ...(manifest?.asilRange ?? []),
-        ...(manifest?.silRange ?? []),
-        ...(manifest?.plRange ?? []),
-        ...(manifest?.phases ?? []),
-        ...(manifest?.requiredConcepts ?? []),
-        ...(manifest?.relationPatterns ?? []),
-        ...(manifest?.composability?.conflicts ?? []),
-        ...(manifest?.composability?.mergeKeys ?? []),
-      ]
-        .map((value) => value?.toString().toLowerCase() ?? "")
-        .some((value) => value.includes(search))
-    }) ?? [])
+  const filteredTemplates = (templates?.filter((wi) => {
+    const search = filterText.trim().toLowerCase()
+    const manifest = wi.templateManifest
+    return !search || [
+      wi.key,
+      wi.name,
+      wi.description || "",
+      ...(wi.standards ?? []),
+      ...(manifest?.tags ?? []),
+      ...(manifest?.asilRange ?? []),
+      ...(manifest?.silRange ?? []),
+      ...(manifest?.plRange ?? []),
+      ...(manifest?.phases ?? []),
+      ...(manifest?.requiredConcepts ?? []),
+      ...(manifest?.relationPatterns ?? []),
+      ...(manifest?.composability?.conflicts ?? []),
+      ...(manifest?.composability?.mergeKeys ?? []),
+    ]
+      .map((value) => value?.toString().toLowerCase() ?? "")
+      .some((value) => value.includes(search))
+  }) ?? [])
 
   async function searchTemplatesWithPrompt() {
     const prompt = filterText.trim()
@@ -1953,11 +1950,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   filteredTemplates={filteredTemplates}
                   filterText={filterText}
                   onFilterTextChange={setFilterText}
-                  templateSearchMode={templateSearchMode}
-                  onTemplateSearchModeChange={(mode) => {
-                    setTemplateSearchMode(mode)
-                    setTemplateSearchError(null)
-                  }}
                   templateSearchLoading={templateSearchLoading}
                   templateSearchError={templateSearchError}
                   onSearchTemplatesWithPrompt={searchTemplatesWithPrompt}
