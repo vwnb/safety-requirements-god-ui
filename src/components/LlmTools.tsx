@@ -72,6 +72,7 @@ type EvaluatorSuggestion = {
   reason: string
   actedOn?: "ACTED_ON" | "DISCARDED"
   actedOnBy?: { name?: string }
+  thumbnail?: string
 }
 
 // Coerce an unknown suggestions payload (from API responses) into an array.
@@ -864,6 +865,15 @@ export function LlmTools({
                   className={cardClass}
                 >
                   <>
+                    {suggestion.thumbnail && (
+                      <img
+                        src={suggestion.thumbnail}
+                        alt="Suggestion thumbnail"
+                        width={128}
+                        height={128}
+                        style={{ float: 'right' }}
+                      />
+                    )}
                     <p data-agent={`suggestion-${suggestion.id}`}>
                       {suggestion.importance && (
                         <span
