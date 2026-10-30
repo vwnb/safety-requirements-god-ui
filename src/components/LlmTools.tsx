@@ -760,7 +760,7 @@ export function LlmTools({
             <option value="">-- Select report --</option>
             {evaluationResults.map(r => (
               <option key={r.id} value={r.id}>
-                {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {r.userPrompt ?? ''}.slice(0, 32)
+                {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {r.userPrompt ? `- ${r.userPrompt.slice(0, 32)}` : "(No prompt)"}
               </option>
             ))}
           </select>
