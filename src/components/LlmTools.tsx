@@ -196,6 +196,10 @@ export function LlmTools({
   useEffect(() => {
     if (!selectedWorkItem) return
     let cancelled = false
+    // Reset any stale report selection immediately so effects below cannot
+    // keep displaying the previous work item's refinement report.
+    setSelectedReportId(null)
+    setEvaluationResults([])
     loadEvaluationResults()
       .then(list => {
         if (cancelled) return
@@ -237,11 +241,13 @@ export function LlmTools({
   // Fetch selected report by id
   useEffect(() => {
     if (!selectedWorkItem) return
+    let cancelled = false
     setSuggestions(null)
     setReportCreatedAt(null)
+    setReportUserPrompt(null)
     if (!selectedReportId) {
       setLatestReportNotFound(false)
-      return
+      return () => { cancelled = true }
     }
     apiFetch(`${API}/evaluation-results/${selectedReportId}`)
       .then(res => {
@@ -249,6 +255,7 @@ export function LlmTools({
         return res.json()
       })
       .then(data => {
+        if (cancelled) return
         if (data) {
           if (data.suggestions) {
             setSuggestions(toSuggestionArray(data.suggestions))
@@ -261,9 +268,11 @@ export function LlmTools({
         }
       })
       .catch(err => {
+        if (cancelled) return
         console.error(err)
         setLatestReportNotFound(true)
       })
+    return () => { cancelled = true }
   }, [selectedWorkItem, selectedReportId, API, apiFetch])
 
   const suggestWithLLM = async (workItemId: string) => {
