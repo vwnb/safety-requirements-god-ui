@@ -474,6 +474,7 @@ main.revise-active {
     background: rgb(233, 237, 233);
     border: none;
     margin: 0;
+    height: calc(100vh - 38px);
   }
 }
 
@@ -510,7 +511,6 @@ section,
   animation: fadeIn 1s ease-out forwards
 }
 
-/* LLM Tools */
 .llm-actions .report-archive {
   display: flex;
   align-items: center;
@@ -885,7 +885,12 @@ section,
   opacity: 0.5;
 }
 
-/* Graph node */
+@media (max-width: 1280px) {
+  .collab-status-dot.collab-green {
+    display: none !important;
+  }
+}
+
 .graph-node-label {
   font-weight: bold;
 }
@@ -899,7 +904,6 @@ section,
   margin-top: 4px;
 }
 
-/* License user card */
 .license-user-card {
   margin-bottom: 10px;
   padding: 6px 10px;
@@ -922,7 +926,6 @@ section,
   text-overflow: ellipsis;
 }
 
-/* Custom button colors */
 .btn-danger {
   background: #F2B8B5;
 }
@@ -931,7 +934,6 @@ section,
   background: #BFE7C6;
 }
 
-/* Hide elements */
 .hidden {
   display: none;
 }
@@ -940,7 +942,6 @@ section,
   cursor: pointer;
 }
 
-/* License modal */
 .license-no-active {
   margin-bottom: 12px;
 }
@@ -1007,7 +1008,6 @@ section,
   transition: width 0.3s ease;
 }
 
-/* Admin licenses modal */
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
@@ -1109,7 +1109,6 @@ section,
   margin-bottom: 12px;
 }
 
-/* LLM Tools */
 .llm-tools-header {
   display: flex;
   align-items: center;
@@ -1190,7 +1189,6 @@ section,
   box-sizing: border-box;
 }
 
-/* Metric styles for entropy and breadth */
 .metric-value {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1209,7 +1207,6 @@ section,
   color: var(--muted-color);
 }
 
-/* Modal */
 .modal {
   position: fixed;
   inset: 0;
