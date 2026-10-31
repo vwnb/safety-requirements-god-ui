@@ -1,8 +1,6 @@
-import { brutal, type WorkItem, type TemplateManifest } from "../App"
+import { brutal, type TemplateItem } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 import { InfoButton } from "./InfoButton"
-
-type TemplateItem = WorkItem & { templateManifest?: TemplateManifest }
 
 export default function TemplateList({
   templates,
@@ -77,6 +75,15 @@ export default function TemplateList({
                     <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 6, width: 300 }}>
                       <div className="template-info">
                         <div className="list-id">{wi.key} - {wi.name}</div>
+                        {wi.thumbnail && (
+                          <img
+                            src={wi.thumbnail}
+                            alt="Template thumbnail"
+                            width={128}
+                            height={128}
+                            style={{ float: 'left', marginRight: "1em" }}
+                          />
+                        )}
                         <div className="list-tooltip" style={{ marginTop: 6 }}>{wi.description ?? "No description :("}</div>
                       </div>
                     </div>

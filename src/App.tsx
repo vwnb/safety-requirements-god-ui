@@ -42,6 +42,8 @@ export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 export type ConceptType = string
 export type RelationType = string
 
+export type TemplateItem = WorkItem & { thumbnail: string, templateManifest?: TemplateManifest }
+
 export type TemplateManifestComposability = {
   mergeKeys: ConceptType[]
   conflicts: string[]
@@ -488,7 +490,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [selectedWorkItemData, setSelectedWorkItemData] = useState<WorkItem | null>(null)
   const [isEditingWorkItemFields, setIsEditingWorkItemFields] = useState(false)
 
-  const [templates, setTemplates] = useState<(WorkItem & { templateManifest?: TemplateManifest })[]>()
+  const [templates, setTemplates] = useState<TemplateItem[]>()
   const [filterText, setFilterText] = useState("")
 
   const [concepts, setConcepts] = useState<Concept[] | null>(null)
