@@ -1109,7 +1109,6 @@ export default function GraphView({
                   ...brutal.button,
                   padding: "8px 12px",
                   margin: 0,
-                  borderLeftColor: "#FF5A00",
                 }}
               >
                 Show all
