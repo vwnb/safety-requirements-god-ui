@@ -1,6 +1,6 @@
 import logo from "./assets/logo.png"
 import { useAuth0 } from "@auth0/auth0-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { parseDiff, Diff, Hunk, type HunkData, type DiffType } from "react-diff-view"
 import "react-diff-view/style/index.css"
 import { diffLines, formatLines } from "unidiff"
@@ -130,6 +130,18 @@ type Revision = {
   versionMajor?: number
   versionMinor?: number
   versionPatch?: number
+}
+
+type GraphData = {
+  concepts: Array<{ id: string; key?: string; title?: string; type: string }>
+  relations: Array<{ id: string; fromId: string; toId: string; type: string }>
+  revisions: Revision[]
+}
+
+type GraphState = {
+  workItemId: string
+  data: GraphData | null
+  error: string | null
 }
 
 export type WorkItem = {
@@ -546,7 +558,39 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const completenessInFlightRef = useRef(false)
   const completenessPendingRef = useRef(false)
 
-  const [graph, setGraph] = useState<any>(null)
+  const [graphState, setGraphState] = useState<GraphState | null>(null)
+  const currentGraphState =
+    graphState?.workItemId === selectedWorkItem ? graphState : null
+  const graph = currentGraphState?.data ?? null
+  const graphLoadError = currentGraphState?.error ?? null
+  const graphData = useMemo(() => {
+    if (!user || !graph) {
+      return { concepts: [], relations: [], revisions: [] }
+    }
+
+    const latestRevisionByConcept = new Map<string, Revision>()
+    for (const revision of graph.revisions) {
+      const current = latestRevisionByConcept.get(revision.conceptId)
+      const isNewer =
+        !current ||
+        (revision.versionMajor ?? 0) > (current.versionMajor ?? 0) ||
+        ((revision.versionMajor ?? 0) === (current.versionMajor ?? 0) &&
+          (revision.versionMinor ?? 0) > (current.versionMinor ?? 0)) ||
+        ((revision.versionMajor ?? 0) === (current.versionMajor ?? 0) &&
+          (revision.versionMinor ?? 0) === (current.versionMinor ?? 0) &&
+          (revision.versionPatch ?? 0) > (current.versionPatch ?? 0))
+
+      if (isNewer) latestRevisionByConcept.set(revision.conceptId, revision)
+    }
+
+    return {
+      concepts: graph.concepts,
+      relations: graph.relations,
+      revisions: graph.revisions.filter(
+        (revision) => latestRevisionByConcept.get(revision.conceptId)?.id === revision.id
+      ),
+    }
+  }, [graph, user])
 
   const graphRequestRef = useRef(0)
   const selectedWorkItemRef = useRef("")
@@ -667,7 +711,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     setDiffResult(null)
     setBaselines(undefined)
     setSelectedBaseline(null)
-    setGraph(null)
+    setGraphState(null)
     setWorkItemCompleteness(null)
 
     async function loadWorkItems() {
@@ -702,7 +746,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
     selectedWorkItemRef.current = selectedWorkItem
     graphCrashRecoveryWorkItemRef.current = null
-
     async function load() {
       const results = await Promise.allSettled([
         loadWorkItemDetails(selectedWorkItem),
@@ -1085,23 +1128,17 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         relations: Array.isArray(data?.relations) ? data.relations : [],
         revisions: Array.isArray(data?.revisions) ? data.revisions : [],
       }
-      // Never clobber an existing non-empty graph with an unexpectedly empty
-      // response (can happen during rapid stress operations).
-      setGraph((prev: any) => {
-        const prevHasNodes = (prev?.revisions?.length ?? 0) > 0
-        const nextHasNodes = normalized.revisions.length > 0
-        if (prevHasNodes && !nextHasNodes) {
-          console.warn("refreshGraph returned empty revisions; keeping previous graph")
-          return prev
-        }
-        return normalized
-      })
+      setGraphState({ workItemId, data: normalized, error: null })
       // Re-fetching the graph should also trigger a completeness refresh
       loadWorkItemCompleteness(workItemId)
     } catch (error) {
       if (requestId === graphRequestRef.current && selectedWorkItemRef.current === workItemId) {
         console.error("Failed to refresh graph", error)
-        setGraph((prev: any) => prev ?? { concepts: [], relations: [], revisions: [] })
+        setGraphState((previous) => ({
+          workItemId,
+          data: previous?.workItemId === workItemId ? previous.data : null,
+          error: error instanceof Error ? error.message : String(error),
+        }))
       }
       throw error
     }
@@ -2074,22 +2111,15 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           >
             <GraphView
               loading={!!user && graph === null && !!selectedWorkItem}
-              revisions={user ? (graph?.revisions ?? []).filter((r: Revision) => {
-                const revisionsForConcept = (graph?.revisions ?? []).filter((rev: Revision) => rev.conceptId === r.conceptId)
-                const compareVersions = (a: Revision, b: Revision) => {
-                  if ((a.versionMajor ?? 0) !== (b.versionMajor ?? 0)) return (a.versionMajor ?? 0) - (b.versionMajor ?? 0)
-                  if ((a.versionMinor ?? 0) !== (b.versionMinor ?? 0)) return (a.versionMinor ?? 0) - (b.versionMinor ?? 0)
-                  return (a.versionPatch ?? 0) - (b.versionPatch ?? 0)
-                }
-                if (revisionsForConcept.length === 0) return false
-                const latestRevision = revisionsForConcept.reduce((latest: Revision, current: Revision) =>
-                  compareVersions(current, latest) > 0 ? current : latest
-                  , revisionsForConcept[0])
-
-                return !!latestRevision && r.id === latestRevision.id
-              }) : []}
-              concepts={user ? (graph?.concepts ?? []) : []}
-              relations={user ? (graph?.relations ?? []) : []}
+              loadError={graphLoadError}
+              onRetry={() => {
+                void refreshGraph(selectedWorkItem).catch((error) => {
+                  console.error("Graph retry failed", error)
+                })
+              }}
+              revisions={graphData.revisions}
+              concepts={graphData.concepts}
+              relations={graphData.relations}
               onRelationCreated={user ? () => { refreshGraph(selectedWorkItem) } : () => { }}
               onNodeClick={user ? async (conceptId) => {
                 const action = async () => {

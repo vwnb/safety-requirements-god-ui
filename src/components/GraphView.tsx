@@ -3,7 +3,7 @@ import ReactFlow, {
   Background,
   Handle,
   Position,
-  BackgroundVariant
+  BackgroundVariant,
 } from "reactflow"
 import type { FitViewOptions, Viewport, ReactFlowInstance } from "reactflow"
 import type { Node, Edge } from "@reactflow/core"
@@ -307,6 +307,8 @@ export default function GraphView({
   workItemId,
   workItemTitle,
   onSetLlmPrompt,
+  loadError,
+  onRetry,
 }: {
   concepts: Concept[]
   revisions: Revision[]
@@ -322,6 +324,8 @@ export default function GraphView({
   workItemId?: string
   workItemTitle?: string
   onSetLlmPrompt?: (prompt: string) => void
+  loadError?: string | null
+  onRetry?: () => void
 }) {
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
@@ -352,6 +356,10 @@ export default function GraphView({
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const initialViewportSentRef = useRef(false)
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null)
+
+  useEffect(() => {
+    initialViewportSentRef.current = false
+  }, [workItemId])
 
   useEffect(() => {
     const updateSize = () => {
@@ -727,11 +735,6 @@ export default function GraphView({
     return layoutGraph(visibleNodes, visibleEdges)
   }, [visibleNodes, visibleEdges])
 
-  // Determine if we have any graph data to display. Rendering ReactFlow with
-  // empty node/edge arrays can cause it to reset its internal state and, in
-  // some edge‑cases, result in a completely blank canvas. By gating the
-  // rendering until we have at least one node we avoid spurious re‑mounts that
-  // were observed as "graph loading fails mysteriously".
   const hasGraphData = layoutedNodes.length > 0
 
   // Convert graph-space coordinates to screen-space within container
@@ -751,14 +754,6 @@ export default function GraphView({
       y: Math.max(halfCursor, Math.min(containerSize.height - halfCursor, screenY)),
     }
   }, [containerSize.width, containerSize.height])
-
-  // Graph key to force re-initialization when data changes (e.g., template import)
-  const graphKey = `${layoutedNodes.length}-${layoutedEdges.length}`
-
-  // Reset initial viewport sent flag when the graph re-initializes
-  useEffect(() => {
-    initialViewportSentRef.current = false
-  }, [graphKey])
 
   // Send initial viewport coordinates once the graph has finished loading and fitView has completed
   useEffect(() => {
@@ -798,10 +793,10 @@ export default function GraphView({
           backgroundSize: "cover, cover",
           backgroundPosition: "center",
           backgroundBlendMode: "color-dodge",
-          opacity: loading ? 0 : 1,
+          opacity: loading && !loadError ? 0 : 1,
         }}
       >
-        {(graphLoading || loading) && (
+        {(graphLoading || (loading && !loadError)) && (
           <div
             data-agent="graph-submit-loading"
             style={{
@@ -819,6 +814,50 @@ export default function GraphView({
             }}
           >
             Loading graph...
+          </div>
+        )}
+
+        {loadError && (
+          <div
+            role="alert"
+            data-agent="graph-load-error"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 11,
+              display: "grid",
+              placeItems: "center",
+              padding: 24,
+              background: "rgba(255, 255, 255, 0.9)",
+              fontFamily: "monospace",
+              textAlign: "center",
+            }}
+          >
+            <div>
+              <strong>Could not load graph.</strong>
+              <p>{loadError}</p>
+              {onRetry && (
+                <button type="button" onClick={onRetry} style={brutal.button}>
+                  Retry
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!hasGraphData && !loading && !loadError && (
+          <div
+            data-agent="graph-empty-state"
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "grid",
+              placeItems: "center",
+              fontFamily: "monospace",
+              pointerEvents: "none",
+            }}
+          >
+            {activeQuery === "NONE" ? "No graph nodes to display." : "No nodes match this query."}
           </div>
         )}
 
@@ -1076,7 +1115,7 @@ export default function GraphView({
 
         {hasGraphData && (
           <ReactFlow
-            key={graphKey}
+            key={workItemId}
             className="react-flow"
             data-agent="react-flow"
             nodes={layoutedNodes}
