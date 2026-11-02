@@ -1046,7 +1046,9 @@ export default function GraphView({
               right: 14,
               zIndex: 12,
               display: "flex",
-              gap: 8,
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 6,
             }}
           >
             <button
@@ -1068,6 +1070,7 @@ export default function GraphView({
                 ...brutal.button,
                 padding: "8px 12px",
                 margin: 0,
+                borderLeftColor: "#FF5A00",
                 opacity: refreshing ? 0.6 : 1,
                 cursor: refreshing ? "wait" : "pointer",
               }}
@@ -1087,6 +1090,7 @@ export default function GraphView({
                   ...brutal.button,
                   padding: "8px 12px",
                   margin: 0,
+                  borderLeftColor: "#FF5A00",
                 }}
               >
                 Show all
