@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { brutal } from "../App"
 import Modal from "./Modal"
 import { GRAPH_WIDE_QUERY_TYPES, type GraphWideQueryType } from "./GraphView"
@@ -26,15 +25,6 @@ export default function GraphWideQueryPicker({
   onSelect,
   onClose,
 }: GraphWideQueryPickerProps) {
-  const [open, setOpen] = useState(true)
-
-  if (!open) return null
-
-  const close = () => {
-    setOpen(false)
-    onClose()
-  }
-
   // Filter categories to only show graph-wide query types
   const filteredCategories = categories
     .map((cat) => ({
@@ -44,7 +34,7 @@ export default function GraphWideQueryPicker({
     .filter((cat) => cat.options.length > 0)
 
   return (
-    <Modal onClose={close} width={380}>
+    <Modal onClose={onClose} width={380}>
       <div className="title" style={{ marginBottom: 16 }}>
         Query graph
       </div>
@@ -84,7 +74,6 @@ export default function GraphWideQueryPicker({
                   className="option"
                   onClick={() => {
                     onSelect(option.value)
-                    setOpen(false)
                   }}
                 >
                   {option.label}
@@ -96,8 +85,9 @@ export default function GraphWideQueryPicker({
       )}
 
       <button
+        type="button"
         data-agent="graph-wide-query-picker-cancel"
-        onClick={close}
+        onClick={onClose}
         style={brutal.button}
       >
         Cancel

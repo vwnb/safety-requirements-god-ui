@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { brutal } from "../App"
 import Modal from "./Modal"
 import type { ConceptCentricQueryType } from "./GraphView"
@@ -28,17 +27,8 @@ export default function QueryPicker({
   onSelect,
   onClose,
 }: QueryPickerProps) {
-  const [open, setOpen] = useState(true)
-
-  if (!open) return null
-
-  const close = () => {
-    setOpen(false)
-    onClose()
-  }
-
   return (
-    <Modal onClose={close} width={380}>
+    <Modal onClose={onClose} width={380}>
       <div className="title" style={{ marginBottom: 16 }}>
         Query graph from node:
         <br />
@@ -80,7 +70,6 @@ export default function QueryPicker({
                   className="option"
                   onClick={() => {
                     onSelect(option.value)
-                    setOpen(false)
                   }}
                 >
                   {option.label}
@@ -92,8 +81,9 @@ export default function QueryPicker({
       )}
 
       <button
+        type="button"
         data-agent="query-picker-cancel"
-        onClick={close}
+        onClick={onClose}
         style={brutal.button}
       >
         Cancel
