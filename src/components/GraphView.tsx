@@ -1101,6 +1101,7 @@ export default function GraphView({
 
         {queryModalSourceId && (
           <QueryPicker
+            key={queryModalSourceId}
             sourceName={
               conceptMap.get(
                 nodes.find((n) => n.id === queryModalSourceId)?.data.conceptId || ""
@@ -1129,6 +1130,7 @@ export default function GraphView({
 
         {graphWideQueryModalOpen && (
           <GraphWideQueryPicker
+            key={workItemId}
             categories={graphWideQueryCategories as any}
             onSelect={(value) => {
               setActiveQuery(value as VisibilityQueryType)
