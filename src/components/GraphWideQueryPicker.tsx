@@ -15,23 +15,18 @@ type QueryCategory = {
 
 type GraphWideQueryPickerProps = {
   categories: QueryCategory[]
+  loading: boolean
   onSelect: (value: GraphWideQueryType) => void
   onClose: () => void
 }
 
 export default function GraphWideQueryPicker({
   categories,
+  loading,
   onSelect,
   onClose,
 }: GraphWideQueryPickerProps) {
   const [open, setOpen] = useState(true)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (categories.some((cat) => cat.options.some((opt) => GRAPH_WIDE_QUERY_TYPES.has(opt.value)))) {
-      setLoading(false)
-    }
-  }, [categories])
 
   if (!open) return null
 
@@ -55,7 +50,11 @@ export default function GraphWideQueryPicker({
       </div>
 
       {loading ? (
-        <div style={{ opacity: 0.7, marginBottom: 16, fontFamily: "monospace", color: "#555" }}>
+        <div
+          role="status"
+          data-agent="graph-wide-query-loading"
+          style={{ opacity: 0.7, marginBottom: 16, fontFamily: "monospace", color: "#555" }}
+        >
           Loading query options…
         </div>
       ) : filteredCategories.length === 0 ? (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { brutal } from "../App"
 import Modal from "./Modal"
 import type { ConceptCentricQueryType } from "./GraphView"
@@ -16,6 +16,7 @@ type QueryCategory = {
 type QueryPickerProps = {
   sourceName: string
   categories: QueryCategory[]
+  loading: boolean
   onSelect: (value: ConceptCentricQueryType) => void
   onClose: () => void
 }
@@ -23,17 +24,11 @@ type QueryPickerProps = {
 export default function QueryPicker({
   sourceName,
   categories,
+  loading,
   onSelect,
   onClose,
 }: QueryPickerProps) {
   const [open, setOpen] = useState(true)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (categories.length > 0) {
-      setLoading(false)
-    }
-  }, [categories])
 
   if (!open) return null
 
@@ -51,7 +46,11 @@ export default function QueryPicker({
       </div>
 
       {loading ? (
-        <div style={{ opacity: 0.7, marginBottom: 16, fontFamily: "monospace", color: "#555" }}>
+        <div
+          role="status"
+          data-agent="query-picker-loading"
+          style={{ opacity: 0.7, marginBottom: 16, fontFamily: "monospace", color: "#555" }}
+        >
           Loading query options…
         </div>
       ) : categories.length === 0 ? (

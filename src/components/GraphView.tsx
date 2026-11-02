@@ -340,8 +340,10 @@ export default function GraphView({
   const [activeQuerySourceId, setActiveQuerySourceId] = useState<string | null>(null)
   const [queryModalSourceId, setQueryModalSourceId] = useState<string | null>(null)
   const [queryCategories, setQueryCategories] = useState<QueryCategory[]>([])
+  const [queryCategoriesLoading, setQueryCategoriesLoading] = useState(false)
   const [graphWideQueryModalOpen, setGraphWideQueryModalOpen] = useState(false)
   const [graphWideQueryCategories, setGraphWideQueryCategories] = useState<QueryCategory[]>([])
+  const [graphWideQueryCategoriesLoading, setGraphWideQueryCategoriesLoading] = useState(false)
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [querySequenceGoal, setQuerySequenceGoal] = useState("")
   const [querySequenceRunning, setQuerySequenceRunning] = useState(false)
@@ -449,13 +451,17 @@ export default function GraphView({
               setActiveQuerySourceId(r.id)
             }
           },
-          onOpenQueryModal: () => setQueryModalSourceId(r.id),
+          onOpenQueryModal: () => {
+            setQueryCategories([])
+            setQueryCategoriesLoading(!!workItemId)
+            setQueryModalSourceId(r.id)
+          },
           onEditRevision: onNodeClick ? () => onNodeClick(r.conceptId) : undefined,
         },
         position: { x: 0, y: 0 },
       }
     })
-  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId])
+  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId])
 
   const pendingDeleteRelation = pendingDeleteRelationId
     ? relations.find((r) => r.id === pendingDeleteRelationId)
@@ -528,6 +534,7 @@ export default function GraphView({
   useEffect(() => {
     if (!queryModalSourceId || !workItemId) return
     let cancelled = false
+    setQueryCategoriesLoading(true)
     const qs = activeQuerySourceId || queryModalSourceId
     const qType = activeQuery !== "NONE" ? activeQuery : "NONE"
     apiFetch(`${API}/graph/${workItemId}/query?type=${qType}&sourceRevisionId=${qs}`)
@@ -536,10 +543,14 @@ export default function GraphView({
         if (!cancelled) {
           setQueryCategories(data.categories || [])
           setQueryResult(data)
+          setQueryCategoriesLoading(false)
         }
       })
       .catch(() => {
-        if (!cancelled) setQueryCategories([])
+        if (!cancelled) {
+          setQueryCategories([])
+          setQueryCategoriesLoading(false)
+        }
       })
     return () => {
       cancelled = true
@@ -550,15 +561,20 @@ export default function GraphView({
   useEffect(() => {
     if (!graphWideQueryModalOpen || !workItemId) return
     let cancelled = false
+    setGraphWideQueryCategoriesLoading(true)
     apiFetch(`${API}/graph/${workItemId}/query?type=NONE`)
       .then((r) => r.json())
       .then((data: QueryResult) => {
         if (!cancelled) {
           setGraphWideQueryCategories(data.categories || [])
+          setGraphWideQueryCategoriesLoading(false)
         }
       })
       .catch(() => {
-        if (!cancelled) setGraphWideQueryCategories([])
+        if (!cancelled) {
+          setGraphWideQueryCategories([])
+          setGraphWideQueryCategoriesLoading(false)
+        }
       })
     return () => {
       cancelled = true
@@ -895,7 +911,11 @@ export default function GraphView({
             </div>
             <button
               data-agent="graph-wide-query-button"
-              onClick={() => setGraphWideQueryModalOpen(true)}
+              onClick={() => {
+                setGraphWideQueryCategories([])
+                setGraphWideQueryCategoriesLoading(!!workItemId)
+                setGraphWideQueryModalOpen(true)
+              }}
               style={{
                 ...brutal.button,
                 position: "relative",
@@ -1106,6 +1126,7 @@ export default function GraphView({
                 nodes.find((n) => n.id === queryModalSourceId)?.data.conceptId || ""
               )?.key || "Unknown"
             }
+            loading={queryCategoriesLoading}
             categories={queryCategories
               .map((cat) => ({
                 ...cat,
@@ -1123,13 +1144,17 @@ export default function GraphView({
               }
               setQueryModalSourceId(null)
             }}
-            onClose={() => setQueryModalSourceId(null)}
+            onClose={() => {
+              setQueryModalSourceId(null)
+              setQueryCategoriesLoading(false)
+            }}
           />
         )}
 
         {graphWideQueryModalOpen && (
           <GraphWideQueryPicker
             key={workItemId}
+            loading={graphWideQueryCategoriesLoading}
             categories={graphWideQueryCategories as any}
             onSelect={(value) => {
               setActiveQuery(value as VisibilityQueryType)
@@ -1137,7 +1162,10 @@ export default function GraphView({
               setQueryResult(null)
               setGraphWideQueryModalOpen(false)
             }}
-            onClose={() => setGraphWideQueryModalOpen(false)}
+            onClose={() => {
+              setGraphWideQueryModalOpen(false)
+              setGraphWideQueryCategoriesLoading(false)
+            }}
           />
         )}
 
