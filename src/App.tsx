@@ -747,18 +747,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     selectedWorkItemRef.current = selectedWorkItem
     graphCrashRecoveryWorkItemRef.current = null
     async function load() {
-      const results = await Promise.allSettled([
-        loadWorkItemDetails(selectedWorkItem),
-        loadConcepts(selectedWorkItem),
-        refreshGraph(selectedWorkItem),
-      ])
-
-      if (results[0].status === "rejected") {
-        console.error("Failed to load work item details", results[0].reason)
-      }
-      if (results[1].status === "rejected") {
-        console.error("Failed to load concepts", results[1].reason)
-      }
+      await reloadWorkItem(selectedWorkItem)
 
       setTimeout(() => {
         setLoadingCount(0)
@@ -1017,6 +1006,21 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     const data = await res.json()
 
     setSelectedWorkItemData(data)
+  }
+
+  async function reloadWorkItem(workItemId: string) {
+    const results = await Promise.allSettled([
+      loadWorkItemDetails(workItemId),
+      loadConcepts(workItemId),
+      refreshGraph(workItemId),
+    ])
+
+    if (results[0].status === "rejected") {
+      console.error("Failed to load work item details", results[0].reason)
+    }
+    if (results[1].status === "rejected") {
+      console.error("Failed to load concepts", results[1].reason)
+    }
   }
 
   async function loadWorkItemCompleteness(workItemId: string) {
@@ -2112,11 +2116,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             <GraphView
               loading={!!user && graph === null && !!selectedWorkItem}
               loadError={graphLoadError}
-              onRetry={() => {
-                void refreshGraph(selectedWorkItem).catch((error) => {
-                  console.error("Graph retry failed", error)
-                })
-              }}
+              onRetry={() => reloadWorkItem(selectedWorkItem)}
               revisions={graphData.revisions}
               concepts={graphData.concepts}
               relations={graphData.relations}

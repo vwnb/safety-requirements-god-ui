@@ -325,7 +325,7 @@ export default function GraphView({
   workItemTitle?: string
   onSetLlmPrompt?: (prompt: string) => void
   loadError?: string | null
-  onRetry?: () => void
+  onRetry?: () => void | Promise<void>
 }) {
   const apiFetch = useApiFetch()
   const [pendingConnection, setPendingConnection] = useState<{
@@ -335,6 +335,7 @@ export default function GraphView({
   const [pendingDeleteRelationId, setPendingDeleteRelationId] = useState<string | null>(null)
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null)
   const [graphLoading, setGraphLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [activeQuery, setActiveQuery] = useState<VisibilityQueryType>("NONE")
   const [activeQuerySourceId, setActiveQuerySourceId] = useState<string | null>(null)
   const [queryModalSourceId, setQueryModalSourceId] = useState<string | null>(null)
@@ -1036,26 +1037,62 @@ export default function GraphView({
           </div>
         )}
 
-        {(activeQuery !== "NONE" || activeQuerySourceId) && (
-          <button
-            data-agent="graph-show-all-button"
-            onClick={() => {
-              setActiveQuery("NONE")
-              setActiveQuerySourceId(null)
-              setQueryResult(null)
-            }}
+        {workItemId && (
+          <div
+            data-agent="graph-controls"
             style={{
-              ...brutal.button,
               position: "absolute",
               top: 14,
               right: 14,
               zIndex: 12,
-              padding: "8px 12px",
-              margin: 0,
+              display: "flex",
+              gap: 8,
             }}
           >
-            Show all
-          </button>
+            <button
+              data-agent="graph-refresh-button"
+              type="button"
+              onClick={async () => {
+                if (!onRetry || refreshing) return
+                setRefreshing(true)
+                try {
+                  await onRetry()
+                } catch (error) {
+                  console.error("Failed to refresh work item", error)
+                } finally {
+                  setRefreshing(false)
+                }
+              }}
+              disabled={!onRetry || refreshing}
+              style={{
+                ...brutal.button,
+                padding: "8px 12px",
+                margin: 0,
+                opacity: refreshing ? 0.6 : 1,
+                cursor: refreshing ? "wait" : "pointer",
+              }}
+            >
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+            {(activeQuery !== "NONE" || activeQuerySourceId) && (
+              <button
+                data-agent="graph-show-all-button"
+                type="button"
+                onClick={() => {
+                  setActiveQuery("NONE")
+                  setActiveQuerySourceId(null)
+                  setQueryResult(null)
+                }}
+                style={{
+                  ...brutal.button,
+                  padding: "8px 12px",
+                  margin: 0,
+                }}
+              >
+                Show all
+              </button>
+            )}
+          </div>
         )}
 
         {queryModalSourceId && (
