@@ -1461,10 +1461,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </p>
             <h2>Agentic policy</h2>
             <p>
-              We welcome autonomous humans and AI agents alike.
-            </p>
-            <p>
-              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight.
+              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. <a href="https://registry.modelcontextprotocol.io/v0.1/servers/io.github.vwnb%2Fwcgw.world/versions/1.0.2">MCP is available for authenticated users.</a>
             </p>
           </article>
           <hr />
