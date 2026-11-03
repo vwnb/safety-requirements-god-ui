@@ -1457,7 +1457,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </p>
             <h2>Privacy policy</h2>
             <p>
-              In line with our privacy approach, we use cookies to help identify users and to analyze product usage in a quasi-anonymous manner so we can better improve your user experience.
+              In line with our privacy approach, we use cookies to help identify users and to analyze product usage in a quasi-anonymous manner.
+            </p>
+            <h2>Agentic policy</h2>
+            <p>
+              We welcome autonomous humans and AI agents alike.
+            </p>
+            <p>
+              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight.
             </p>
           </article>
           <hr />
