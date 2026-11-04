@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { typeColor, type Concept } from "../App"
+import { typeColor, type Concept, type PsppDimension } from "../App"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL",
@@ -15,15 +15,18 @@ const TYPES = [
   "ARCHITECTURE",
 ] as const
 
+const PSPP_DIMENSIONS: PsppDimension[] = ["PROCESS", "STRUCTURE", "PROPERTY", "PERFORMANCE"]
 
 export default function ConceptCard({
   concept,
   editKey,
   editTitle,
   editType,
+  editPsppDimension,
   onEditKey,
   onEditTitle,
   onEditType,
+  onEditPsppDimension,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -32,9 +35,11 @@ export default function ConceptCard({
   editKey: string
   editTitle: string
   editType: string
+  editPsppDimension: PsppDimension | ""
   onEditKey: (v: string) => void
   onEditTitle: (v: string) => void
   onEditType: (v: string) => void
+  onEditPsppDimension: (v: PsppDimension | "") => void
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -89,6 +94,7 @@ export default function ConceptCard({
 
           <p className="info-row">
             <span><span className="field-label">Created by</span> {concept.createdBy?.name || "—"}</span>
+            <span><span className="field-label">PSPP dimension</span> {concept.psppDimension || "—"}</span>
           </p>
         </article>
       ) : (
@@ -131,6 +137,19 @@ export default function ConceptCard({
               <option value="">-- Select Type --</option>
               {TYPES.map((t) => (
                 <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-row">
+            <div className="field-label">PSPP dimension</div>
+            <select
+              data-agent="select-edit-concept-pspp-dimension"
+              value={editPsppDimension}
+              onChange={(e) => onEditPsppDimension(e.target.value as PsppDimension | "")}
+            >
+              <option value="">-- Select PSPP dimension --</option>
+              {PSPP_DIMENSIONS.map((dimension) => (
+                <option key={dimension} value={dimension}>{dimension}</option>
               ))}
             </select>
           </div>

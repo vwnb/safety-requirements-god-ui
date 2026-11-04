@@ -28,6 +28,7 @@ import { CollaborationBanner } from "./components/CollaborationBanner"
 import BaselineDetailsCard from "./components/BaselineDetailsCard"
 import TemplateList from "./components/TemplateList"
 import Modal from "./components/Modal"
+import PsppTraversalModal from "./components/PsppTraversalModal"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -38,6 +39,7 @@ export type LifecyclePhase = "ITEM_DEFINITION" | "HARA" | "FUNCTIONAL_SAFETY" | 
 export type ASIL = "QM" | "ASIL_A" | "ASIL_B" | "ASIL_C" | "ASIL_D"
 export type SIL = "SIL_1" | "SIL_2" | "SIL_3" | "SIL_4"
 export type PL = "PL_A" | "PL_B" | "PL_C" | "PL_D" | "PL_E"
+export type PsppDimension = "PROCESS" | "STRUCTURE" | "PROPERTY" | "PERFORMANCE"
 export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 export type ConceptType = string
 export type RelationType = string
@@ -73,6 +75,7 @@ export type Concept = {
   asil?: ASIL
   sil?: SIL
   pl?: PL
+  psppDimension?: PsppDimension
   standards?: Standard[]
   createdBy: { name: string }
 }
@@ -516,6 +519,13 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     useState<Record<string, Revision[]>>({})
 
   const [activeRevisionId, setActiveRevisionId] = useState<string | null>(null)
+  const [psppTraversal, setPsppTraversal] = useState<{
+    revisionId: string
+    result: unknown
+    loading: boolean
+    error: string | null
+  } | null>(null)
+  const psppTraversalRequestRef = useRef(0)
   const [editorValue, setEditorValue] = useState("")
   const [llmPrompt, setLlmPrompt] = useState("")
 
@@ -532,6 +542,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [editConceptAsil, setEditConceptAsil] = useState("QM")
   const [editConceptSil, setEditConceptSil] = useState("")
   const [editConceptPl, setEditConceptPl] = useState("")
+  const [editConceptPsppDimension, setEditConceptPsppDimension] = useState<PsppDimension | "">("")
   const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
   const [editConceptKey, setEditConceptKey] = useState("")
@@ -785,6 +796,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         setEditConceptAsil(concept.asil || "")
         setEditConceptSil(concept.sil || "")
         setEditConceptPl(concept.pl || "")
+        setEditConceptPsppDimension(concept.psppDimension || "")
         setEditConceptStandards(concept.standards || [])
       }
     }
@@ -825,6 +837,45 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }))
 
     return data
+  }
+
+  async function loadPsppTraversal(revisionId: string) {
+    const requestId = ++psppTraversalRequestRef.current
+    setPsppTraversal({ revisionId, result: null, loading: true, error: null })
+
+    const params = new URLSearchParams({
+      sourceRevisionId: revisionId,
+      direction: "BOTH",
+      maxDepth: "3",
+    })
+
+    try {
+      const res = await apiFetch(
+        `${API}/work-items/${encodeURIComponent(selectedWorkItem)}/pspp-traversal?${params}`
+      )
+      if (!res.ok) {
+        throw new Error(`Failed to load PSPP traversal: ${res.status} ${res.statusText}`)
+      }
+
+      const result: unknown = await res.json()
+      if (requestId === psppTraversalRequestRef.current) {
+        setPsppTraversal({ revisionId, result, loading: false, error: null })
+      }
+    } catch (error) {
+      if (requestId === psppTraversalRequestRef.current) {
+        setPsppTraversal({
+          revisionId,
+          result: null,
+          loading: false,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+  }
+
+  function closePsppTraversal() {
+    psppTraversalRequestRef.current += 1
+    setPsppTraversal(null)
   }
 
   function getRevisionText(id: string) {
@@ -952,6 +1003,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           asil: editConceptAsil || null,
           sil: editConceptSil || null,
           pl: editConceptPl || null,
+          psppDimension: editConceptPsppDimension || null,
           standards: editConceptStandards.length > 0 ? editConceptStandards : null,
           user: actorForApi
         }),
@@ -966,6 +1018,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         asil: editConceptAsil as ASIL,
         sil: editConceptSil as SIL,
         pl: editConceptPl as PL,
+        psppDimension: editConceptPsppDimension || undefined,
         standards: editConceptStandards,
         createdBy: activeConcept?.createdBy || { name: "" },
       })
@@ -982,6 +1035,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               asil: editConceptAsil as ASIL,
               sil: editConceptSil as SIL,
               pl: editConceptPl as PL,
+              psppDimension: editConceptPsppDimension || undefined,
               standards: editConceptStandards,
             }
             : c
@@ -1727,6 +1781,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onEditKey={setEditConceptKey}
                       onEditTitle={setEditConceptTitle}
                       onEditType={setEditConceptType}
+                      editPsppDimension={editConceptPsppDimension}
+                      onEditPsppDimension={setEditConceptPsppDimension}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}
@@ -1800,6 +1856,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                     style={brutal.button}
                                   >
                                     Edit
+                                  </button>
+
+                                  <button
+                                    data-agent="btn-pspp-traversal"
+                                    onClick={() => void loadPsppTraversal(r.id)}
+                                    style={brutal.button}
+                                  >
+                                    PSPP traversal
                                   </button>
 
                                   <div
@@ -2161,6 +2225,15 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             />
           </GraphErrorBoundary>
         </main>
+      )}
+      {psppTraversal && (
+        <PsppTraversalModal
+          revisionId={psppTraversal.revisionId}
+          result={psppTraversal.result}
+          loading={psppTraversal.loading}
+          error={psppTraversal.error}
+          onClose={closePsppTraversal}
+        />
       )}
     </>
   )
