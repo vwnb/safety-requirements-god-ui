@@ -1858,14 +1858,6 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                                     Edit
                                   </button>
 
-                                  <button
-                                    data-agent="btn-pspp-traversal"
-                                    onClick={() => void loadPsppTraversal(r.id)}
-                                    style={brutal.button}
-                                  >
-                                    PSPP traversal
-                                  </button>
-
                                   <div
                                     style={{
                                       border: "1px solid black",
@@ -2218,6 +2210,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               projectTitle={selectedProject?.key}
               workItemId={selectedWorkItem}
               workItemTitle={selectedWorkItemData ? `${selectedWorkItemData.key} - ${selectedWorkItemData.name}` : undefined}
+              onPsppTraversal={(revisionId) => void loadPsppTraversal(revisionId)}
               onViewportChange={(viewport) => {
                 collab.sendViewportCoordinates({ x: viewport.x, y: viewport.y })
               }}

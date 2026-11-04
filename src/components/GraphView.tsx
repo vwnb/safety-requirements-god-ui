@@ -277,6 +277,21 @@ function ConceptNode({ data, id }: any) {
           >
             Query node
           </button>
+          <button
+            data-agent="graph-node-pspp"
+            onClick={(event) => {
+              event.stopPropagation()
+              data.onPsppTraversal?.()
+            }}
+            style={{
+              ...brutal.button,
+              padding: "4px 8px",
+              fontSize: 11,
+              whiteSpace: "nowrap",
+            }}
+          >
+            PSPP
+          </button>
         </div>
       </div>
 
@@ -307,6 +322,7 @@ export default function GraphView({
   workItemId,
   workItemTitle,
   onSetLlmPrompt,
+  onPsppTraversal,
   loadError,
   onRetry,
 }: {
@@ -324,6 +340,7 @@ export default function GraphView({
   workItemId?: string
   workItemTitle?: string
   onSetLlmPrompt?: (prompt: string) => void
+  onPsppTraversal?: (revisionId: string) => void
   loadError?: string | null
   onRetry?: () => void | Promise<void>
 }) {
@@ -456,12 +473,13 @@ export default function GraphView({
             setQueryCategoriesLoading(!!workItemId)
             setQueryModalSourceId(r.id)
           },
+          onPsppTraversal: onPsppTraversal ? () => onPsppTraversal(r.id) : undefined,
           onEditRevision: onNodeClick ? () => onNodeClick(r.conceptId) : undefined,
         },
         position: { x: 0, y: 0 },
       }
     })
-  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId])
+  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId, onPsppTraversal])
 
   const pendingDeleteRelation = pendingDeleteRelationId
     ? relations.find((r) => r.id === pendingDeleteRelationId)
