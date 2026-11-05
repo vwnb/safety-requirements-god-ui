@@ -371,7 +371,7 @@ function ConceptNode({ data, id }: any) {
               whiteSpace: "nowrap",
             }}
           >
-            Query node
+            Query
           </button>
           <button
             data-agent="graph-node-pspp"
