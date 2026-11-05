@@ -46,6 +46,101 @@ type Relation = {
 const nodeWidth = 220
 const nodeHeight = 80
 
+// Deterministic color scale for graph traversal depth.
+export function depthColor(depth: number): string {
+  const safeDepth = Number.isFinite(depth) && depth >= 0 ? Math.floor(depth) : 0
+  const hue = (safeDepth * 55) % 360
+  const lightness = Math.max(28, 58 - safeDepth * 4)
+  return `hsl(${hue}, 70%, ${lightness}%)`
+}
+
+// Derive node depths from a traversal graph structure using the source as depth 0.
+// Accepts edges with either fromId/toId or source/target fields.
+export function computeGraphDepths(
+  nodeIds: Array<string | { id: string; depth?: number }>,
+  edges: Array<{ fromId?: string; toId?: string; source?: string; target?: string }>,
+  sourceId: string | null,
+): Record<string, number> {
+  const depths: Record<string, number> = {}
+
+  // If nodes directly carry depth, prefer it.
+  const nodesWithDepth = nodeIds.filter(
+    (n): n is { id: string; depth?: number } =>
+      typeof n === "object" && n !== null && typeof (n as any).id === "string",
+  )
+  let hasDirectDepth = false
+  if (nodesWithDepth.length === nodeIds.length && nodeIds.length > 0) {
+    for (const n of nodesWithDepth) {
+      if (typeof n.depth === "number") {
+        hasDirectDepth = true
+        depths[n.id] = n.depth
+      }
+    }
+  }
+  if (hasDirectDepth) {
+    // Fill any missing via BFS below, but keep provided values.
+  }
+
+  // Build adjacency list for BFS fallback / completion.
+  const adjacency = new Map<string, Set<string>>()
+  const ensure = (id: string) => {
+    if (!adjacency.has(id)) adjacency.set(id, new Set())
+  }
+  for (const e of edges) {
+    const s = e.fromId ?? e.source
+    const t = e.toId ?? e.target
+    if (!s || !t) continue
+    ensure(s)
+    ensure(t)
+    adjacency.get(s)!.add(t)
+    adjacency.get(t)!.add(s)
+  }
+
+  const allIds = new Set<string>()
+  for (const n of nodeIds) {
+    allIds.add(typeof n === "string" ? n : n.id)
+  }
+  for (const id of adjacency.keys()) allIds.add(id)
+
+  // If direct depths were provided for all nodes, return them.
+  if (hasDirectDepth && Object.keys(depths).length === allIds.size) {
+    return depths
+  }
+
+  // Determine traversal root.
+  const root = sourceId && allIds.has(sourceId) ? sourceId : null
+  if (!root) {
+    // No source: leave depths empty (caller falls back).
+    return hasDirectDepth ? depths : {}
+  }
+
+  // BFS from root, treating edges as undirected.
+  const visited = new Set<string>([root])
+  const queue: Array<{ id: string; d: number }> = [{ id: root, d: 0 }]
+  if (depths[root] == null) depths[root] = 0
+  while (queue.length > 0) {
+    const { id, d } = queue.shift()!
+    // Respect direct depth if present.
+    const currentDepth = depths[id] != null ? depths[id] : d
+    if (depths[id] == null) depths[id] = currentDepth
+    for (const neighbor of adjacency.get(id) ?? []) {
+      if (visited.has(neighbor)) continue
+      visited.add(neighbor)
+      if (depths[neighbor] == null) depths[neighbor] = currentDepth + 1
+      queue.push({ id: neighbor, d: currentDepth + 1 })
+    }
+  }
+
+  // Ensure all nodes have an entry if direct depths provided.
+  for (const id of allIds) {
+    if (depths[id] == null) {
+      // Disconnected node: assign a large depth? Keep undefined by omitting.
+    }
+  }
+
+  return depths
+}
+
 type VisibilityQueryType =
   | "NONE"
   // Traceability
@@ -159,6 +254,7 @@ function layoutGraph(nodes: Node[], edges: Edge[]) {
 type GraphNode = {
   id: string
   conceptId: string
+  depth?: number
 }
 
 type GraphEdge = {
@@ -376,6 +472,7 @@ export default function GraphView({
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const initialViewportSentRef = useRef(false)
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null)
+  const [psppResult, setPsppResult] = useState<QueryResult | null>(null)
 
   useEffect(() => {
     initialViewportSentRef.current = false
@@ -443,6 +540,46 @@ export default function GraphView({
     return m
   }, [revisions])
 
+  const handlePsppTraversal = useCallback(async (revisionId: string) => {
+    if (!workItemId) return
+    try {
+      const params = new URLSearchParams({
+        sourceRevisionId: revisionId,
+        direction: "BOTH",
+        maxDepth: "3",
+      })
+      const res = await apiFetch(
+        `${API}/work-items/${encodeURIComponent(workItemId)}/pspp-traversal?${params}`,
+      )
+      if (!res.ok) {
+        throw new Error(`Failed to load PSPP traversal: ${res.status} ${res.statusText}`)
+      }
+      const result: any = await res.json()
+      console.log(result)
+      setPsppResult({
+        queryType: (result?.queryType ?? (activeQuery !== "NONE" ? activeQuery : "NONE")) as VisibilityQueryType,
+        sourceRevisionId: result?.sourceRevisionId ?? revisionId,
+        nodes: Array.isArray(result?.nodes) ? result.nodes : [],
+        edges: Array.isArray(result?.edges) ? result.edges : [],
+        explanations: result?.explanations ?? null,
+        categories: Array.isArray(result?.categories) ? result.categories : [],
+      })
+      setActiveQuerySourceId(revisionId)
+    } catch (error) {
+
+    }
+  }, [workItemId, API, apiFetch, activeQuery, onPsppTraversal])
+
+  const depthByNode = useMemo(() => {
+    if (!psppResult) return {}
+
+    return computeGraphDepths(
+      psppResult.nodes,
+      psppResult.edges,
+      psppResult.sourceRevisionId
+    )
+  }, [psppResult])
+
   const nodes: Node[] = useMemo(() => {
     return revisions.map((r) => {
       const concept = conceptMap.get(r.conceptId)
@@ -455,7 +592,10 @@ export default function GraphView({
         data: {
           label: (concept?.key || "?") + " - " + (concept?.title || "Untitled"),
           type: concept?.type || "Concept",
-          color: typeColor[concept?.type || ""],
+          color:
+            Object.prototype.hasOwnProperty.call(depthByNode, r.id)
+              ? depthColor(depthByNode[r.id])
+              : typeColor[concept?.type || ""],
           conceptId: r.conceptId,
           excerpt: latestRev?.markdown?.slice(0, 120) + "...",
           queryValue: isActiveQuerySource ? activeQuery : "NONE",
@@ -473,13 +613,15 @@ export default function GraphView({
             setQueryCategoriesLoading(!!workItemId)
             setQueryModalSourceId(r.id)
           },
-          onPsppTraversal: onPsppTraversal ? () => onPsppTraversal(r.id) : undefined,
+          onPsppTraversal: () => {
+            void handlePsppTraversal(r.id);
+          },
           onEditRevision: onNodeClick ? () => onNodeClick(r.conceptId) : undefined,
         },
         position: { x: 0, y: 0 },
       }
     })
-  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId, onPsppTraversal])
+  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId, onPsppTraversal, depthByNode])
 
   const pendingDeleteRelation = pendingDeleteRelationId
     ? relations.find((r) => r.id === pendingDeleteRelationId)
@@ -601,33 +743,45 @@ export default function GraphView({
 
   // Fetch query result from backend whenever active query changes
   const { nodes: visibleNodes, edges: visibleEdges } = useMemo(() => {
-    if (activeQuery === "NONE" || !workItemId) {
+    // PSPP traversal takes precedence
+    if (psppResult) {
+      const nodeIds = new Set(psppResult.nodes.map(n => n.id))
+      const edgeIds = new Set(psppResult.edges.map(e => e.id))
+
+      return {
+        nodes: nodes.filter(n => nodeIds.has(n.id)),
+        edges: edges.filter(e => edgeIds.has(e.id)),
+      }
+    }
+
+    // Existing graph query behavior
+    if (!queryResult || activeQuery === "NONE") {
       return { nodes, edges }
     }
-    // Check if this is a graph-wide query (sourceRevisionId is null)
-    const isGraphWide = activeQuerySourceId === null && GRAPH_WIDE_QUERY_TYPES.has(activeQuery)
-    // For node queries, we need a source revision id
+
+    const isGraphWide =
+      activeQuerySourceId === null &&
+      GRAPH_WIDE_QUERY_TYPES.has(activeQuery)
+
     if (!isGraphWide && !activeQuerySourceId) {
       return { nodes, edges }
     }
-    // Use the API-fetched result when available and matching the current source
+
     if (
-      queryResult &&
       queryResult.sourceRevisionId === activeQuerySourceId &&
       queryResult.queryType === activeQuery
     ) {
-      const nodeIds = new Set(queryResult.nodes.map((n) => n.id))
-      const edgeIds = new Set(queryResult.edges.map((e) => e.id))
+      const nodeIds = new Set(queryResult.nodes.map(n => n.id))
+      const edgeIds = new Set(queryResult.edges.map(e => e.id))
 
       return {
-        nodes: nodes.filter((n) => nodeIds.has(n.id)),
-        edges: edges.filter((e) => edgeIds.has(e.id)),
+        nodes: nodes.filter(n => nodeIds.has(n.id)),
+        edges: edges.filter(e => edgeIds.has(e.id)),
       }
     }
-    // Fallback: keep the full graph visible until the query result arrives,
-    // instead of blanking the canvas (which looked like a loading failure).
+
     return { nodes, edges }
-  }, [activeQuery, activeQuerySourceId, workItemId, nodes, edges, queryResult])
+  }, [psppResult, queryResult, activeQuery, activeQuerySourceId, nodes, edges])
 
   // Fetch query result from backend
   useEffect(() => {
@@ -1114,24 +1268,27 @@ export default function GraphView({
             >
               {refreshing ? "Refreshing…" : "Refresh"}
             </button>
-            {(activeQuery !== "NONE" || activeQuerySourceId) && (
-              <button
-                data-agent="graph-show-all-button"
-                type="button"
-                onClick={() => {
-                  setActiveQuery("NONE")
-                  setActiveQuerySourceId(null)
-                  setQueryResult(null)
-                }}
-                style={{
-                  ...brutal.button,
-                  padding: "8px 12px",
-                  margin: 0,
-                }}
-              >
-                Show all
-              </button>
-            )}
+            {(psppResult !== null ||
+              activeQuery !== "NONE" ||
+              activeQuerySourceId !== null) && (
+                <button
+                  data-agent="graph-show-all-button"
+                  type="button"
+                  onClick={() => {
+                    setPsppResult(null)
+                    setQueryResult(null)
+                    setActiveQuery("NONE")
+                    setActiveQuerySourceId(null)
+                  }}
+                  style={{
+                    ...brutal.button,
+                    padding: "8px 12px",
+                    margin: 0,
+                  }}
+                >
+                  Show all
+                </button>
+              )}
           </div>
         )}
 
