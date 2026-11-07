@@ -54,93 +54,6 @@ export function depthColor(depth: number): string {
   return `hsl(${hue}, 70%, ${lightness}%)`
 }
 
-// Derive node depths from a traversal graph structure using the source as depth 0.
-// Accepts edges with either fromId/toId or source/target fields.
-export function computeGraphDepths(
-  nodeIds: Array<string | { id: string; depth?: number }>,
-  edges: Array<{ fromId?: string; toId?: string; source?: string; target?: string }>,
-  sourceId: string | null,
-): Record<string, number> {
-  const depths: Record<string, number> = {}
-
-  // If nodes directly carry depth, prefer it.
-  const nodesWithDepth = nodeIds.filter(
-    (n): n is { id: string; depth?: number } =>
-      typeof n === "object" && n !== null && typeof (n as any).id === "string",
-  )
-  let hasDirectDepth = false
-  if (nodesWithDepth.length === nodeIds.length && nodeIds.length > 0) {
-    for (const n of nodesWithDepth) {
-      if (typeof n.depth === "number") {
-        hasDirectDepth = true
-        depths[n.id] = n.depth
-      }
-    }
-  }
-  if (hasDirectDepth) {
-    // Fill any missing via BFS below, but keep provided values.
-  }
-
-  // Build adjacency list for BFS fallback / completion.
-  const adjacency = new Map<string, Set<string>>()
-  const ensure = (id: string) => {
-    if (!adjacency.has(id)) adjacency.set(id, new Set())
-  }
-  for (const e of edges) {
-    const s = e.fromId ?? e.source
-    const t = e.toId ?? e.target
-    if (!s || !t) continue
-    ensure(s)
-    ensure(t)
-    adjacency.get(s)!.add(t)
-    adjacency.get(t)!.add(s)
-  }
-
-  const allIds = new Set<string>()
-  for (const n of nodeIds) {
-    allIds.add(typeof n === "string" ? n : n.id)
-  }
-  for (const id of adjacency.keys()) allIds.add(id)
-
-  // If direct depths were provided for all nodes, return them.
-  if (hasDirectDepth && Object.keys(depths).length === allIds.size) {
-    return depths
-  }
-
-  // Determine traversal root.
-  const root = sourceId && allIds.has(sourceId) ? sourceId : null
-  if (!root) {
-    // No source: leave depths empty (caller falls back).
-    return hasDirectDepth ? depths : {}
-  }
-
-  // BFS from root, treating edges as undirected.
-  const visited = new Set<string>([root])
-  const queue: Array<{ id: string; d: number }> = [{ id: root, d: 0 }]
-  if (depths[root] == null) depths[root] = 0
-  while (queue.length > 0) {
-    const { id, d } = queue.shift()!
-    // Respect direct depth if present.
-    const currentDepth = depths[id] != null ? depths[id] : d
-    if (depths[id] == null) depths[id] = currentDepth
-    for (const neighbor of adjacency.get(id) ?? []) {
-      if (visited.has(neighbor)) continue
-      visited.add(neighbor)
-      if (depths[neighbor] == null) depths[neighbor] = currentDepth + 1
-      queue.push({ id: neighbor, d: currentDepth + 1 })
-    }
-  }
-
-  // Ensure all nodes have an entry if direct depths provided.
-  for (const id of allIds) {
-    if (depths[id] == null) {
-      // Disconnected node: assign a large depth? Keep undefined by omitting.
-    }
-  }
-
-  return depths
-}
-
 type VisibilityQueryType =
   | "NONE"
   // Traceability
@@ -175,6 +88,7 @@ type VisibilityQueryType =
   | "LIFECYCLE_COVERAGE"
   // Navigation
   | "NEIGHBORHOOD"
+  | "PSPP_TRAVERSAL"
   | "CONNECTED_COMPONENT"
   | "BREADTH_FIRST"
 
@@ -254,13 +168,13 @@ function layoutGraph(nodes: Node[], edges: Edge[]) {
 type GraphNode = {
   id: string
   conceptId: string
-  depth?: number
+  depth?: number | null
 }
 
 type GraphEdge = {
   id: string
-  fromId: string
-  toId: string
+  source: string
+  target: string
   type: string
 }
 
@@ -373,21 +287,6 @@ function ConceptNode({ data, id }: any) {
           >
             Query
           </button>
-          <button
-            data-agent="graph-node-pspp"
-            onClick={(event) => {
-              event.stopPropagation()
-              data.onPsppTraversal?.()
-            }}
-            style={{
-              ...brutal.button,
-              padding: "4px 8px",
-              fontSize: 11,
-              whiteSpace: "nowrap",
-            }}
-          >
-            PSPP
-          </button>
         </div>
       </div>
 
@@ -418,7 +317,6 @@ export default function GraphView({
   workItemId,
   workItemTitle,
   onSetLlmPrompt,
-  onPsppTraversal,
   loadError,
   onRetry,
 }: {
@@ -436,7 +334,6 @@ export default function GraphView({
   workItemId?: string
   workItemTitle?: string
   onSetLlmPrompt?: (prompt: string) => void
-  onPsppTraversal?: (revisionId: string) => void
   loadError?: string | null
   onRetry?: () => void | Promise<void>
 }) {
@@ -472,7 +369,6 @@ export default function GraphView({
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const initialViewportSentRef = useRef(false)
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null)
-  const [psppResult, setPsppResult] = useState<QueryResult | null>(null)
 
   useEffect(() => {
     initialViewportSentRef.current = false
@@ -540,45 +436,25 @@ export default function GraphView({
     return m
   }, [revisions])
 
-  const handlePsppTraversal = useCallback(async (revisionId: string) => {
-    if (!workItemId) return
-    try {
-      const params = new URLSearchParams({
-        sourceRevisionId: revisionId,
-        direction: "BOTH",
-        maxDepth: "3",
-      })
-      const res = await apiFetch(
-        `${API}/work-items/${encodeURIComponent(workItemId)}/pspp-traversal?${params}`,
-      )
-      if (!res.ok) {
-        throw new Error(`Failed to load PSPP traversal: ${res.status} ${res.statusText}`)
-      }
-      const result: any = await res.json()
-      console.log(result)
-      setPsppResult({
-        queryType: (result?.queryType ?? (activeQuery !== "NONE" ? activeQuery : "NONE")) as VisibilityQueryType,
-        sourceRevisionId: result?.sourceRevisionId ?? revisionId,
-        nodes: Array.isArray(result?.nodes) ? result.nodes : [],
-        edges: Array.isArray(result?.edges) ? result.edges : [],
-        explanations: result?.explanations ?? null,
-        categories: Array.isArray(result?.categories) ? result.categories : [],
-      })
-      setActiveQuerySourceId(revisionId)
-    } catch (error) {
-
-    }
-  }, [workItemId, API, apiFetch, activeQuery, onPsppTraversal])
-
   const depthByNode = useMemo(() => {
-    if (!psppResult) return {}
+    const depths: Record<string, number> = {}
+    if (
+      activeQuery === "NONE" ||
+      GRAPH_WIDE_QUERY_TYPES.has(activeQuery) ||
+      !activeQuerySourceId ||
+      queryResult?.queryType !== activeQuery ||
+      queryResult.sourceRevisionId !== activeQuerySourceId
+    ) return depths
 
-    return computeGraphDepths(
-      psppResult.nodes,
-      psppResult.edges,
-      psppResult.sourceRevisionId
-    )
-  }, [psppResult])
+    // Backend distances respect query direction, filters, and hidden intermediates.
+    // Null/missing depths retain the concept-type color.
+    for (const node of queryResult.nodes) {
+      if (typeof node.depth === "number" && Number.isFinite(node.depth) && node.depth >= 0) {
+        depths[node.id] = node.depth
+      }
+    }
+    return depths
+  }, [queryResult, activeQuery, activeQuerySourceId])
 
   const nodes: Node[] = useMemo(() => {
     return revisions.map((r) => {
@@ -613,15 +489,12 @@ export default function GraphView({
             setQueryCategoriesLoading(!!workItemId)
             setQueryModalSourceId(r.id)
           },
-          onPsppTraversal: () => {
-            void handlePsppTraversal(r.id);
-          },
           onEditRevision: onNodeClick ? () => onNodeClick(r.conceptId) : undefined,
         },
         position: { x: 0, y: 0 },
       }
     })
-  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId, onPsppTraversal, depthByNode])
+  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId, onNodeClick, depthByNode])
 
   const pendingDeleteRelation = pendingDeleteRelationId
     ? relations.find((r) => r.id === pendingDeleteRelationId)
@@ -743,18 +616,6 @@ export default function GraphView({
 
   // Fetch query result from backend whenever active query changes
   const { nodes: visibleNodes, edges: visibleEdges } = useMemo(() => {
-    // PSPP traversal takes precedence
-    if (psppResult) {
-      const nodeIds = new Set(psppResult.nodes.map(n => n.id))
-      const edgeIds = new Set(psppResult.edges.map(e => e.id))
-
-      return {
-        nodes: nodes.filter(n => nodeIds.has(n.id)),
-        edges: edges.filter(e => edgeIds.has(e.id)),
-      }
-    }
-
-    // Existing graph query behavior
     if (!queryResult || activeQuery === "NONE") {
       return { nodes, edges }
     }
@@ -781,7 +642,7 @@ export default function GraphView({
     }
 
     return { nodes, edges }
-  }, [psppResult, queryResult, activeQuery, activeQuerySourceId, nodes, edges])
+  }, [queryResult, activeQuery, activeQuerySourceId, nodes, edges])
 
   // Fetch query result from backend
   useEffect(() => {
@@ -1268,14 +1129,12 @@ export default function GraphView({
             >
               {refreshing ? "Refreshing…" : "Refresh"}
             </button>
-            {(psppResult !== null ||
-              activeQuery !== "NONE" ||
+            {(activeQuery !== "NONE" ||
               activeQuerySourceId !== null) && (
                 <button
                   data-agent="graph-show-all-button"
                   type="button"
                   onClick={() => {
-                    setPsppResult(null)
                     setQueryResult(null)
                     setActiveQuery("NONE")
                     setActiveQuerySourceId(null)

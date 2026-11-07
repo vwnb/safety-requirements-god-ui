@@ -6,8 +6,8 @@ export type QuerySequenceStepPayload = {
 export type QuerySequenceStepResult = {
   queryType?: string
   sourceRevisionId?: string | null
-  nodes?: Array<{ id: string; conceptId?: string }>
-  edges?: Array<{ id: string; fromId?: string; toId?: string }>
+  nodes?: Array<{ id: string; conceptId?: string; depth?: number | null }>
+  edges?: Array<{ id: string; source?: string; target?: string }>
   explanations?: { title: string; content: string } | null
 }
 
