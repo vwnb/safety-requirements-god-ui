@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['src/assets/favicon.ico'],
       manifest: {
-        name: 'Safety Requirements GOD UI',
-        short_name: 'Safety GOD',
+        name: 'WCGW Safety UI',
+        short_name: 'WCGW Safety',
         description: 'ISO 26262 Safety Requirements Management',
         theme_color: '#e9ede9',
         background_color: '#e9ede9',

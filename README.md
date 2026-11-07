@@ -71,4 +71,4 @@ export default defineConfig([
   },
 ])
 ```
-# safety-requirements-god-ui
+# wcgw-safety-ui
