@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['src/assets/favicon.ico'],
+      includeAssets: ['favicon.ico'],
       manifest: {
         name: 'WCGW Safety UI',
         short_name: 'WCGW Safety',
@@ -19,7 +19,7 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'src/assets/favicon.ico',
+            src: 'favicon.ico',
             sizes: 'any',
             type: 'image/x-icon',
             purpose: 'any maskable',
