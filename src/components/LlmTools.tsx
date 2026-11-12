@@ -135,10 +135,7 @@ interface LlmToolsProps {
 export function LlmTools({
   selectedWorkItem,
   selectedWorkItemData,
-  concepts,
   activeRevisionId,
-  onSetActiveRevisionId,
-  onSetEditorValue,
   actorForApi,
   actorName,
   apiFetch,
@@ -162,7 +159,6 @@ export function LlmTools({
 
   // Warnings collected while acting on a suggestion are surfaced in a modal.
   type CollectedWarning = { message: string; payload?: unknown }
-  const warningsRef = useRef<CollectedWarning[]>([])
   const [warningsModal, setWarningsModal] = useState<CollectedWarning[] | null>(null)
 
   const [runnerActive, setRunnerActive] = useState(false)
@@ -174,13 +170,6 @@ export function LlmTools({
     errors: { suggestion: EvaluatorSuggestion; message: string }[]
   } | null>(null)
   const [runnerModalOpen, setRunnerModalOpen] = useState(false)
-
-  // Collect a console.warn so it can be shown to the user in a modal.
-  // The textual message and the JSON payload are stored separately.
-  const collectWarning = useCallback((message: string, payload?: unknown) => {
-    console.warn(message, payload ?? "")
-    warningsRef.current.push({ message, payload })
-  }, [])
 
   // Fetch the full list of evaluation results for the dropdown.
   // We always read the whole list from the API so newly generated reports
@@ -412,218 +401,52 @@ export function LlmTools({
     })
   }, [actOnSuggestionApi])
 
+  const applyingRef = useRef(new Set<string>())
   const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion, options?: { silent?: boolean }) => {
+    const warnings: CollectedWarning[] = []
     const silent = !!options?.silent
-    warningsRef.current = []
-
-    try {
-      const { action, payload } = suggestion
-
-      const normalizedAction =
-        action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
-
-      switch (normalizedAction) {
-        case 'Create': {
-          if (!selectedWorkItem) { collectWarning("No work item selected", undefined); return { warnings: [...warningsRef.current] } }
-
-          if (!silent) onSetLoading(true)
-          onSetLoadingMessage("Creating from suggestion...")
-
-          try {
-            const concepts = (payload.concepts ?? []).map((c: PayloadConcept) => ({
-              key: c.key,
-              type: c.type,
-              title: c.title || "",
-              phase: c.phase || undefined,
-              asil: c.asil || undefined,
-              sil: c.sil || undefined,
-              pl: c.pl || undefined,
-              standards: c.standards || undefined,
-              createdBy: { name: displayName },
-            }))
-
-            const revisions = (payload.revisions ?? []).map((r: PayloadRevision) => ({
-              conceptKey: r.conceptKey,
-              markdown: r.markdown,
-              versionMajor: r.versionMajor ?? 1,
-              versionMinor: r.versionMinor ?? 0,
-              versionPatch: r.versionPatch ?? 0,
-            }))
-
-            const relations = (payload.relations ?? []).map((r: PayloadRelation) => ({
-              fromConceptKey: r.fromKey,
-              toConceptKey: r.toKey,
-              fromKey: r.fromKey,
-              toKey: r.toKey,
-              sourceConceptKey: r.fromKey,
-              targetConceptKey: r.toKey,
-              type: r.type,
-              rationale: r.rationale,
-            }))
-
-            let res: Response
-            try {
-              res = await apiFetch(`${API}/work-items/${selectedWorkItem}/graph`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  concepts,
-                  revisions,
-                  relations,
-                  user: actorForApi,
-                }),
-              })
-
-              if (!res.ok) {
-                collectWarning(`Failed to create from suggestion (HTTP ${res.status})`, payload)
-                return { warnings: [...warningsRef.current] }
-              }
-            } catch (err) {
-              collectWarning(`Failed to create from suggestion: ${describeError(err)}`, payload)
-              return { warnings: [...warningsRef.current] }
-            }
-
-            await onLoadConcepts(selectedWorkItem)
-            await onRefreshGraph(selectedWorkItem)
-            if (warningsRef.current.length === 0) markSuggestion(suggestion.id, "ACTED_ON")
-          } finally {
-            if (!silent) onSetLoading(false)
-          }
-          return { warnings: [...warningsRef.current] }
+    if (!suggestion.id || !selectedReportId || !selectedWorkItem) {
+      warnings.push({ message: "Reload the persisted report before applying this suggestion." })
+    } else if (applyingRef.current.has(suggestion.id)) {
+      warnings.push({ message: "This suggestion is already being applied." })
+    } else {
+      applyingRef.current.add(suggestion.id)
+      if (!silent) onSetLoading(true)
+      onSetLoadingMessage("Applying approved suggestion...")
+      try {
+        const response = await apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/${selectedReportId}/apply`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ suggestionIds: [suggestion.id] }),
+        })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || `Application failed (HTTP ${response.status})`)
+        const outcome = result.results?.[0]
+        if (!["applied", "already_applied"].includes(outcome?.status)) throw new Error(outcome?.error || "Suggestion was not applied")
+        // Refresh persisted review state as well as the affected graph.
+        setSuggestions(prev => prev?.map(s => s.id === suggestion.id ? { ...s, actedOn: "ACTED_ON" } : s) ?? null)
+        const refreshed = await Promise.allSettled([
+          (async () => {
+            const report = await apiFetch(`${API}/evaluation-results/${selectedReportId}`)
+            if (!report.ok) throw new Error("Report refresh failed")
+            setSuggestions(toSuggestionArray((await report.json()).suggestions))
+          })(),
+          onLoadConcepts(selectedWorkItem),
+          onRefreshGraph(selectedWorkItem),
+        ])
+        if (refreshed.some(result => result.status === "rejected")) {
+          throw new Error("Applied successfully, but some views could not refresh. Reload the work item and report.")
         }
-
-        case 'Revise': {
-          if (!selectedWorkItem) { collectWarning("No work item selected", undefined); return { warnings: [...warningsRef.current] } }
-
-          if (!payload.conceptKey || !payload.markdown) {
-            collectWarning("Revise suggestion is missing conceptKey/markdown", payload)
-            return { warnings: [...warningsRef.current] }
-          }
-
-          const concept = (concepts ?? []).find((c) => c.key === payload.conceptKey)
-          if (!concept) {
-            collectWarning(`Revise suggestion references unknown concept "${payload.conceptKey}"`, payload)
-            return { warnings: [...warningsRef.current] }
-          }
-
-          if (!silent) onSetLoading(true)
-          onSetLoadingMessage("Revising from suggestion...")
-
-          try {
-            let res: Response
-            try {
-              res = await apiFetch(`${API}/workflow/submit-change`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  conceptId: concept.id,
-                  markdown: payload.markdown,
-                  user: actorForApi,
-                }),
-              })
-
-              if (!res.ok) {
-                collectWarning(`Failed to revise from suggestion (HTTP ${res.status})`, payload)
-                return { warnings: [...warningsRef.current] }
-              }
-            } catch (err) {
-              collectWarning(`Failed to revise from suggestion: ${describeError(err)}`, payload)
-              return { warnings: [...warningsRef.current] }
-            }
-
-            await onLoadConcepts(selectedWorkItem)
-            await onRefreshGraph(selectedWorkItem)
-            if (warningsRef.current.length === 0) markSuggestion(suggestion.id, "ACTED_ON")
-          } finally {
-            if (!silent) onSetLoading(false)
-          }
-          return { warnings: [...warningsRef.current] }
-        }
-
-        case 'Remove': {
-          if (!selectedWorkItem) { collectWarning("No work item selected", undefined); return { warnings: [...warningsRef.current] } }
-
-          const relationIds = payload.relationIds ?? []
-          const conceptKeys = payload.conceptKeys ?? []
-
-          if (relationIds.length === 0 && conceptKeys.length === 0) {
-            collectWarning("Remove suggestion has no relationIds or conceptKeys; nothing to remove.", payload)
-            return { warnings: [...warningsRef.current] }
-          }
-
-          if (!silent) onSetLoading(true)
-          onSetLoadingMessage("Removing from suggestion...")
-
-          try {
-            // Delete concepts by key (removes all of their revisions and related relations)
-            for (const conceptKey of conceptKeys) {
-              const concept = (concepts ?? []).find((c) => c.key === conceptKey)
-              if (!concept) {
-                collectWarning(`Remove suggestion references unknown concept "${conceptKey}"`, payload)
-                continue
-              }
-              try {
-                const res = await apiFetch(`${API}/concepts/${concept.id}`, {
-                  method: "DELETE",
-                  headers: { "Content-Type": "application/json" },
-                })
-                if (!res.ok) {
-                  collectWarning(`Failed to remove concept "${conceptKey}" (HTTP ${res.status})`, payload)
-                  return { warnings: [...warningsRef.current] }
-                }
-              } catch (err) {
-                collectWarning(`Failed to remove concept "${conceptKey}": ${describeError(err)}`, payload)
-                return { warnings: [...warningsRef.current] }
-              }
-            }
-
-            // Delete relations by id
-            for (const relationId of relationIds) {
-              try {
-                const res = await apiFetch(`${API}/relations/${relationId}`, {
-                  method: "DELETE",
-                  headers: { "Content-Type": "application/json" },
-                })
-                if (!res.ok) {
-                  collectWarning(`Failed to remove relation "${relationId}" (HTTP ${res.status})`, payload)
-                  return { warnings: [...warningsRef.current] }
-                }
-              } catch (err) {
-                collectWarning(`Failed to remove relation "${relationId}": ${describeError(err)}`, payload)
-                return { warnings: [...warningsRef.current] }
-              }
-            }
-
-            await onLoadConcepts(selectedWorkItem)
-            await onRefreshGraph(selectedWorkItem)
-            if (warningsRef.current.length === 0) markSuggestion(suggestion.id, "ACTED_ON")
-          } finally {
-            if (!silent) onSetLoading(false)
-          }
-          return { warnings: [...warningsRef.current] }
-        }
-
-        case 'Discard':
-        case 'Cancel':
-        case 'Reject': {
-          onSetActiveRevisionId(null)
-          onSetEditorValue("")
-          markSuggestion(suggestion.id, "DISCARDED")
-          break
-        }
-
-        default:
-          break
-      }
-    } catch (err) {
-      collectWarning("Failed to act on suggestion: " + describeError(err), (suggestion && suggestion.payload) || undefined)
-    } finally {
-      if (!silent && warningsRef.current.length > 0) {
-        setWarningsModal([...warningsRef.current])
+      } catch (error) {
+        warnings.push({ message: describeError(error) })
+      } finally {
+        applyingRef.current.delete(suggestion.id)
+        if (!silent) onSetLoading(false)
       }
     }
-    return { warnings: [...warningsRef.current] }
-  }, [apiFetch, selectedWorkItem, actorForApi, actorName, concepts, onLoadConcepts, onRefreshGraph, onSetActiveRevisionId, onSetEditorValue, onSetLoading, onSetLoadingMessage, markSuggestion, collectWarning])
+    if (!silent && warnings.length) setWarningsModal(warnings)
+    return { warnings }
+  }, [API, apiFetch, selectedWorkItem, selectedReportId, onLoadConcepts, onRefreshGraph, onSetLoading, onSetLoadingMessage])
 
   const discardSuggestion = useCallback((suggestionId: string | undefined) => {
     markSuggestion(suggestionId, "DISCARDED")
@@ -840,9 +663,10 @@ export function LlmTools({
                 className="btn btn-success"
                 style={{ marginTop: "2em", marginBottom: "1em" }}
               >
-                Act on all suggestions
+                Approve and apply all suggestions
               </button>
             )}
+            <p>Each approved suggestion is applied atomically. Earlier successes remain applied if a later suggestion fails or conflicts. Overlapping suggestions may require a fresh evaluation.</p>
             {runnerActive && (
               <div data-agent="runner-progress" style={{ marginTop: 8 }}>
                 <div>Running suggestions... {runnerCurrent}/{runnerTotal}</div>
