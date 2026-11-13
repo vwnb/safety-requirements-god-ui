@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { brutal } from "../App"
 import Modal from "./Modal"
+import AiLabel from "./AiLabel"
 import type { QuerySequenceResult, QuerySequenceStep } from "./QuerySequenceTypes"
 
 type QuerySequencePickerProps = {
@@ -43,6 +44,12 @@ export default function QuerySequencePicker({
       <div className="title" style={{ marginBottom: 16 }}>
         Prompt for query sequence
       </div>
+
+      {(result || running) && (
+        <p data-agent="query-sequence-ai-disclosure">
+          <AiLabel variant="basic" height={40} text="The query steps were chosen by AI. The results come from the graph itself." />
+        </p>
+      )}
 
       {goal && (
         <p>

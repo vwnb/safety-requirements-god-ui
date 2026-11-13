@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { SemanticColor } from "../lib/SemanticColor"
 import { InfoButton } from "./InfoButton"
 import Modal from "./Modal"
+import AiLabel from "./AiLabel"
 import { brutal } from "../App"
 
 type WorkItem = {
@@ -593,6 +594,9 @@ export function LlmTools({
         {!!suggestions && selectedWorkItemData && (
           <>
             <h1 ref={reportHeadingRef} id='refinement-report-heading' data-agent='refinement-report-heading'>Refinement report: {selectedWorkItemData.name}</h1>
+            <p data-agent="refinement-report-ai-disclosure">
+              <AiLabel variant="generated" height={44} text="These suggestions were written by AI. Review them before applying." />
+            </p>
             {reportCreatedAt && (
               <div className="report-meta">
                 Created: {new Date(reportCreatedAt).toLocaleString()}<br />
@@ -665,6 +669,9 @@ export function LlmTools({
                   className={cardClass}
                 >
                   <>
+                    <div style={{ margin: "-8px 0 0 -8px" }}>
+                      <AiLabel variant="generated" height={36} />
+                    </div>
                     {suggestion.thumbnail && (
                       <img
                         src={suggestion.thumbnail}
