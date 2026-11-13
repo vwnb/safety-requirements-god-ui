@@ -27,6 +27,7 @@ import { CollaborationBanner } from "./components/CollaborationBanner"
 import BaselineDetailsCard from "./components/BaselineDetailsCard"
 import TemplateList from "./components/TemplateList"
 import Modal from "./components/Modal"
+import ElapsedTime from "./components/ElapsedTime"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -1400,6 +1401,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             }}
           >
             {loadingMessage}
+            <ElapsedTime />
           </div>
         </div>
       )}
