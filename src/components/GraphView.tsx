@@ -1186,7 +1186,9 @@ export default function GraphView({
 
         {graphWideQueryModalOpen && (
           <GraphWideQueryPicker
-            key={workItemId}
+            // Must differ from the sibling <ReactFlow key={workItemId}>: duplicate
+            // sibling keys make React leave a stale copy of this modal in the DOM.
+            key={`graph-wide-query-picker-${workItemId}`}
             loading={graphWideQueryCategoriesLoading}
             categories={graphWideQueryCategories as any}
             onSelect={(value) => {
