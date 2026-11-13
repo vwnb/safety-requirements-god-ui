@@ -75,6 +75,18 @@ type EvaluatorSuggestion = {
   thumbnail?: string
 }
 
+// Evaluation lifecycle exposed by the backend. One evaluation commits one approved selection.
+type EvaluationState = "CREATED" | "EVALUATING" | "READY_FOR_REVIEW" | "APPROVED" | "COMMITTED" | "CONFLICTED" | "SUPERSEDED"
+type EvaluationLifecycle = {
+  state?: EvaluationState
+  approvedSuggestionIds?: string[]
+  approvedAt?: string | null
+  committedAt?: string | null
+  conflictReason?: string | null
+  supersededById?: string | null
+}
+const isSelectable = (s: EvaluatorSuggestion) => !!s.id && !s.actedOn && ["Create", "Revise", "Remove"].includes(s.action)
+
 // Coerce an unknown suggestions payload (from API responses) into an array.
 // This guards the render path (which spreads `suggestions`) from ever receiving a
 // non-iterable value, which would throw "X is not iterable" and crash the UI.
@@ -152,18 +164,28 @@ export function LlmTools({
 
   const [suggestions, setSuggestions] = useState<EvaluatorSuggestion[] | null>(null)
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
-  const [evaluationResults, setEvaluationResults] = useState<Array<{ id: string; createdAt: string; userPrompt?: string }>>([])
+  const [evaluationResults, setEvaluationResults] = useState<Array<{ id: string; createdAt: string; userPrompt?: string; state?: EvaluationState }>>([])
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
   const [reportCreatedAt, setReportCreatedAt] = useState<string | null>(null)
   const [reportUserPrompt, setReportUserPrompt] = useState<string | null>(null)
+  const [lifecycle, setLifecycle] = useState<EvaluationLifecycle | null>(null)
+  const [selection, setSelection] = useState<string[]>([])
+  // Reports from a not-yet-migrated backend have no state; treat them as reviewable.
+  const reportState: EvaluationState = lifecycle?.state ?? "READY_FOR_REVIEW"
+
+  // Load persisted suggestions + lifecycle. The approved set is fixed once approved;
+  // otherwise default the selection to every pending applicable suggestion.
+  const applyReportData = useCallback((data: EvaluationLifecycle & { suggestions?: unknown }) => {
+    const list = toSuggestionArray(data.suggestions)
+    setSuggestions(list)
+    setLifecycle(data)
+    setSelection(data.approvedSuggestionIds?.length ? data.approvedSuggestionIds : list.filter(isSelectable).map(s => s.id!))
+  }, [])
 
   // Warnings collected while acting on a suggestion are surfaced in a modal.
   type CollectedWarning = { message: string; payload?: unknown }
   const [warningsModal, setWarningsModal] = useState<CollectedWarning[] | null>(null)
 
-  const [runnerActive, setRunnerActive] = useState(false)
-  const [runnerCurrent, setRunnerCurrent] = useState(0)
-  const [runnerTotal, setRunnerTotal] = useState(0)
   const [runnerResults, setRunnerResults] = useState<{
     acted: EvaluatorSuggestion[]
     discarded: EvaluatorSuggestion[]
@@ -234,6 +256,8 @@ export function LlmTools({
     setSuggestions(null)
     setReportCreatedAt(null)
     setReportUserPrompt(null)
+    setLifecycle(null)
+    setSelection([])
     if (!selectedReportId) {
       setLatestReportNotFound(false)
       return () => { cancelled = true }
@@ -247,7 +271,7 @@ export function LlmTools({
         if (cancelled) return
         if (data) {
           if (data.suggestions) {
-            setSuggestions(toSuggestionArray(data.suggestions))
+            applyReportData(data)
           }
           if (data.createdAt) {
             setReportCreatedAt(data.createdAt)
@@ -262,7 +286,7 @@ export function LlmTools({
         setLatestReportNotFound(true)
       })
     return () => { cancelled = true }
-  }, [selectedWorkItem, selectedReportId, API, apiFetch])
+  }, [selectedWorkItem, selectedReportId, API, apiFetch, applyReportData])
 
   const suggestWithLLM = async (workItemId: string) => {
     if (!selectedWorkItem) return
@@ -401,55 +425,54 @@ export function LlmTools({
     })
   }, [actOnSuggestionApi])
 
-  const applyingRef = useRef(new Set<string>())
-  const actOnSuggestion = useCallback(async (suggestion: EvaluatorSuggestion, options?: { silent?: boolean }) => {
+  // Approve (persist the exact selection) or apply (approve + commit all-or-nothing).
+  const submitSelection = useCallback(async (step: "approve" | "apply") => {
+    if (!selectedReportId || !selectedWorkItem || !selection.length) return
     const warnings: CollectedWarning[] = []
-    const silent = !!options?.silent
-    if (!suggestion.id || !selectedReportId || !selectedWorkItem) {
-      warnings.push({ message: "Reload the persisted report before applying this suggestion." })
-    } else if (applyingRef.current.has(suggestion.id)) {
-      warnings.push({ message: "This suggestion is already being applied." })
-    } else {
-      applyingRef.current.add(suggestion.id)
-      if (!silent) onSetLoading(true)
-      onSetLoadingMessage("Applying approved suggestion...")
-      try {
-        const response = await apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/${selectedReportId}/apply`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ suggestionIds: [suggestion.id] }),
-        })
-        const result = await response.json()
-        if (!response.ok) throw new Error(result.error || `Application failed (HTTP ${response.status})`)
-        const outcome = result.results?.[0]
-        if (!["applied", "already_applied"].includes(outcome?.status)) throw new Error(outcome?.error || "Suggestion was not applied")
-        // Refresh persisted review state as well as the affected graph.
-        setSuggestions(prev => prev?.map(s => s.id === suggestion.id ? { ...s, actedOn: "ACTED_ON" } : s) ?? null)
-        const refreshed = await Promise.allSettled([
-          (async () => {
-            const report = await apiFetch(`${API}/evaluation-results/${selectedReportId}`)
-            if (!report.ok) throw new Error("Report refresh failed")
-            setSuggestions(toSuggestionArray((await report.json()).suggestions))
-          })(),
-          onLoadConcepts(selectedWorkItem),
-          onRefreshGraph(selectedWorkItem),
-        ])
-        if (refreshed.some(result => result.status === "rejected")) {
-          throw new Error("Applied successfully, but some views could not refresh. Reload the work item and report.")
+    let applied = false
+    onSetLoading(true)
+    onSetLoadingMessage(step === "approve" ? "Approving selection..." : "Applying approved selection...")
+    try {
+      const response = await apiFetch(`${API}/work-items/${selectedWorkItem}/evaluation-results/${selectedReportId}/${step}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suggestionIds: selection }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || `Request failed (HTTP ${response.status})`)
+      if (step === "apply") {
+        const failed = (result.results ?? []).filter((r: { status: string }) => !["applied", "already_applied"].includes(r.status))
+        if (failed.length) {
+          const messages = [...new Set<string>(failed.map((r: { error?: string }) => r.error ?? "Suggestion was not applied"))]
+          warnings.push({ message: "No changes were committed." }, ...messages.map(message => ({ message })))
+        } else {
+          applied = true
+          setRunnerResults({ acted: (suggestions ?? []).filter(s => s.id && selection.includes(s.id)), discarded: [], errors: [] })
         }
-      } catch (error) {
-        warnings.push({ message: describeError(error) })
-      } finally {
-        applyingRef.current.delete(suggestion.id)
-        if (!silent) onSetLoading(false)
       }
+    } catch (error) {
+      warnings.push({ message: describeError(error) })
     }
-    if (!silent && warnings.length) setWarningsModal(warnings)
-    return { warnings }
-  }, [API, apiFetch, selectedWorkItem, selectedReportId, onLoadConcepts, onRefreshGraph, onSetLoading, onSetLoadingMessage])
+    // Refresh persisted lifecycle/review state as well as the affected graph.
+    const refreshed = await Promise.allSettled([
+      (async () => {
+        const report = await apiFetch(`${API}/evaluation-results/${selectedReportId}`)
+        if (!report.ok) throw new Error("Report refresh failed")
+        applyReportData(await report.json())
+      })(),
+      ...(applied ? [onLoadConcepts(selectedWorkItem), onRefreshGraph(selectedWorkItem)] : []),
+    ])
+    if (refreshed.some(r => r.status === "rejected")) {
+      warnings.push({ message: "Some views could not refresh. Reload the work item and report." })
+    }
+    onSetLoading(false)
+    if (applied) setRunnerModalOpen(true)
+    if (warnings.length) setWarningsModal(warnings)
+  }, [API, apiFetch, selectedWorkItem, selectedReportId, selection, suggestions, applyReportData, onLoadConcepts, onRefreshGraph, onSetLoading, onSetLoadingMessage])
 
   const discardSuggestion = useCallback((suggestionId: string | undefined) => {
     markSuggestion(suggestionId, "DISCARDED")
+    setSelection(prev => prev.filter(id => id !== suggestionId))
   }, [markSuggestion])
 
   const actionLabelForAction = (action: string, payload: SuggestionPayload): { actionLabel: string; graphDescription: string; hasPayloadData: boolean } => {
@@ -508,45 +531,6 @@ export function LlmTools({
     return { actionLabel, graphDescription, hasPayloadData }
   }
 
-  const buildConfirmMessage = (suggestion: EvaluatorSuggestion): { confirmMessage: string; confirmLabel: string } => {
-    const { action, payload } = suggestion
-    const payloadConcepts = payload.concepts || []
-    const payloadRelations = payload.relations || []
-    const payloadRevisions = payload.revisions || []
-    const hasPayloadData = payloadConcepts.length > 0 || payloadRelations.length > 0 || payloadRevisions.length > 0 || !!payload.conceptKey || !!payload.markdown || (payload.conceptKeys?.length ?? 0) > 0
-
-    if (["Discard", "Cancel", "Reject"].includes(action)) {
-      return { confirmMessage: "No updates will be performed. Discard this suggestion?", confirmLabel: "Discard" }
-    } else if (["Revise", "Update"].includes(action) && payload.conceptKey) {
-      return { confirmMessage: `Revision will be created for concept "${payload.conceptKey}". Continue?`, confirmLabel: "Continue" }
-    } else if (action === "Remove") {
-      const relationCount = payload.relationIds?.length ?? 0
-      const conceptCount = payload.conceptKeys?.length ?? 0
-      if (conceptCount > 0 && relationCount > 0) {
-        return { confirmMessage: `${conceptCount} concept(s) and ${relationCount} relation(s) will be removed from the graph. Continue?`, confirmLabel: "Continue" }
-      } else if (conceptCount > 0) {
-        return { confirmMessage: `${conceptCount} concept(s) (including all of their revisions and related relations) will be removed from the graph. Continue?`, confirmLabel: "Continue" }
-      } else if (relationCount > 0) {
-        return { confirmMessage: `${relationCount} relation(s) will be removed from the graph. Continue?`, confirmLabel: "Continue" }
-      }
-      return { confirmMessage: "No relations or concepts to remove. Discard this suggestion?", confirmLabel: "Discard" }
-    } else if (action === "Create") {
-      const parts: string[] = []
-      if (payloadConcepts.length > 0) parts.push(`${payloadConcepts.length} concept(s)`)
-      if (payloadRelations.length > 0) parts.push(`${payloadRelations.length} relation(s)`)
-      if (payloadRevisions.length > 0) parts.push(`${payloadRevisions.length} revision(s)`)
-      const desc = parts.join(", ") || "no graph data"
-      return { confirmMessage: `${desc} will be created. Continue?`, confirmLabel: "Continue" }
-    } else {
-      return {
-        confirmMessage: hasPayloadData
-          ? "This action will modify the graph. Continue?"
-          : "No updates can be performed. Discard this suggestion?",
-        confirmLabel: hasPayloadData ? "Continue" : "Discard",
-      }
-    }
-  }
-
   return (
     <section data-agent="llm-suggestions-section">
       <div className="llm-tools-header title">
@@ -593,7 +577,7 @@ export function LlmTools({
             <option value="">-- Select report --</option>
             {evaluationResults.map(r => (
               <option key={r.id} value={r.id}>
-                {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {r.userPrompt ? `- ${r.userPrompt.slice(0, 32)}` : "(No prompt)"}
+                {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {r.userPrompt ? `- ${r.userPrompt.slice(0, 32)}` : "(No prompt)"}{r.state ? ` [${r.state.replace(/_/g, " ").toLowerCase()}]` : ""}
               </option>
             ))}
           </select>
@@ -612,67 +596,50 @@ export function LlmTools({
             {reportCreatedAt && (
               <div className="report-meta">
                 Created: {new Date(reportCreatedAt).toLocaleString()}<br />
-                User prompt: {reportUserPrompt ? <span>{reportUserPrompt}</span> : "(No user prompt)"}
+                User prompt: {reportUserPrompt ? <span>{reportUserPrompt}</span> : "(No user prompt)"}<br />
+                State: {reportState.replace(/_/g, " ").toLowerCase()}
+                {lifecycle?.approvedAt && <><br />Approved: {new Date(lifecycle.approvedAt).toLocaleString()}</>}
+                {lifecycle?.committedAt && <><br />Committed: {new Date(lifecycle.committedAt).toLocaleString()}</>}
+                {lifecycle?.conflictReason && <><br />Conflict: {lifecycle.conflictReason}</>}
+                {lifecycle?.supersededById && <><br />Superseded by a newer report.</>}
               </div>
             )}
-            {!!suggestions && suggestions.length > 0 && (
+            {reportState === "READY_FOR_REVIEW" && suggestions.some(isSelectable) && (
+              <div className="suggestion-actions" style={{ marginTop: "2em", marginBottom: "1em" }}>
+                <button
+                  data-agent="btn-approve-selection"
+                  disabled={!selection.length}
+                  onClick={() => submitSelection("approve")}
+                  className="btn"
+                >
+                  Approve selection ({selection.length})
+                </button>
+                <button
+                  data-agent="btn-runner-mode"
+                  disabled={!selection.length}
+                  onClick={() => onSetPendingConfirm({
+                    message: `${activeRevisionId ? "You have an active revision in progress. " : ""}${selection.length} selected suggestion(s) will be committed together. If any fails, none are applied. Continue?`,
+                    onConfirm: () => submitSelection("apply"),
+                    confirmLabel: "Continue",
+                    cancelLabel: "Cancel",
+                  })}
+                  className="btn btn-success"
+                >
+                  Approve and apply selected ({selection.length})
+                </button>
+              </div>
+            )}
+            {reportState === "APPROVED" && (
               <button
-                data-agent="btn-runner-mode"
-                disabled={runnerActive}
-                onClick={async () => {
-                  if (!suggestions) return
-                  const candidates = suggestions.filter((sug) => !sug.actedOn)
-                  if (candidates.length === 0) {
-                    setRunnerResults({ acted: [], discarded: [], errors: [] })
-                    setRunnerModalOpen(true)
-                    return
-                  }
-                  setRunnerActive(true)
-                  setRunnerCurrent(0)
-                  setRunnerTotal(candidates.length)
-                  const acted: EvaluatorSuggestion[] = []
-                  const discarded: EvaluatorSuggestion[] = []
-                  const errors: { suggestion: EvaluatorSuggestion; message: string }[] = []
-                  for (let i = 0; i < candidates.length; i++) {
-                    const sug = candidates[i]
-                    setRunnerCurrent(i)
-                    const isDiscardAction = ["Discard", "Cancel", "Reject"].includes(sug.action)
-                    try {
-                      const res = await actOnSuggestion(sug, { silent: true })
-                      const warnings = res?.warnings ?? []
-                      if (warnings.length > 0) {
-                        errors.push({ suggestion: sug, message: warnings.map((w) => w.message).join("; ") })
-                      } else if (isDiscardAction) {
-                        discarded.push(sug)
-                      } else {
-                        acted.push(sug)
-                      }
-                    } catch (err) {
-                      errors.push({ suggestion: sug, message: describeError(err) })
-                    }
-                    setRunnerCurrent(i + 1)
-                  }
-                  setRunnerActive(false)
-                  setRunnerResults({ acted, discarded, errors })
-                  setRunnerModalOpen(true)
-                  if (selectedWorkItem) {
-                    try { await onLoadConcepts(selectedWorkItem) } catch { }
-                    try { await onRefreshGraph(selectedWorkItem) } catch { }
-                  }
-                }}
+                data-agent="btn-apply-approved"
+                onClick={() => submitSelection("apply")}
                 className="btn btn-success"
                 style={{ marginTop: "2em", marginBottom: "1em" }}
               >
-                Approve and apply all suggestions
+                Apply approved selection ({selection.length})
               </button>
             )}
-            <p>Each approved suggestion is applied atomically. Earlier successes remain applied if a later suggestion fails or conflicts. Overlapping suggestions may require a fresh evaluation.</p>
-            {runnerActive && (
-              <div data-agent="runner-progress" style={{ marginTop: 8 }}>
-                <div>Running suggestions... {runnerCurrent}/{runnerTotal}</div>
-                <progress data-agent="runner-progress-bar" value={runnerCurrent} max={runnerTotal} />
-              </div>
-            )}
+            <p>The selected suggestions are committed together: if any fails or conflicts, none are applied. Each report commits one approved selection; to apply a different set, generate a new report. Suggestions that modify the same concept cannot be selected together.</p>
           </>
         )}
         {!suggestions || suggestions.length === 0 && (
@@ -740,38 +707,29 @@ export function LlmTools({
                   <hr className="suggestion-divider" />
                   {!suggestionStatus && (
                     <div className="suggestion-actions">
-                      <button
-                        data-agent={`btn-act-on-suggestion-${index}`}
-                        onClick={() => {
-                          const { confirmMessage, confirmLabel } = buildConfirmMessage(suggestion)
-
-                          if (activeRevisionId) {
-                            onSetPendingConfirm({
-                              message: `You have an active revision in progress. ${confirmMessage}`,
-                              onConfirm: () => actOnSuggestion(suggestion),
-                              confirmLabel,
-                              cancelLabel: "Cancel",
-                            })
-                          } else {
-                            onSetPendingConfirm({
-                              message: confirmMessage,
-                              onConfirm: () => actOnSuggestion(suggestion),
-                              confirmLabel,
-                              cancelLabel: "Cancel",
-                            })
-                          }
-                        }}
-                        className="btn btn-success"
-                      >
-                        Act on
-                      </button>
-                      <button
-                        data-agent={`btn-discard-suggestion-${index}`}
-                        onClick={() => discardSuggestion(suggestion.id)}
-                        className="btn btn-danger"
-                      >
-                        Discard
-                      </button>
+                      {isSelectable(suggestion) && (reportState === "READY_FOR_REVIEW" || reportState === "APPROVED") && (
+                        <label data-agent={`select-suggestion-${index}`}>
+                          <input
+                            type="checkbox"
+                            checked={selection.includes(suggestion.id!)}
+                            disabled={reportState !== "READY_FOR_REVIEW"}
+                            onChange={e => {
+                              const id = suggestion.id!
+                              setSelection(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id))
+                            }}
+                          />{" "}
+                          {reportState === "APPROVED" ? "Approved" : "Include in approved set"}
+                        </label>
+                      )}
+                      {!(reportState === "APPROVED" && selection.includes(suggestion.id!)) && (
+                        <button
+                          data-agent={`btn-discard-suggestion-${index}`}
+                          onClick={() => discardSuggestion(suggestion.id)}
+                          className="btn btn-danger"
+                        >
+                          Discard
+                        </button>
+                      )}
                     </div>
                   )}
                   {suggestionStatus && (
