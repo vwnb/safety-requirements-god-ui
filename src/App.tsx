@@ -451,7 +451,7 @@ function scrollToEditConcept() {
   }, 0)
 }
 
-export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
+export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled: boolean; mcpClientId?: string | null }) {
 
   const apiFetch = useApiFetch()
   const [authSub, setAuthSub] = useState("")
@@ -1569,7 +1569,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </p>
             <h2>MCP configuration</h2>
             <p>
-              Connect your agent to WCGW over MCP (streamable HTTP) at <code data-agent="mcp-server-url">{MCP_SERVER_URL}</code> and sign in with your WCGW account when the client asks. See the <a href={MCP_REGISTRY_URL} target="_blank" rel="noreferrer">MCP registry entry</a> for details.
+              Connect your agent to WCGW over MCP (streamable HTTP) at <code data-agent="mcp-server-url">{MCP_SERVER_URL}</code> and sign in with your WCGW account when the client asks.{mcpClientId && <> If your client asks for an OAuth client ID, use <code data-agent="mcp-oauth-client-id">{mcpClientId}</code>.</>} See the <a href={MCP_REGISTRY_URL} target="_blank" rel="noreferrer">MCP registry entry</a> for details.
             </p>
             <pre
               data-agent="mcp-client-config"
@@ -1595,7 +1595,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             )}
             {NEVERMINED_PLAN_URL && (
               <p>
-                Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools priced in credits. Each paid call carries three headers: <code>Authorization: Bearer</code> with your WCGW sign-in, <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
+                Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools priced in credits. Your client signs in over OAuth the same way{mcpClientId && <>, with the same client ID</>}. Each paid call also carries two headers: <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
               </p>
             )}
           </article>

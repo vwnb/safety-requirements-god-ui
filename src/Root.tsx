@@ -11,6 +11,8 @@ type Auth0PublicConfig = {
   domain: string
   clientId: string
   audience: string
+  /** OAuth client ID that MCP clients sign in with; null when not published. */
+  mcpClientId: string | null
 }
 
 type RootState =
@@ -47,8 +49,11 @@ function normalizeAuthConfig(json: Record<string, unknown>): Auth0PublicConfig |
     (typeof json.apiAudience === "string" && json.apiAudience) ||
     ""
 
+  const mcpClientId =
+    (typeof json.mcpClientId === "string" && json.mcpClientId) || null
+
   if (!domain || !clientId || !audience) return null
-  return { domain, clientId, audience }
+  return { domain, clientId, audience, mcpClientId }
 }
 
 async function loadAuthConfig(): Promise<Auth0PublicConfig | null> {
@@ -95,7 +100,7 @@ export default function Root() {
     )
   }
 
-  const { domain, clientId, audience } = state.cfg
+  const { domain, clientId, audience, mcpClientId } = state.cfg
   const redirectUri = window.location.origin
 
   return (
@@ -110,7 +115,7 @@ export default function Root() {
     >
       <ErrorToastProvider>
         <Auth0ApiFetchBridge audience={audience}>
-          <App auth0Enabled />
+          <App auth0Enabled mcpClientId={mcpClientId} />
         </Auth0ApiFetchBridge>
       </ErrorToastProvider>
     </Auth0Provider>

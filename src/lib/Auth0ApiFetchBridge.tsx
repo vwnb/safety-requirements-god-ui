@@ -106,6 +106,25 @@ export function Auth0ApiFetchBridge({
           }, 3000)
           break
 
+        case 402: {
+          // The backend sends 402 when a license has run out; `code` says how.
+          const body = await response.clone().json().catch(() => null)
+          if (body?.code === "LICENSE_LIMIT") {
+            pushError({
+              title: "LLM Calls Used Up",
+              message:
+                "Your license has no LLM calls left. Contact an admin to extend it.",
+            })
+          } else {
+            pushError({
+              title: "License Expired",
+              message:
+                "Your license has expired. Contact an admin to renew it.",
+            })
+          }
+          break
+        }
+
         case 403:
           pushError({
             title: "Access Denied",
