@@ -25,7 +25,7 @@ export default function TemplateList({
         Import work item templates
         <InfoButton
           title="Work item templates"
-          content="Use Browse to filter locally loaded templates by manifest fields. Use Prompt search to send a natural-language request to the server and retrieve matching templates."
+          content="Templates are atomic bases for work items, basically. Use Browse to filter locally loaded templates by manifest fields."
         />
       </div>
       {templates === undefined ? (

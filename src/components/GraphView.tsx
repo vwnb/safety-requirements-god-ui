@@ -287,6 +287,24 @@ function ConceptNode({ data, id }: any) {
           >
             Query
           </button>
+          {data.onDeleteConcept && (
+            <button
+              data-agent="graph-node-delete-concept"
+              onClick={(event) => {
+                event.stopPropagation()
+                data.onDeleteConcept()
+              }}
+              style={{
+                ...brutal.button,
+                padding: "4px 8px",
+                fontSize: 11,
+                whiteSpace: "nowrap",
+                background: "#F2B8B5",
+              }}
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
 
@@ -308,6 +326,7 @@ export default function GraphView({
   relations,
   onRelationCreated,
   onNodeClick,
+  onDeleteConcept,
   API,
   loading,
   presences,
@@ -325,6 +344,7 @@ export default function GraphView({
   relations: Relation[]
   onRelationCreated: () => void
   onNodeClick?: (conceptId: string) => void
+  onDeleteConcept?: (conceptId: string) => void
   API: string
   loading?: boolean
   presences: UserPresence[]
@@ -490,11 +510,12 @@ export default function GraphView({
             setQueryModalSourceId(r.id)
           },
           onEditRevision: onNodeClick ? () => onNodeClick(r.conceptId) : undefined,
+          onDeleteConcept: onDeleteConcept ? () => onDeleteConcept(r.conceptId) : undefined,
         },
         position: { x: 0, y: 0 },
       }
     })
-  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId, onNodeClick, depthByNode])
+  }, [revisions, conceptMap, latestRevisionByConcept, activeQuery, activeQuerySourceId, workItemId, onNodeClick, onDeleteConcept, depthByNode])
 
   const pendingDeleteRelation = pendingDeleteRelationId
     ? relations.find((r) => r.id === pendingDeleteRelationId)

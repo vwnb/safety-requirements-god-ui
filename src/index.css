@@ -13,7 +13,8 @@
   font-size: 0.8rem;
   display: grid;
   box-sizing: border-box;
-  grid-template-columns: 720px 1fr;
+  grid-template-columns: 720px minmax(0, 1fr);
+  overflow-wrap: anywhere;
   grid-template-areas:
     "header main"
     "hr main"
@@ -201,7 +202,7 @@ header>* {
 
 .cms-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas: "list new";
   gap: 30px;
   align-items: start;
@@ -273,7 +274,7 @@ header>* {
 
 .concept-option .list-id {
   width: auto;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
 }
 
 .graph-node {

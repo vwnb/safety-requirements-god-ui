@@ -27,8 +27,20 @@ import { CollaborationBanner } from "./components/CollaborationBanner"
 import BaselineDetailsCard from "./components/BaselineDetailsCard"
 import TemplateList from "./components/TemplateList"
 import Modal from "./components/Modal"
+import ElapsedTime from "./components/ElapsedTime"
 
 const API = import.meta.env.VITE_API_URL || ""
+
+const MCP_SERVER_URL = "https://wcgw-safety-suite.vercel.app/wcgwmcp"
+const MCP_REGISTRY_URL = "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.vwnb%2Fwcgw.world/versions/1.0.6"
+// Nevermined checkout page of the "WCGW Safety Suite: Explorer" plan.
+const NEVERMINED_PLAN_URL = "https://nevermined.app/checkout/plan/91361406102803352688289049720216159296950955023569606850613505240740550404523"
+const NVM_MCP_SERVER_URL = "https://wcgw-safety-suite.vercel.app/wcgw-nvm/mcp"
+const MCP_CLIENT_CONFIG = JSON.stringify(
+  { mcpServers: { wcgw: { type: "http", url: MCP_SERVER_URL } } },
+  null,
+  2
+)
 
 type Project = { id: string, key: string }
 
@@ -1037,6 +1049,53 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     })
   }
 
+  function requestDeleteConcept(conceptId: string) {
+    const concept =
+      (concepts ?? []).find((c) => c.id === conceptId) ||
+      graphData.concepts.find((c) => c.id === conceptId)
+    const label = concept ? `${concept.key}${concept.title ? ` — ${concept.title}` : ""}` : "this concept"
+    const otherUsersEditing = collab.presences.filter(
+      (p) =>
+        (p.status === "editing_concept" || p.status === "editing_revision") &&
+        p.contextId === conceptId &&
+        p.userId !== actorForApi
+    )
+    const editingWarning = otherUsersEditing.length > 0
+      ? ` ${otherUsersEditing.map((p) => p.userName || p.userId).join(", ")} is currently editing it.`
+      : ""
+
+    setPendingConfirm({
+      message: `Delete ${label}? This permanently removes the concept with its revisions, relations, signatures and baseline references.${editingWarning}`,
+      onConfirm: () => { deleteConcept(conceptId) },
+      clearRevisionOnConfirm: false,
+      confirmLabel: "Delete permanently",
+      cancelLabel: "Cancel",
+    })
+  }
+
+  async function deleteConcept(conceptId: string) {
+    return withLoading("Deleting concept...", async () => {
+      const response = await apiFetch(`${API}/concepts/${conceptId}`, { method: "DELETE" })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null)
+        throw new Error(error?.error || "Failed to delete concept")
+      }
+
+      if (selectedConcept === conceptId) {
+        setSelectedConcept("")
+        setActiveConcept(null)
+        setActiveRevisionId(null)
+        setEditorValue("")
+        setIsEditingConceptFields(false)
+      }
+
+      setConcepts((prev) => (prev ? prev.filter((c) => c.id !== conceptId) : prev))
+
+      if (selectedWorkItem) await refreshGraph(selectedWorkItem)
+    })
+  }
+
 
   async function loadWorkItemDetails(workItemId: string) {
     const res = await apiFetch(
@@ -1400,6 +1459,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             }}
           >
             {loadingMessage}
+            <ElapsedTime />
           </div>
         </div>
       )}
@@ -1505,8 +1565,39 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
             </p>
             <h2>Agentic policy</h2>
             <p>
-              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. <a href="https://registry.modelcontextprotocol.io/v0.1/servers/io.github.vwnb%2Fwcgw.world/versions/1.0.6">MCP is available for authenticated users.</a>
+              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. MCP is available for authenticated users.
             </p>
+            <h2>MCP configuration</h2>
+            <p>
+              Connect your agent to WCGW over MCP (streamable HTTP) at <code data-agent="mcp-server-url">{MCP_SERVER_URL}</code> and sign in with your WCGW account when the client asks. See the <a href={MCP_REGISTRY_URL} target="_blank" rel="noreferrer">MCP registry entry</a> for details.
+            </p>
+            <pre
+              data-agent="mcp-client-config"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 13,
+                lineHeight: 1.5,
+                background: "#eee",
+                border: "2px solid black",
+                borderLeftWidth: 6,
+                borderRadius: 4,
+                padding: "12px 16px",
+                overflowX: "auto",
+                maxWidth: 640,
+              }}
+            >
+              {MCP_CLIENT_CONFIG}
+            </pre>
+            {NEVERMINED_PLAN_URL && (
+              <p>
+                Agents can also pay per use: get the <a data-agent="link-nevermined" href={NEVERMINED_PLAN_URL} target="_blank" rel="noreferrer">WCGW Safety Suite: Explorer plan on Nevermined</a>. The purchase is optional; free licenses through this web UI and self-configured MCP connections remain available.
+              </p>
+            )}
+            {NEVERMINED_PLAN_URL && (
+              <p>
+                Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools priced in credits. Each paid call carries three headers: <code>Authorization: Bearer</code> with your WCGW sign-in, <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
+              </p>
+            )}
           </article>
           <hr />
           <footer>
@@ -1782,6 +1873,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}
+                      onDelete={() => requestDeleteConcept(selectedConcept)}
                     />
                   </section>
                 )}
@@ -2200,6 +2292,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                   action()
                 }
               } : undefined}
+              onDeleteConcept={user ? requestDeleteConcept : undefined}
               API={API}
               presences={collab.presences}
               currentUserId={actorForApi}

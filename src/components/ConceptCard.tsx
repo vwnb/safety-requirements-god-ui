@@ -64,6 +64,7 @@ export default function ConceptCard({
   onSave,
   onPendingConfirm,
   onEditingChange,
+  onDelete,
 }: {
   concept: Concept | null
   editKey: string
@@ -83,6 +84,7 @@ export default function ConceptCard({
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
+  onDelete?: () => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
 
@@ -123,18 +125,29 @@ export default function ConceptCard({
               {concept.key} {concept.title && `— ${concept.title}`}
             </h2>
 
-            <button
-              data-agent="btn-edit-concept"
-              onClick={() => {
-                onEditSotifCategory(concept.sotifCategory || "")
-                onEditOpbTerm(concept.opbTerm || "")
-                onEditStpa(stpaFieldsOf(concept))
-                setEditingState(true)
-              }}
-              className="btn"
-            >
-              Edit
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                data-agent="btn-edit-concept"
+                onClick={() => {
+                  onEditSotifCategory(concept.sotifCategory || "")
+                  onEditOpbTerm(concept.opbTerm || "")
+                  onEditStpa(stpaFieldsOf(concept))
+                  setEditingState(true)
+                }}
+                className="btn"
+              >
+                Edit
+              </button>
+              {onDelete && (
+                <button
+                  data-agent="btn-delete-concept"
+                  onClick={onDelete}
+                  className="btn btn-danger"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
 
           <p className="info-row">
