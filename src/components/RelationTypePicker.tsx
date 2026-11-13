@@ -11,6 +11,11 @@ const RELATION_TYPES = [
   "REFINES",
   "DUPLICATES",
   "SUPERSEDES",
+  // STPA control structure
+  "ISSUES",
+  "ACTS_ON",
+  "FEEDS_BACK",
+  "LEADS_TO",
 ]
 
 export default function RelationTypePicker({
