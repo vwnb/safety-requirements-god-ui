@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { typeColor, type Concept, type PsppDimension } from "../App"
+import { typeColor, type Concept, type PsppDimension, type SotifCategory } from "../App"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL",
@@ -17,6 +17,13 @@ const TYPES = [
 
 const PSPP_DIMENSIONS: PsppDimension[] = ["PROCESS", "STRUCTURE", "PROPERTY", "PERFORMANCE"]
 
+const SOTIF_CATEGORIES: { value: SotifCategory; label: string }[] = [
+  { value: "TriggeringCondition", label: "Triggering condition" },
+  { value: "FunctionalInsufficiency", label: "Functional insufficiency" },
+  { value: "UnknownUnsafeScenario", label: "Unknown unsafe scenario" },
+  { value: "KnownUnsafeScenario", label: "Known unsafe scenario" },
+]
+
 export default function ConceptCard({
   concept,
   editKey,
@@ -27,6 +34,10 @@ export default function ConceptCard({
   onEditTitle,
   onEditType,
   onEditPsppDimension,
+  editSotifCategory,
+  onEditSotifCategory,
+  editOpbTerm,
+  onEditOpbTerm,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -40,6 +51,10 @@ export default function ConceptCard({
   onEditTitle: (v: string) => void
   onEditType: (v: string) => void
   onEditPsppDimension: (v: PsppDimension | "") => void
+  editSotifCategory: SotifCategory | ""
+  onEditSotifCategory: (v: SotifCategory | "") => void
+  editOpbTerm: string
+  onEditOpbTerm: (v: string) => void
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -85,7 +100,11 @@ export default function ConceptCard({
 
             <button
               data-agent="btn-edit-concept"
-              onClick={() => setEditingState(true)}
+              onClick={() => {
+                onEditSotifCategory(concept.sotifCategory || "")
+                onEditOpbTerm(concept.opbTerm || "")
+                setEditingState(true)
+              }}
               className="btn"
             >
               Edit
@@ -95,6 +114,8 @@ export default function ConceptCard({
           <p className="info-row">
             <span><span className="field-label">Created by</span> {concept.createdBy?.name || "—"}</span>
             <span><span className="field-label">PSPP dimension</span> {concept.psppDimension || "—"}</span>
+            <span><span className="field-label">SOTIF category</span> {SOTIF_CATEGORIES.find(category => category.value === concept.sotifCategory)?.label || "—"}</span>
+            <span style={{ overflowWrap: "anywhere" }}><span className="field-label">OPB term</span> {concept.opbTerm || "—"}</span>
           </p>
         </article>
       ) : (
@@ -152,6 +173,36 @@ export default function ConceptCard({
                 <option key={dimension} value={dimension}>{dimension}</option>
               ))}
             </select>
+          </div>
+          <div className="form-row">
+            <label className="field-label" htmlFor="edit-concept-sotif">SOTIF category</label>
+            <select
+              id="edit-concept-sotif"
+              data-agent="select-edit-concept-sotif-category"
+              value={editSotifCategory}
+              onChange={(e) => onEditSotifCategory(e.target.value as SotifCategory | "")}
+            >
+              <option value="">-- Not set --</option>
+              {SOTIF_CATEGORIES.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-row">
+            <label className="field-label" htmlFor="edit-concept-opb">OPB term IRI</label>
+            <input
+              id="edit-concept-opb"
+              data-agent="input-edit-concept-opb-term"
+              value={editOpbTerm}
+              onChange={(e) => onEditOpbTerm(e.target.value)}
+              aria-describedby="edit-concept-opb-help"
+              placeholder="Paste the class IRI from BioPortal"
+              className="license-value"
+              style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
+            />
+            <small id="edit-concept-opb-help" style={{ marginLeft: 8 }}>
+              <a href="https://bioportal.bioontology.org/ontologies/OPB" target="_blank" rel="noreferrer">Browse OPB in BioPortal</a>
+            </small>
           </div>
           <div className="form-actions">
             <button data-agent="btn-save-concept" className="btn" onClick={handleSave}>Save concept</button>

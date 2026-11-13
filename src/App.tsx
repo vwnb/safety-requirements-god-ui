@@ -15,7 +15,6 @@ import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
 import WorkItemCard from "./components/WorkItemCard"
 import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
-import { runOnboardingTour } from "./lib/demoRunner"
 import { SemanticColor } from "./lib/SemanticColor"
 import { InfoButton } from "./components/InfoButton"
 import { LicenseModal } from "./components/LicenseModal"
@@ -39,6 +38,7 @@ export type ASIL = "QM" | "ASIL_A" | "ASIL_B" | "ASIL_C" | "ASIL_D"
 export type SIL = "SIL_1" | "SIL_2" | "SIL_3" | "SIL_4"
 export type PL = "PL_A" | "PL_B" | "PL_C" | "PL_D" | "PL_E"
 export type PsppDimension = "PROCESS" | "STRUCTURE" | "PROPERTY" | "PERFORMANCE"
+export type SotifCategory = "TriggeringCondition" | "FunctionalInsufficiency" | "UnknownUnsafeScenario" | "KnownUnsafeScenario"
 export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 export type ConceptType = string
 export type RelationType = string
@@ -75,6 +75,8 @@ export type Concept = {
   sil?: SIL
   pl?: PL
   psppDimension?: PsppDimension
+  sotifCategory?: SotifCategory | null
+  opbTerm?: string | null
   standards?: Standard[]
   createdBy: { name: string }
 }
@@ -535,6 +537,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [editConceptSil, setEditConceptSil] = useState("")
   const [editConceptPl, setEditConceptPl] = useState("")
   const [editConceptPsppDimension, setEditConceptPsppDimension] = useState<PsppDimension | "">("")
+  const [editConceptSotifCategory, setEditConceptSotifCategory] = useState<SotifCategory | "">("")
+  const [editConceptOpbTerm, setEditConceptOpbTerm] = useState("")
   const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
   const [editConceptKey, setEditConceptKey] = useState("")
@@ -749,17 +753,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
 
     selectedWorkItemRef.current = selectedWorkItem
     graphCrashRecoveryWorkItemRef.current = null
-    async function load() {
-      await reloadWorkItem(selectedWorkItem)
-
-      setTimeout(() => {
-        setLoadingCount(0)
-        setLoadingMessage("")
-        runOnboardingTour()
-      }, 3000)
-    }
-
-    load()
+    void reloadWorkItem(selectedWorkItem)
   }, [selectedWorkItem])
 
   useEffect(() => {
@@ -789,6 +783,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         setEditConceptSil(concept.sil || "")
         setEditConceptPl(concept.pl || "")
         setEditConceptPsppDimension(concept.psppDimension || "")
+        setEditConceptSotifCategory(concept.sotifCategory || "")
+        setEditConceptOpbTerm(concept.opbTerm || "")
         setEditConceptStandards(concept.standards || [])
       }
     }
@@ -945,7 +941,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
     }
 
     return withLoading("Saving concept...", async () => {
-      await apiFetch(`${API}/concepts/${selectedConcept}`, {
+      const response = await apiFetch(`${API}/concepts/${selectedConcept}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -957,10 +953,17 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           sil: editConceptSil || null,
           pl: editConceptPl || null,
           psppDimension: editConceptPsppDimension || null,
-          standards: editConceptStandards.length > 0 ? editConceptStandards : null,
+          sotifCategory: editConceptSotifCategory || null,
+          opbTerm: editConceptOpbTerm.trim() || null,
+          standards: editConceptStandards,
           user: actorForApi
         }),
       })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null)
+        throw new Error(error?.error || "Failed to save concept")
+      }
 
       setActiveConcept({
         id: selectedConcept,
@@ -972,6 +975,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         sil: editConceptSil as SIL,
         pl: editConceptPl as PL,
         psppDimension: editConceptPsppDimension || undefined,
+        sotifCategory: editConceptSotifCategory || null,
+        opbTerm: editConceptOpbTerm.trim() || null,
         standards: editConceptStandards,
         createdBy: activeConcept?.createdBy || { name: "" },
       })
@@ -989,6 +994,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               sil: editConceptSil as SIL,
               pl: editConceptPl as PL,
               psppDimension: editConceptPsppDimension || undefined,
+              sotifCategory: editConceptSotifCategory || null,
+              opbTerm: editConceptOpbTerm.trim() || null,
               standards: editConceptStandards,
             }
             : c
@@ -1736,6 +1743,10 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onEditType={setEditConceptType}
                       editPsppDimension={editConceptPsppDimension}
                       onEditPsppDimension={setEditConceptPsppDimension}
+                      editSotifCategory={editConceptSotifCategory}
+                      onEditSotifCategory={setEditConceptSotifCategory}
+                      editOpbTerm={editConceptOpbTerm}
+                      onEditOpbTerm={setEditConceptOpbTerm}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}
