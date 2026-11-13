@@ -1567,37 +1567,39 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
             <p>
               Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. MCP is available for authenticated users.
             </p>
-            <h2>MCP configuration</h2>
-            <p>
-              Connect your agent to WCGW over MCP (streamable HTTP) at <code data-agent="mcp-server-url">{MCP_SERVER_URL}</code> and sign in with your WCGW account when the client asks.{mcpClientId && <> If your client asks for an OAuth client ID, use <code data-agent="mcp-oauth-client-id">{mcpClientId}</code>.</>} See the <a href={MCP_REGISTRY_URL} target="_blank" rel="noreferrer">MCP registry entry</a> for details.
-            </p>
-            <pre
-              data-agent="mcp-client-config"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 13,
-                lineHeight: 1.5,
-                background: "#eee",
-                border: "2px solid black",
-                borderLeftWidth: 6,
-                borderRadius: 4,
-                padding: "12px 16px",
-                overflowX: "auto",
-                maxWidth: 640,
-              }}
-            >
-              {MCP_CLIENT_CONFIG}
-            </pre>
-            {NEVERMINED_PLAN_URL && (
+            <div className="mcp-configuration" aria-labelledby="mcp-configuration-heading">
+              <h2 id="mcp-configuration-heading">MCP configuration</h2>
               <p>
-                Agents can also pay per use: get the <a data-agent="link-nevermined" href={NEVERMINED_PLAN_URL} target="_blank" rel="noreferrer">WCGW Safety Suite: Explorer plan on Nevermined</a>. The purchase is optional; free licenses through this web UI and self-configured MCP connections remain available.
+                Connect your agent to WCGW over MCP (streamable HTTP) at <code data-agent="mcp-server-url">{MCP_SERVER_URL}</code> and sign in with your WCGW account when the client asks.{mcpClientId && <> If your client asks for an OAuth client ID, use <code data-agent="mcp-oauth-client-id">{mcpClientId}</code>.</>} See the <a href={MCP_REGISTRY_URL} target="_blank" rel="noreferrer">MCP registry entry</a> for details.
               </p>
-            )}
-            {NEVERMINED_PLAN_URL && (
-              <p>
-                Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools priced in credits. Your client signs in over OAuth the same way{mcpClientId && <>, with the same client ID</>}. Each paid call also carries two headers: <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
-              </p>
-            )}
+              <pre
+                data-agent="mcp-client-config"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                  lineHeight: 1.35,
+                  background: "#eee",
+                  border: "2px solid black",
+                  borderLeftWidth: 6,
+                  borderRadius: 4,
+                  padding: "12px 16px",
+                  overflowX: "auto",
+                  maxWidth: 640,
+                }}
+              >
+                {MCP_CLIENT_CONFIG}
+              </pre>
+              {NEVERMINED_PLAN_URL && (
+                <p>
+                  Agents can also pay per use: get the <a data-agent="link-nevermined" href={NEVERMINED_PLAN_URL} target="_blank" rel="noreferrer">WCGW Safety Suite: Explorer plan on Nevermined</a>. The purchase is optional; free licenses through this web UI and self-configured MCP connections remain available.
+                </p>
+              )}
+              {NEVERMINED_PLAN_URL && (
+                <p>
+                  Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools priced in credits. Your client signs in over OAuth the same way{mcpClientId && <>, with the same client ID</>}. Each paid call also carries two headers: <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
+                </p>
+              )}
+            </div>
           </article>
           <hr />
           <footer>

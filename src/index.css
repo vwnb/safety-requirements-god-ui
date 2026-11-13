@@ -1230,3 +1230,20 @@ section,
   max-height: 90vh;
   overflow-y: auto;
 }
+
+/* Keep inline configuration values from inflating paragraph line boxes. */
+.mcp-configuration p {
+  line-height: 1.45;
+  margin: 0.75em 0;
+}
+
+.mcp-configuration p code {
+  display: inline;
+  margin: 0;
+  padding: 1px 5px;
+  font-size: 0.85em;
+  line-height: inherit;
+  overflow-wrap: anywhere;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
