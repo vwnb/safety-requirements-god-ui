@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { typeColor, type Concept, type PsppDimension, type SotifCategory } from "../App"
+import { stpaFieldsOf, typeColor, type Concept, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL",
@@ -24,6 +24,27 @@ const SOTIF_CATEGORIES: { value: SotifCategory; label: string }[] = [
   { value: "KnownUnsafeScenario", label: "Known unsafe scenario" },
 ]
 
+const STPA_ROLES: { value: StpaRole; label: string }[] = [
+  { value: "LOSS", label: "Loss" },
+  { value: "CONTROLLER", label: "Controller" },
+  { value: "CONTROL_ACTION", label: "Control action" },
+  { value: "FEEDBACK", label: "Feedback" },
+  { value: "ACTUATOR", label: "Actuator" },
+  { value: "CONTROLLED_PROCESS", label: "Controlled process" },
+  { value: "UCA", label: "Unsafe control action (UCA)" },
+  { value: "LOSS_SCENARIO", label: "Loss scenario" },
+]
+
+const UCA_TYPES: { value: UcaType; label: string }[] = [
+  { value: "NOT_PROVIDED", label: "Not provided" },
+  { value: "PROVIDED_UNSAFE", label: "Provided, causing hazard" },
+  { value: "WRONG_TIMING_OR_ORDER", label: "Too early, too late or out of order" },
+  { value: "STOPPED_TOO_SOON_OR_TOO_LONG", label: "Stopped too soon or applied too long" },
+]
+
+const labelOf = <T extends string>(options: { value: T; label: string }[], value: T | null | undefined) =>
+  options.find((option) => option.value === value)?.label
+
 export default function ConceptCard({
   concept,
   editKey,
@@ -38,6 +59,8 @@ export default function ConceptCard({
   onEditSotifCategory,
   editOpbTerm,
   onEditOpbTerm,
+  editStpa,
+  onEditStpa,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -55,6 +78,8 @@ export default function ConceptCard({
   onEditSotifCategory: (v: SotifCategory | "") => void
   editOpbTerm: string
   onEditOpbTerm: (v: string) => void
+  editStpa: StpaFields
+  onEditStpa: (v: StpaFields) => void
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -103,6 +128,7 @@ export default function ConceptCard({
               onClick={() => {
                 onEditSotifCategory(concept.sotifCategory || "")
                 onEditOpbTerm(concept.opbTerm || "")
+                onEditStpa(stpaFieldsOf(concept))
                 setEditingState(true)
               }}
               className="btn"
@@ -116,6 +142,13 @@ export default function ConceptCard({
             <span><span className="field-label">PSPP dimension</span> {concept.psppDimension || "—"}</span>
             <span><span className="field-label">SOTIF category</span> {SOTIF_CATEGORIES.find(category => category.value === concept.sotifCategory)?.label || "—"}</span>
             <span style={{ overflowWrap: "anywhere" }}><span className="field-label">OPB term</span> {concept.opbTerm || "—"}</span>
+            <span><span className="field-label">STPA role</span> {labelOf(STPA_ROLES, concept.stpaRole) || "—"}</span>
+            {concept.stpaRole === "UCA" && (
+              <>
+                <span><span className="field-label">UCA type</span> {labelOf(UCA_TYPES, concept.ucaType) || "—"}</span>
+                <span style={{ overflowWrap: "anywhere" }}><span className="field-label">UCA context</span> {concept.ucaContext || "—"}</span>
+              </>
+            )}
           </p>
         </article>
       ) : (
@@ -204,6 +237,50 @@ export default function ConceptCard({
               <a href="https://bioportal.bioontology.org/ontologies/OPB" target="_blank" rel="noreferrer">Browse OPB in BioPortal</a>
             </small>
           </div>
+          <div className="form-row">
+            <label className="field-label" htmlFor="edit-concept-stpa-role">STPA role</label>
+            <select
+              id="edit-concept-stpa-role"
+              data-agent="select-edit-concept-stpa-role"
+              value={editStpa.stpaRole}
+              onChange={(e) => onEditStpa({ ...editStpa, stpaRole: e.target.value as StpaRole | "" })}
+            >
+              <option value="">-- Not set --</option>
+              {STPA_ROLES.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          {editStpa.stpaRole === "UCA" && (
+            <>
+              <div className="form-row">
+                <label className="field-label" htmlFor="edit-concept-uca-type">UCA type</label>
+                <select
+                  id="edit-concept-uca-type"
+                  data-agent="select-edit-concept-uca-type"
+                  value={editStpa.ucaType}
+                  onChange={(e) => onEditStpa({ ...editStpa, ucaType: e.target.value as UcaType | "" })}
+                >
+                  <option value="">-- Not set --</option>
+                  {UCA_TYPES.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-row">
+                <label className="field-label" htmlFor="edit-concept-uca-context">UCA context</label>
+                <input
+                  id="edit-concept-uca-context"
+                  data-agent="input-edit-concept-uca-context"
+                  value={editStpa.ucaContext}
+                  onChange={(e) => onEditStpa({ ...editStpa, ucaContext: e.target.value })}
+                  placeholder="When is this control action unsafe?"
+                  className="license-value"
+                  style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
+                />
+              </div>
+            </>
+          )}
           <div className="form-actions">
             <button data-agent="btn-save-concept" className="btn" onClick={handleSave}>Save concept</button>
             <button data-agent="btn-cancel-edit-concept" className="btn btn-danger" onClick={handleCancel}>Cancel</button>

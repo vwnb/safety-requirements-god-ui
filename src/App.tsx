@@ -39,6 +39,9 @@ export type SIL = "SIL_1" | "SIL_2" | "SIL_3" | "SIL_4"
 export type PL = "PL_A" | "PL_B" | "PL_C" | "PL_D" | "PL_E"
 export type PsppDimension = "PROCESS" | "STRUCTURE" | "PROPERTY" | "PERFORMANCE"
 export type SotifCategory = "TriggeringCondition" | "FunctionalInsufficiency" | "UnknownUnsafeScenario" | "KnownUnsafeScenario"
+export type StpaRole = "LOSS" | "CONTROLLER" | "CONTROL_ACTION" | "FEEDBACK" | "ACTUATOR" | "CONTROLLED_PROCESS" | "UCA" | "LOSS_SCENARIO"
+export type UcaType = "NOT_PROVIDED" | "PROVIDED_UNSAFE" | "WRONG_TIMING_OR_ORDER" | "STOPPED_TOO_SOON_OR_TOO_LONG"
+export type StpaFields = { stpaRole: StpaRole | ""; ucaType: UcaType | ""; ucaContext: string }
 export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 export type ConceptType = string
 export type RelationType = string
@@ -77,6 +80,9 @@ export type Concept = {
   psppDimension?: PsppDimension
   sotifCategory?: SotifCategory | null
   opbTerm?: string | null
+  stpaRole?: StpaRole | null
+  ucaType?: UcaType | null
+  ucaContext?: string | null
   standards?: Standard[]
   createdBy: { name: string }
 }
@@ -216,8 +222,19 @@ export type WorkItemCompleteness = {
   requirementTestCoverage: { covered: number; total: number }
   systemBehaviorSafetyGoalCoverage: { covered: number; total: number }
   hazardMitigationCoverage: { covered: number; total: number }
+  /** Absent when the backend predates STPA support. */
+  ucaHazardLinkCoverage?: { covered: number; total: number }
+  ucaMitigationCoverage?: { covered: number; total: number }
   entropy: EntropyResult
   breadth: BreadthResult
+}
+
+export function stpaFieldsOf(concept: Pick<Concept, "stpaRole" | "ucaType" | "ucaContext">): StpaFields {
+  return {
+    stpaRole: concept.stpaRole || "",
+    ucaType: concept.ucaType || "",
+    ucaContext: concept.ucaContext || "",
+  }
 }
 
 export const brutal = {
@@ -539,6 +556,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
   const [editConceptPsppDimension, setEditConceptPsppDimension] = useState<PsppDimension | "">("")
   const [editConceptSotifCategory, setEditConceptSotifCategory] = useState<SotifCategory | "">("")
   const [editConceptOpbTerm, setEditConceptOpbTerm] = useState("")
+  const [editConceptStpa, setEditConceptStpa] = useState<StpaFields>({ stpaRole: "", ucaType: "", ucaContext: "" })
   const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
   const [editConceptKey, setEditConceptKey] = useState("")
@@ -785,6 +803,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         setEditConceptPsppDimension(concept.psppDimension || "")
         setEditConceptSotifCategory(concept.sotifCategory || "")
         setEditConceptOpbTerm(concept.opbTerm || "")
+        setEditConceptStpa(stpaFieldsOf(concept))
         setEditConceptStandards(concept.standards || [])
       }
     }
@@ -940,6 +959,14 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
       }
     }
 
+    // UCA type and context are only valid on a UCA; the backend rejects them otherwise.
+    const isUca = editConceptStpa.stpaRole === "UCA"
+    const stpaPayload = {
+      stpaRole: editConceptStpa.stpaRole || null,
+      ucaType: isUca ? editConceptStpa.ucaType || null : null,
+      ucaContext: isUca ? editConceptStpa.ucaContext.trim() || null : null,
+    }
+
     return withLoading("Saving concept...", async () => {
       const response = await apiFetch(`${API}/concepts/${selectedConcept}`, {
         method: "PUT",
@@ -955,6 +982,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
           psppDimension: editConceptPsppDimension || null,
           sotifCategory: editConceptSotifCategory || null,
           opbTerm: editConceptOpbTerm.trim() || null,
+          ...stpaPayload,
           standards: editConceptStandards,
           user: actorForApi
         }),
@@ -977,6 +1005,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
         psppDimension: editConceptPsppDimension || undefined,
         sotifCategory: editConceptSotifCategory || null,
         opbTerm: editConceptOpbTerm.trim() || null,
+        ...stpaPayload,
         standards: editConceptStandards,
         createdBy: activeConcept?.createdBy || { name: "" },
       })
@@ -996,6 +1025,7 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
               psppDimension: editConceptPsppDimension || undefined,
               sotifCategory: editConceptSotifCategory || null,
               opbTerm: editConceptOpbTerm.trim() || null,
+              ...stpaPayload,
               standards: editConceptStandards,
             }
             : c
@@ -1747,6 +1777,8 @@ export default function App({ auth0Enabled }: { auth0Enabled: boolean }) {
                       onEditSotifCategory={setEditConceptSotifCategory}
                       editOpbTerm={editConceptOpbTerm}
                       onEditOpbTerm={setEditConceptOpbTerm}
+                      editStpa={editConceptStpa}
+                      onEditStpa={setEditConceptStpa}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}

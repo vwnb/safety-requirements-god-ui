@@ -15,6 +15,32 @@ const SIL_OPTIONS = ["SIL_1", "SIL_2", "SIL_3", "SIL_4"] as SIL[]
 const PL_OPTIONS = ["PL_A", "PL_B", "PL_C", "PL_D", "PL_E"] as PL[]
 const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]
 
+const percentOf = ({ covered, total }: { covered: number; total: number }) =>
+  total > 0 ? Math.round((covered / total) * 100) : 0
+
+/** STPA rows, shown only when the work item has UCAs. */
+function ucaCoverageRows(completeness: WorkItemCompleteness) {
+  const link = completeness.ucaHazardLinkCoverage
+  const mitigation = completeness.ucaMitigationCoverage
+  if (!link || !mitigation || link.total === 0) return []
+  return [
+    {
+      label: "UCA hazard link coverage",
+      percent: percentOf(link),
+      totalLabel: `${link.covered}/${link.total}`,
+      description: "STPA: how many unsafe control actions (concepts with STPA role UCA) have a LEADS_TO relation to a hazard. UCAs are not counted in hazard mitigation coverage.",
+      barColor: SemanticColor.RISK,
+    },
+    {
+      label: "UCA mitigation coverage",
+      percent: percentOf(mitigation),
+      totalLabel: `${mitigation.covered}/${mitigation.total}`,
+      description: "STPA: how many unsafe control actions have a MITIGATES relation, for example from a constraint or safety requirement that prevents them.",
+      barColor: SemanticColor.RISK,
+    },
+  ]
+}
+
 
 export default function WorkItemCard({
   workItem,
@@ -100,7 +126,7 @@ export default function WorkItemCard({
         label: "Overall completeness",
         percent: completenessPercent ?? 0,
         totalLabel: null,
-        description: "Overall progress across the work item's three coverage indicators: requirement test coverage, system behavior safety goal coverage, and hazard mitigation coverage.",
+        description: "Overall progress across the work item's coverage indicators: requirement test coverage, system behavior safety goal coverage, hazard mitigation coverage and, for STPA, UCA hazard links and UCA mitigation coverage. Each UCA counts twice: once for leading to a hazard and once for being mitigated.",
         barColor: completenessPercent != null && completenessPercent >= 80
           ? SemanticColor.SUCCESS
           : completenessPercent != null && completenessPercent >= 50
@@ -134,6 +160,7 @@ export default function WorkItemCard({
         description: "This metric counts how many hazard-related concepts in the work item have mitigation evidence linked to them. Mitigation evidence concepts include: functional safety requirement, technical safety requirement, hardware requirement, software requirement, hardware safety requirement, software safety requirement, test case, test result, verification report, validation report, and proof test.",
         barColor: SemanticColor.RISK,
       },
+      ...ucaCoverageRows(completeness),
       {
         label: "Entropy",
         percent: normalizedEntropy !== null ? Math.round((normalizedEntropy * 100)) : 0,
