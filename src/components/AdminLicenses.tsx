@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { SemanticColor } from "../lib/SemanticColor"
+import { LicenseUsageRows } from "./LicenseUsage"
+import { USAGE_WINDOWS, type UsageResponse } from "../lib/licenseUsage"
 
 type User = {
   id: string
@@ -219,6 +221,9 @@ export function AdminLicenses({
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [openProjects, setOpenProjects] = useState<Set<string>>(new Set())
+  const [usageDays, setUsageDays] = useState<number>(30)
+  const [usage, setUsage] = useState<UsageResponse | null>(null)
+  const [usageError, setUsageError] = useState(false)
 
   const toggleProjects = (userId: string) =>
     setOpenProjects((prev) => {
@@ -250,6 +255,24 @@ export function AdminLicenses({
   useEffect(() => {
     loadLicenses()
   }, [loadLicenses])
+
+  // Usage is optional extra detail: a failure here never hides the licenses.
+  useEffect(() => {
+    let cancelled = false
+    apiFetch(`${API}/admin/licenses/usage?days=${usageDays}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to load usage")
+        const body = (await res.json()) as UsageResponse
+        if (!cancelled) { setUsage(body); setUsageError(false) }
+      })
+      .catch(() => { if (!cancelled) { setUsage(null); setUsageError(true) } })
+    return () => { cancelled = true }
+  }, [API, apiFetch, usageDays])
+
+  const usageByUser = new Map((usage?.users ?? []).map((u) => [u.userId, u]))
+  const licensedUserIds = new Set(licenses.map((l) => l.userId))
+  const unlicensedUsage = (usage?.users ?? []).filter((u) => !licensedUserIds.has(u.userId))
+  const reconciliationTotal = (usage?.users ?? []).reduce((sum, u) => sum + u.paid.needsReconciliation, 0)
 
   const grantLicense = async () => {
     if (!formData.userId.trim() || !formData.expiresAt) return
@@ -330,7 +353,34 @@ export function AdminLicenses({
           >
             {showForm ? "Cancel" : "Grant License"}
           </button>
+          <label style={{ marginLeft: 12, fontSize: 13 }}>
+            Usage window{" "}
+            <select
+              value={usageDays}
+              onChange={(e) => setUsageDays(Number(e.target.value))}
+              aria-label="Usage window"
+            >
+              {USAGE_WINDOWS.map((d) => <option key={d} value={d}>Last {d} days</option>)}
+            </select>
+          </label>
         </div>
+
+        {usageError && (
+          <p style={{ fontSize: 13, opacity: 0.8 }}>Usage metrics are unavailable right now; license data is shown without them.</p>
+        )}
+        {reconciliationTotal > 0 && (
+          <div className="error-box">
+            <p className="error-text">
+              {reconciliationTotal} paid {reconciliationTotal === 1 ? "operation needs" : "operations need"} reconciliation with Nevermined. Check the ledger before refunding or retrying.
+            </p>
+          </div>
+        )}
+        {unlicensedUsage.length > 0 && (
+          <p style={{ fontSize: 13, opacity: 0.8 }}>
+            {unlicensedUsage.length} {unlicensedUsage.length === 1 ? "user without a license has" : "users without a license have"} usage in this window
+            ({unlicensedUsage.reduce((s, u) => s + u.llm.calls, 0)} provider calls).
+          </p>
+        )}
 
         {showForm && (
           <div className="card">
@@ -416,6 +466,11 @@ export function AdminLicenses({
                     >
                       {isExpired ? "Expired" : "Active"}
                     </div>
+                    {(usageByUser.get(license.userId)?.paid.needsReconciliation ?? 0) > 0 && (
+                      <div className="tag" style={{ background: SemanticColor.DANGER }}>
+                        Needs reconciliation
+                      </div>
+                    )}
                     <span className="license-card-id">
                       ID: {license.id}
                     </span>
@@ -503,6 +558,8 @@ export function AdminLicenses({
                       </div>
                     </div>
                   </div>
+
+                  {usage && <LicenseUsageRows usage={usageByUser.get(license.userId)} days={usage.window.days} />}
                 </div>
               )
             })}
