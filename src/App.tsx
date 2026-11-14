@@ -28,8 +28,16 @@ import BaselineDetailsCard from "./components/BaselineDetailsCard"
 import TemplateList from "./components/TemplateList"
 import Modal from "./components/Modal"
 import ElapsedTime from "./components/ElapsedTime"
+import AiProcessLoader from "./components/AiProcessLoader"
 
 const API = import.meta.env.VITE_API_URL || ""
+
+const AI_PROCESS_LOADING_HINTS = [
+  "Generating suggestions",
+  "Evaluating",
+  "Approving selection",
+  "Applying approved selection",
+]
 
 const MCP_SERVER_URL = "https://wcgw-safety-suite.vercel.app/wcgwmcp"
 const MCP_REGISTRY_URL = "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.vwnb%2Fwcgw.world/versions/1.0.6"
@@ -640,6 +648,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const loadingCountRef = useRef(0)
   const loading = loadingCount > 0
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
+  const aiProcessLoading = AI_PROCESS_LOADING_HINTS.some((hint) => loadingMessage.includes(hint))
 
   const pushLoading = (message?: string) => {
     setLoadingCount((c) => {
@@ -1448,19 +1457,23 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
             padding: 20,
           }}
         >
-          <div
-            className="loading-message"
-            data-agent="loading-message"
-            style={{
-              border: "2px solid black",
-              background: "rgb(255,255,255)",
-              padding: 18,
-              fontSize: 16,
-            }}
-          >
-            {loadingMessage}
-            <ElapsedTime />
-          </div>
+          {aiProcessLoading ? (
+            <AiProcessLoader message={loadingMessage} />
+          ) : (
+            <div
+              className="loading-message"
+              data-agent="loading-message"
+              style={{
+                border: "2px solid black",
+                background: "rgb(255,255,255)",
+                padding: 18,
+                fontSize: 16,
+              }}
+            >
+              {loadingMessage}
+              <ElapsedTime />
+            </div>
+          )}
         </div>
       )}
 
