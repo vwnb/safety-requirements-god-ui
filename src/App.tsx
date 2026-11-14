@@ -10,6 +10,7 @@ import { LlmTools } from "./components/LlmTools"
 import NewWorkItemModal from "./components/NewWorkItemModal"
 import NewConceptModal from "./components/NewConceptModal"
 import { OfflineBanner } from "./components/OfflineBanner"
+import GovernancePainDeity from "./components/GovernancePainDeity"
 import { useApiFetch } from "./lib/apiFetchContext"
 import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
 import WorkItemCard from "./components/WorkItemCard"
@@ -1407,6 +1408,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   return (
     <>
       <OfflineBanner />
+      <GovernancePainDeity />
       {!!user && !!collab && <CollaborationBanner
         connected={collab.connected}
         presences={collab.presences}
