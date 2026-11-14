@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react"
 import { createPortal } from "react-dom"
+import Panel from "./Panel"
 
 export default function Modal({
   title,
@@ -30,15 +31,15 @@ export default function Modal({
       data-agent="modal-overlay"
       className="modal"
     >
-      <div
-        data-agent="modal-content"
+      <Panel
+        dataAgent="modal-content"
         ref={ref}
         className="modal-content"
         style={width !== undefined ? { maxWidth: width, width: width } : undefined}
       >
         {title && <div className="title" style={{ marginBottom: 16 }}>{title}</div>}
         {children}
-      </div>
+      </Panel>
     </div>
   )
 

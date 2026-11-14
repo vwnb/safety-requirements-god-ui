@@ -663,17 +663,6 @@ section,
   z-index: 1000;
 }
 
-.modal-content {
-  background: rgb(233, 237, 233);
-  border: 2px solid black;
-  padding: 20px;
-  border-radius: 4px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
 .modal-title {
   margin-bottom: 16px;
 }
@@ -1218,15 +1207,20 @@ section,
   padding: 20px;
 }
 
-.modal-content {
+/* Shared brutalist frame for modals and AI loaders. */
+.brutal-panel {
   background: rgb(233, 237, 233);
   border: 2px solid black;
   border-left-width: 6px;
   border-radius: 8px;
   font-family: monospace;
   padding: min(2rem, 5vw);
-  max-width: min(480px, calc(100vw - 40px));
+  box-sizing: border-box;
+}
+
+.modal-content {
   width: 100%;
+  max-width: min(480px, calc(100vw - 40px));
   max-height: 90vh;
   overflow-y: auto;
 }
