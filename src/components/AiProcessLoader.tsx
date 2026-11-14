@@ -15,13 +15,13 @@ export default function AiProcessLoader({
       data-agent="loading-message"
       style={{
         border: boxed ? "2px solid black" : "none",
-        background: boxed ? "rgb(255,255,255)" : "transparent",
-        padding: boxed ? 18 : 0,
+        background: boxed ? "rgb(233,237,233)" : "transparent",
+        padding: boxed ? 20 : 0,
         fontSize: 16,
         display: "grid",
         gap: 10,
         width: "100%",
-        maxWidth: boxed ? 460 : 480,
+        maxWidth: 480,
         margin: "0 auto",
         boxSizing: "border-box",
       }}
