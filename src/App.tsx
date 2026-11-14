@@ -1570,13 +1570,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           <article style={{ padding: 40, maxWidth: 1100 }}>
             <h1>🎊 Public beta is open.</h1>
 
-            <div
-              data-agent="landing-ai-process"
-              style={{ maxWidth: 250 }}
-            >
-              <AiProcessCanvas />
-            </div>
-
             <p>
               We are pleased to make this software available through an open public beta, with continued development and refinement underway as we gather feedback and assess its broader deployment. The software is provided as-is for the time being, and we appreciate your understanding as we continue to improve the platform and its service model.
             </p>
@@ -1591,6 +1584,15 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
             <p>
               Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. MCP is available for authenticated users.
             </p>
+
+
+            <div
+              data-agent="landing-ai-process"
+              style={{ maxWidth: 250 }}
+            >
+              <AiProcessCanvas />
+            </div>
+
             <div className="mcp-configuration" aria-labelledby="mcp-configuration-heading">
               <h2 id="mcp-configuration-heading">MCP configuration</h2>
               <p>
