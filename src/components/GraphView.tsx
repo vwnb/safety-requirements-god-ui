@@ -15,6 +15,7 @@ import GraphWideQueryPicker from "./GraphWideQueryPicker"
 import QuerySequencePicker from "./QuerySequencePicker"
 import type { QuerySequenceResult } from "./QuerySequenceTypes"
 import { useApiFetch } from "../lib/apiFetchContext"
+import { resolveModelName } from "../lib/resolveModelName"
 import { brutal, typeColor } from "../App"
 import background from "../assets/background.jpg";
 import type { UserPresence } from "../types/collaboration";
@@ -377,6 +378,7 @@ export default function GraphView({
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [querySequenceGoal, setQuerySequenceGoal] = useState("")
   const [querySequenceRunning, setQuerySequenceRunning] = useState(false)
+  const [querySequenceModelName, setQuerySequenceModelName] = useState<string | null>(null)
   const [querySequenceError, setQuerySequenceError] = useState<string | null>(null)
   const [querySequenceResult, setQuerySequenceResult] = useState<QuerySequenceResult | null>(null)
   const [querySequenceModalOpen, setQuerySequenceModalOpen] = useState(false)
@@ -716,6 +718,10 @@ export default function GraphView({
     if (!workItemId || !goal) return
     setQuerySequenceRunning(true)
     setQuerySequenceError(null)
+    setQuerySequenceResult(null)
+    setQuerySequenceModalOpen(true)
+    setQuerySequenceModelName(null)
+    resolveModelName(apiFetch, API).then(setQuerySequenceModelName).catch(() => {})
     try {
       const res = await apiFetch(`${API}/graph/${workItemId}/query-sequence`, {
         method: "POST",
@@ -1229,6 +1235,7 @@ export default function GraphView({
           <QuerySequencePicker
             goal={querySequenceResult?.goal || querySequenceGoal.trim()}
             running={querySequenceRunning}
+            modelName={querySequenceModelName}
             error={querySequenceError}
             result={querySequenceResult}
             resolveSourceLabel={resolveSourceLabel}

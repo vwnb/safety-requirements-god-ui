@@ -1,3 +1,4 @@
+import AiLabel from "./AiLabel"
 import AiProcessCanvas from "./AiProcessCanvas"
 import ElapsedTime from "./ElapsedTime"
 
@@ -17,8 +18,12 @@ export default function AiProcessLoader({ message }: { message: string }) {
         boxSizing: "border-box",
       }}
     >
-      <div data-agent="ai-process-message" style={{ lineHeight: 1.35 }}>
-        {message}
+      <div
+        data-agent="ai-process-message"
+        style={{ lineHeight: 1.35, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
+      >
+        <AiLabel variant="basic" height={22} />
+        <span>{message}</span>
       </div>
       <AiProcessCanvas />
       <ElapsedTime />

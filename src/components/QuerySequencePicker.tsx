@@ -8,6 +8,7 @@ import type { QuerySequenceResult, QuerySequenceStep } from "./QuerySequenceType
 type QuerySequencePickerProps = {
   goal: string
   running: boolean
+  modelName?: string | null
   error: string | null
   result: QuerySequenceResult | null
   resolveSourceLabel: (sourceRevisionId: string | null) => string
@@ -20,6 +21,7 @@ type QuerySequencePickerProps = {
 export default function QuerySequencePicker({
   goal,
   running,
+  modelName,
   error,
   result,
   resolveSourceLabel,
@@ -61,7 +63,13 @@ export default function QuerySequencePicker({
 
       {running && (
         <div style={{ marginBottom: 16 }}>
-          <AiProcessLoader message="Planning and running sequence…" />
+          <AiProcessLoader
+            message={
+              modelName
+                ? `Planning query sequence with ${modelName}…`
+                : "Planning and running sequence…"
+            }
+          />
         </div>
       )}
 
