@@ -30,7 +30,7 @@ export default function AiProcessLoader({
         data-agent="ai-process-message"
         style={{ lineHeight: 1.35, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
       >
-        <AiLabel variant="basic" height={22} />
+        {boxed && <AiLabel variant="basic" height={22} />}
         <span>{message}</span>
       </div>
       <AiProcessCanvas />
