@@ -1450,7 +1450,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(255,255,255,0.8)",
+            background: "rgba(233,237,233,0.9)",
             zIndex: 9999,
             display: "grid",
             placeItems: "center",

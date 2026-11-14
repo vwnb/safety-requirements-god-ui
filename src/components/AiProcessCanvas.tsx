@@ -128,8 +128,6 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       ctx.save()
       roundedRect(ctx, 0, 0, width, height, 10)
       ctx.clip()
-      ctx.fillStyle = "#D3DCD1"
-      ctx.fillRect(0, 0, width, height)
 
       // Twinkling motes
       motes.forEach((mote) => {
@@ -365,7 +363,7 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       ref={canvasRef}
       data-agent="ai-process-canvas"
       aria-hidden="true"
-      style={{ display: "block", width: "100%", height, borderRadius: 10 }}
+      style={{ display: "block", width: "100%", height }}
     />
   )
 }
