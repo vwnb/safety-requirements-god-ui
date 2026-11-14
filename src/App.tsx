@@ -1458,7 +1458,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           }}
         >
           {aiProcessLoading ? (
-            <AiProcessLoader title="Evaluation" message={loadingMessage} />
+            <AiProcessLoader title="Generating refinement report" message={loadingMessage} />
           ) : (
             <div
               className="loading-message"
