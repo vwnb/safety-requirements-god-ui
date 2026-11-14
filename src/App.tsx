@@ -1570,9 +1570,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           <hr />
           <article style={{ padding: 40, maxWidth: 1100 }}>
             <h1>🎊 Public beta is open.</h1>
-
-            <AiLabel variant="basic" height={36} />
-
             <p>
               We are pleased to make this software available through an open public beta, with continued development and refinement underway as we gather feedback and assess its broader deployment. The software is provided as-is for the time being, and we appreciate your understanding as we continue to improve the platform and its service model.
             </p>
@@ -1583,7 +1580,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
             <p>
               In line with our privacy approach, we use cookies to help identify users and to analyze product usage in a quasi-anonymous manner.
             </p>
-            <h2>Agentic policy</h2>
+            <h2><AiLabel variant="basic" height={36} /> Agentic policy</h2>
             <p>
               Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. If you use AI to generate or substantially modify WCGW content, we encourage you to use the EU AI content labels where appropriate. 
             </p>
