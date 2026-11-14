@@ -1572,7 +1572,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
 
             <div
               data-agent="landing-ai-process"
-              style={{ maxWidth: 150 }}
+              style={{ maxWidth: 250 }}
             >
               <AiProcessCanvas />
             </div>
