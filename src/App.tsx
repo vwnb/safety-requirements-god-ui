@@ -1450,7 +1450,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(233,237,233,0.9)",
+            background: "rgba(0,0,0,0.4)",
             zIndex: 9999,
             display: "grid",
             placeItems: "center",
@@ -1458,7 +1458,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           }}
         >
           {aiProcessLoading ? (
-            <AiProcessLoader message={loadingMessage} />
+            <AiProcessLoader title="Evaluation" message={loadingMessage} />
           ) : (
             <div
               className="loading-message"

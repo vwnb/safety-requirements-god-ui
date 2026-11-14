@@ -5,18 +5,25 @@ import Panel from "./Panel"
 
 export default function AiProcessLoader({
   message,
+  title,
   boxed = true,
 }: {
   message: string
+  title?: string
   boxed?: boolean
 }) {
   const content = (
     <>
+      {boxed && title && (
+        <div className="title" style={{ marginBottom: 6 }}>
+          {title}
+        </div>
+      )}
       <div
         data-agent="ai-process-message"
         style={{ lineHeight: 1.35, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
       >
-        {boxed && <AiLabel variant="basic" height={22} />}
+        {boxed && <AiLabel variant="basic" height={40} />}
         <span>{message}</span>
       </div>
       <AiProcessCanvas />
