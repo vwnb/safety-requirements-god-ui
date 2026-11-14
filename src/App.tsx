@@ -31,6 +31,7 @@ import Modal from "./components/Modal"
 import ElapsedTime from "./components/ElapsedTime"
 import AiProcessLoader from "./components/AiProcessLoader"
 import AiProcessCanvas from "./components/AiProcessCanvas"
+import AiLabel from "./components/AiLabel"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -1569,6 +1570,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           <hr />
           <article style={{ padding: 40, maxWidth: 1100 }}>
             <h1>🎊 Public beta is open.</h1>
+
+            <AiLabel height={36} />
 
             <p>
               We are pleased to make this software available through an open public beta, with continued development and refinement underway as we gather feedback and assess its broader deployment. The software is provided as-is for the time being, and we appreciate your understanding as we continue to improve the platform and its service model.
