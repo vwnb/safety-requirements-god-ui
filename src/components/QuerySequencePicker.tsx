@@ -2,6 +2,7 @@ import { useState } from "react"
 import { brutal } from "../App"
 import Modal from "./Modal"
 import AiLabel from "./AiLabel"
+import AiProcessLoader from "./AiProcessLoader"
 import type { QuerySequenceResult, QuerySequenceStep } from "./QuerySequenceTypes"
 
 type QuerySequencePickerProps = {
@@ -59,9 +60,9 @@ export default function QuerySequencePicker({
       )}
 
       {running && (
-        <p style={{ opacity: 0.8, marginBottom: 16, fontFamily: "monospace" }}>
-          Planning and running sequence…
-        </p>
+        <div style={{ marginBottom: 16 }}>
+          <AiProcessLoader message="Planning and running sequence…" />
+        </div>
       )}
 
       {error && (
