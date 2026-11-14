@@ -21,7 +21,7 @@ export default function AiProcessLoader({
         display: "grid",
         gap: 10,
         width: "100%",
-        maxWidth: boxed ? 460 : undefined,
+        maxWidth: boxed ? 460 : 480,
         margin: "0 auto",
         boxSizing: "border-box",
       }}
