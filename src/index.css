@@ -1247,3 +1247,11 @@ section,
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+
+button,
+.btn {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
