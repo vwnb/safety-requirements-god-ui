@@ -1580,7 +1580,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
             <p>
               In line with our privacy approach, we use cookies to help identify users and to analyze product usage in a quasi-anonymous manner.
             </p>
-            <h2><AiLabel variant="basic" height={36} /> Agentic policy</h2>
+            <h2>Agentic policy<AiLabel variant="basic" height={36} /></h2>
             <p>
               Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. If you use AI to generate or substantially modify WCGW content, we encourage you to use the EU AI content labels where appropriate. 
             </p>
