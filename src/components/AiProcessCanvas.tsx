@@ -86,8 +86,8 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
     let lastFrame = 0
 
     const resize = () => {
-      const parent = canvas.parentElement
-      const nextWidth = Math.max(220, Math.floor(parent?.clientWidth || canvas.clientWidth || 320))
+      const measured = canvas.clientWidth || canvas.getBoundingClientRect().width
+      const nextWidth = Math.max(220, Math.floor(measured || 320))
       const scale = Math.min(window.devicePixelRatio || 1, 2)
       width = nextWidth
       canvas.width = Math.round(nextWidth * scale)
@@ -351,7 +351,7 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       resize()
       if (reduceMotion) draw(0)
     })
-    if (canvas.parentElement) observer.observe(canvas.parentElement)
+    observer.observe(canvas)
     return () => {
       window.cancelAnimationFrame(raf)
       observer.disconnect()
