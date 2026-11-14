@@ -4,6 +4,7 @@ import { InfoButton } from "./InfoButton"
 import Modal from "./Modal"
 import AiLabel from "./AiLabel"
 import { brutal } from "../App"
+import { resolveModelName } from "../lib/resolveModelName"
 
 type WorkItem = {
   id: string
@@ -294,36 +295,9 @@ export function LlmTools({
 
     onSetLoading(true)
 
-    // Resolve the model name currently in use so the loader can remind the user.
-    let modelName = "LLM"
-    try {
-      const [optsRes, meRes] = await Promise.all([
-        apiFetch(`${API}/user-settings/available`),
-        apiFetch(`${API}/user-settings/me`),
-      ])
-      let availableOptions: { key: string; defaultModel: string }[] = []
-      if (optsRes.ok) {
-        const optsData = await optsRes.json()
-        availableOptions = (optsData as { providers?: { key: string; defaultModel: string }[] }).providers ?? []
-      }
-      let provider: string | null = null
-      let model: string | null = null
-      if (meRes.ok) {
-        const meData = (await meRes.json()) as { provider?: string | null; model?: string | null } | null
-        if (meData) {
-          provider = meData.provider ?? null
-          model = meData.model ?? null
-        }
-      }
-      if (provider !== null) {
-        const opt = availableOptions.find((o) => o.key === provider)
-        modelName = model ?? opt?.defaultModel ?? provider
-      }
-    } catch {
-      // fall back to generic label
-    }
+    const modelName = await resolveModelName(apiFetch, API)
 
-    onSetLoadingMessage(`👺 Generating suggestions with ${modelName}...`)
+    onSetLoadingMessage(`Generating suggestions with ${modelName}...`)
 
     try {
       const res = await apiFetch(`${API}/evaluate-work-item/${workItemId}`, {

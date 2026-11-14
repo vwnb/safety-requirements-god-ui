@@ -12,8 +12,21 @@ type Pulse = {
   returning: boolean
 }
 
-const ACCENT = "#BFE7C6"
-const WARN = "#F2B8B5"
+type Mote = {
+  x: number
+  y: number
+  size: number
+  phase: number
+  speed: number
+}
+
+// Brand hazard orange plus a sage/grey "mythical glade" palette.
+const BRAND = "#FF5A00"
+const BRAND_LIGHT = "#FF9A5C"
+const BRAND_INK = "#2B1400"
+const SAGE = "#9ED8A8"
+const GOLD = "#E8C57A"
+const CREAM = "#FFF3D6"
 
 function roundedRect(
   ctx: CanvasRenderingContext2D,
@@ -60,6 +73,13 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       phase: index * 1.7,
     }))
     const flashes = new Array(orbs.length).fill(0)
+    const motes: Mote[] = Array.from({ length: 18 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      size: 0.7 + Math.random() * 1.5,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.4 + Math.random() * 0.8,
+    }))
     let pulses: Pulse[] = []
     let nextSpawn = 0
     let raf = 0
@@ -105,20 +125,80 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
 
       ctx.clearRect(0, 0, width, height)
 
+      // Misty green-grey glade background
+      ctx.save()
+      roundedRect(ctx, 0, 0, width, height, 10)
+      ctx.clip()
+      const sky = ctx.createLinearGradient(0, 0, 0, height)
+      sky.addColorStop(0, "#EDF1EA")
+      sky.addColorStop(0.55, "#D6DED3")
+      sky.addColorStop(1, "#BCC7BB")
+      ctx.fillStyle = sky
+      ctx.fillRect(0, 0, width, height)
+
+      // Drifting mist bands
+      for (let i = 0; i < 2; i += 1) {
+        const drift = reduceMotion ? 0 : Math.sin(time / (5200 + i * 2600) + i * 2) * width * 0.12
+        const mist = ctx.createRadialGradient(
+          cx + drift,
+          height * (0.72 + i * 0.12),
+          4,
+          cx + drift,
+          height * (0.72 + i * 0.12),
+          width * 0.55
+        )
+        mist.addColorStop(0, i === 0 ? "rgba(158, 216, 168, 0.22)" : "rgba(255, 243, 214, 0.18)")
+        mist.addColorStop(1, "rgba(158, 216, 168, 0)")
+        ctx.fillStyle = mist
+        ctx.fillRect(0, 0, width, height)
+      }
+
+      // Twinkling motes
+      motes.forEach((mote) => {
+        const twinkle = reduceMotion
+          ? 0.55
+          : 0.25 + 0.75 * Math.abs(Math.sin(time / 1200 * mote.speed + mote.phase))
+        const mx = mote.x * width + (reduceMotion ? 0 : Math.sin(time / 4000 + mote.phase) * 3)
+        const my = mote.y * height + (reduceMotion ? 0 : Math.cos(time / 4600 + mote.phase) * 2)
+        ctx.fillStyle = `rgba(255, 243, 214, ${0.55 * twinkle})`
+        ctx.beginPath()
+        ctx.arc(mx, my, mote.size, 0, Math.PI * 2)
+        ctx.fill()
+      })
+
       // Halo behind the chip
-      const halo = ctx.createRadialGradient(cx, cy, 6, cx, cy, 70)
-      halo.addColorStop(0, "rgba(191, 231, 198, 0.5)")
-      halo.addColorStop(1, "rgba(191, 231, 198, 0)")
+      const halo = ctx.createRadialGradient(cx, cy, 6, cx, cy, 74)
+      halo.addColorStop(0, "rgba(255, 90, 0, 0.16)")
+      halo.addColorStop(0.45, "rgba(232, 197, 122, 0.18)")
+      halo.addColorStop(1, "rgba(158, 216, 168, 0)")
       ctx.fillStyle = halo
       ctx.beginPath()
-      ctx.arc(cx, cy, 70, 0, Math.PI * 2)
+      ctx.arc(cx, cy, 74, 0, Math.PI * 2)
       ctx.fill()
+
+      // Slowly turning rune rings
+      const ringSpin = reduceMotion ? 0 : time / 9000
+      ctx.save()
+      ctx.setLineDash([3, 8])
+      ctx.lineDashOffset = -ringSpin * 40
+      ctx.strokeStyle = "rgba(92, 102, 92, 0.4)"
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.arc(cx, cy, 44, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.setLineDash([1, 7])
+      ctx.lineDashOffset = ringSpin * 55
+      ctx.strokeStyle = "rgba(158, 216, 168, 0.65)"
+      ctx.beginPath()
+      ctx.arc(cx, cy, 56, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
 
       // Connections between chip and orbs
       points.forEach((point) => {
         ctx.save()
         ctx.setLineDash([2, 5])
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.22)"
+        ctx.strokeStyle = "rgba(70, 82, 70, 0.32)"
         ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(cx, cy)
@@ -136,12 +216,18 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
         const y = pulse.returning
           ? target.y + (cy - target.y) * pulse.progress
           : cy + (target.y - cy) * pulse.progress
-        ctx.fillStyle = pulse.returning ? WARN : ACCENT
+        ctx.save()
+        ctx.shadowColor = pulse.returning ? GOLD : SAGE
+        ctx.shadowBlur = 8
+        ctx.fillStyle = pulse.returning ? GOLD : SAGE
         ctx.beginPath()
         ctx.arc(x, y, 3.4, 0, Math.PI * 2)
         ctx.fill()
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.45)"
+        ctx.restore()
+        ctx.strokeStyle = "rgba(43, 20, 0, 0.5)"
         ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(x, y, 3.4, 0, Math.PI * 2)
         ctx.stroke()
       })
 
@@ -149,82 +235,105 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       points.forEach((point, index) => {
         const flash = flashes[index]
         if (flash > 0) {
-          ctx.strokeStyle = `rgba(0, 0, 0, ${0.35 * flash})`
+          ctx.strokeStyle = `rgba(232, 197, 122, ${0.75 * flash})`
           ctx.lineWidth = 1.5
           ctx.beginPath()
-          ctx.arc(point.x, point.y, 8 + (1 - flash) * 16, 0, Math.PI * 2)
+          ctx.arc(point.x, point.y, 8 + (1 - flash) * 18, 0, Math.PI * 2)
           ctx.stroke()
         }
-        ctx.fillStyle = "#ffffff"
-        ctx.strokeStyle = "#000000"
+        ctx.fillStyle = "#F7FAF5"
+        ctx.strokeStyle = "#2B2B24"
         ctx.lineWidth = 2
         ctx.beginPath()
         ctx.arc(point.x, point.y, 8.5, 0, Math.PI * 2)
         ctx.fill()
         ctx.stroke()
-        ctx.fillStyle = index % 3 === 0 ? WARN : ACCENT
+        ctx.fillStyle = index % 3 === 0 ? GOLD : SAGE
         ctx.beginPath()
         ctx.arc(point.x, point.y, 3, 0, Math.PI * 2)
         ctx.fill()
       })
 
-      // Chip body
-      const chipSize = 54
+      // Chip body in hazard orange
+      const chipSize = 56
       ctx.save()
-      ctx.shadowColor = "rgba(0, 0, 0, 0.08)"
-      ctx.shadowBlur = 12
+      ctx.shadowColor = "rgba(43, 20, 0, 0.25)"
+      ctx.shadowBlur = 14
       ctx.shadowOffsetY = 3
-      roundedRect(ctx, cx - chipSize / 2, cy - chipSize / 2, chipSize, chipSize, 14)
-      ctx.fillStyle = "#ffffff"
+      roundedRect(ctx, cx - chipSize / 2, cy - chipSize / 2, chipSize, chipSize, 16)
+      const body = ctx.createLinearGradient(cx - chipSize / 2, cy - chipSize / 2, cx + chipSize / 2, cy + chipSize / 2)
+      body.addColorStop(0, BRAND_LIGHT)
+      body.addColorStop(0.55, BRAND)
+      body.addColorStop(1, "#D94A00")
+      ctx.fillStyle = body
       ctx.fill()
       ctx.restore()
-      roundedRect(ctx, cx - chipSize / 2, cy - chipSize / 2, chipSize, chipSize, 14)
-      ctx.strokeStyle = "#000000"
-      ctx.lineWidth = 2
+      roundedRect(ctx, cx - chipSize / 2, cy - chipSize / 2, chipSize, chipSize, 16)
+      ctx.strokeStyle = "#2B2B24"
+      ctx.lineWidth = 2.5
       ctx.stroke()
 
-      // Antenna
-      ctx.strokeStyle = "#000000"
+      // Rune mark on the forehead
+      ctx.strokeStyle = "rgba(255, 243, 214, 0.85)"
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(cx, cy - 20)
+      ctx.lineTo(cx + 3.5, cy - 14.5)
+      ctx.lineTo(cx, cy - 9)
+      ctx.lineTo(cx - 3.5, cy - 14.5)
+      ctx.closePath()
+      ctx.stroke()
+
+      // Antenna with a glowing charm
+      ctx.strokeStyle = "#2B2B24"
       ctx.lineWidth = 2
       ctx.beginPath()
       ctx.moveTo(cx, cy - chipSize / 2)
       ctx.lineTo(cx, cy - chipSize / 2 - 13)
       ctx.stroke()
       const antennaPulse = reduceMotion ? 1 : 1 + Math.sin(time / 260) * 0.25
-      ctx.fillStyle = ACCENT
+      ctx.save()
+      ctx.shadowColor = CREAM
+      ctx.shadowBlur = 10
+      ctx.fillStyle = CREAM
       ctx.beginPath()
       ctx.arc(cx, cy - chipSize / 2 - 15, 4 * antennaPulse, 0, Math.PI * 2)
       ctx.fill()
-      ctx.strokeStyle = "#000000"
+      ctx.restore()
+      ctx.strokeStyle = "#2B2B24"
       ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.arc(cx, cy - chipSize / 2 - 15, 4 * antennaPulse, 0, Math.PI * 2)
       ctx.stroke()
 
       // Face
       const blinkCycle = time % 3600
       const blinking = !reduceMotion && blinkCycle > 3400
-      ctx.fillStyle = "#000000"
+      ctx.fillStyle = BRAND_INK
       ;[-10, 10].forEach((offset) => {
         if (blinking) {
-          ctx.fillRect(cx + offset - 3, cy - 3, 6, 2)
+          ctx.fillRect(cx + offset - 3, cy - 2, 6, 2)
         } else {
           ctx.beginPath()
-          ctx.arc(cx + offset, cy - 2, 2.6, 0, Math.PI * 2)
+          ctx.arc(cx + offset, cy - 1, 2.6, 0, Math.PI * 2)
           ctx.fill()
         }
       })
-      ctx.strokeStyle = "#000000"
+      ctx.strokeStyle = BRAND_INK
       ctx.lineWidth = 2
       ctx.beginPath()
-      ctx.arc(cx, cy + 5, 8, Math.PI * 0.18, Math.PI * 0.82)
+      ctx.arc(cx, cy + 6, 8, Math.PI * 0.18, Math.PI * 0.82)
       ctx.stroke()
 
       // Cheeks
-      ctx.fillStyle = "rgba(242, 184, 181, 0.6)"
+      ctx.fillStyle = "rgba(255, 243, 214, 0.55)"
       ;[-16, 16].forEach((offset) => {
         ctx.beginPath()
-        ctx.arc(cx + offset, cy + 7, 3.2, 0, Math.PI * 2)
+        ctx.arc(cx + offset, cy + 8, 3.2, 0, Math.PI * 2)
         ctx.fill()
       })
+
+      ctx.restore()
     }
 
     const step = (time: number) => {
@@ -278,7 +387,7 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       ref={canvasRef}
       data-agent="ai-process-canvas"
       aria-hidden="true"
-      style={{ display: "block", width: "100%", height }}
+      style={{ display: "block", width: "100%", height, borderRadius: 10 }}
     />
   )
 }
