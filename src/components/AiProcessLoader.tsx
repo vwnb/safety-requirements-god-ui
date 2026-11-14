@@ -2,19 +2,27 @@ import AiLabel from "./AiLabel"
 import AiProcessCanvas from "./AiProcessCanvas"
 import ElapsedTime from "./ElapsedTime"
 
-export default function AiProcessLoader({ message }: { message: string }) {
+export default function AiProcessLoader({
+  message,
+  boxed = true,
+}: {
+  message: string
+  boxed?: boolean
+}) {
   return (
     <div
       className="loading-message"
       data-agent="loading-message"
       style={{
-        border: "2px solid black",
-        background: "rgb(255,255,255)",
-        padding: 18,
+        border: boxed ? "2px solid black" : "none",
+        background: boxed ? "rgb(255,255,255)" : "transparent",
+        padding: boxed ? 18 : 0,
         fontSize: 16,
         display: "grid",
         gap: 10,
-        width: "min(460px, 100%)",
+        width: "100%",
+        maxWidth: boxed ? 460 : undefined,
+        margin: "0 auto",
         boxSizing: "border-box",
       }}
     >

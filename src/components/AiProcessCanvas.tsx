@@ -22,7 +22,6 @@ type Mote = {
 
 // Brand hazard orange plus a sage/grey "mythical glade" palette.
 const BRAND = "#FF5A00"
-const BRAND_LIGHT = "#FF9A5C"
 const BRAND_INK = "#2B1400"
 const SAGE = "#9ED8A8"
 const GOLD = "#E8C57A"
@@ -129,29 +128,8 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       ctx.save()
       roundedRect(ctx, 0, 0, width, height, 10)
       ctx.clip()
-      const sky = ctx.createLinearGradient(0, 0, 0, height)
-      sky.addColorStop(0, "#EDF1EA")
-      sky.addColorStop(0.55, "#D6DED3")
-      sky.addColorStop(1, "#BCC7BB")
-      ctx.fillStyle = sky
+      ctx.fillStyle = "#D3DCD1"
       ctx.fillRect(0, 0, width, height)
-
-      // Drifting mist bands
-      for (let i = 0; i < 2; i += 1) {
-        const drift = reduceMotion ? 0 : Math.sin(time / (5200 + i * 2600) + i * 2) * width * 0.12
-        const mist = ctx.createRadialGradient(
-          cx + drift,
-          height * (0.72 + i * 0.12),
-          4,
-          cx + drift,
-          height * (0.72 + i * 0.12),
-          width * 0.55
-        )
-        mist.addColorStop(0, i === 0 ? "rgba(158, 216, 168, 0.22)" : "rgba(255, 243, 214, 0.18)")
-        mist.addColorStop(1, "rgba(158, 216, 168, 0)")
-        ctx.fillStyle = mist
-        ctx.fillRect(0, 0, width, height)
-      }
 
       // Twinkling motes
       motes.forEach((mote) => {
@@ -165,16 +143,6 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
         ctx.arc(mx, my, mote.size, 0, Math.PI * 2)
         ctx.fill()
       })
-
-      // Halo behind the chip
-      const halo = ctx.createRadialGradient(cx, cy, 6, cx, cy, 74)
-      halo.addColorStop(0, "rgba(255, 90, 0, 0.16)")
-      halo.addColorStop(0.45, "rgba(232, 197, 122, 0.18)")
-      halo.addColorStop(1, "rgba(158, 216, 168, 0)")
-      ctx.fillStyle = halo
-      ctx.beginPath()
-      ctx.arc(cx, cy, 74, 0, Math.PI * 2)
-      ctx.fill()
 
       // Slowly turning rune rings
       const ringSpin = reduceMotion ? 0 : time / 9000
@@ -261,11 +229,7 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       ctx.shadowBlur = 14
       ctx.shadowOffsetY = 3
       roundedRect(ctx, cx - chipSize / 2, cy - chipSize / 2, chipSize, chipSize, 16)
-      const body = ctx.createLinearGradient(cx - chipSize / 2, cy - chipSize / 2, cx + chipSize / 2, cy + chipSize / 2)
-      body.addColorStop(0, BRAND_LIGHT)
-      body.addColorStop(0.55, BRAND)
-      body.addColorStop(1, "#D94A00")
-      ctx.fillStyle = body
+      ctx.fillStyle = BRAND
       ctx.fill()
       ctx.restore()
       roundedRect(ctx, cx - chipSize / 2, cy - chipSize / 2, chipSize, chipSize, 16)
@@ -306,31 +270,45 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       ctx.arc(cx, cy - chipSize / 2 - 15, 4 * antennaPulse, 0, Math.PI * 2)
       ctx.stroke()
 
-      // Face
-      const blinkCycle = time % 3600
-      const blinking = !reduceMotion && blinkCycle > 3400
-      ctx.fillStyle = BRAND_INK
-      ;[-10, 10].forEach((offset) => {
-        if (blinking) {
-          ctx.fillRect(cx + offset - 3, cy - 2, 6, 2)
-        } else {
-          ctx.beginPath()
-          ctx.arc(cx + offset, cy - 1, 2.6, 0, Math.PI * 2)
-          ctx.fill()
-        }
-      })
+      // Contemplative face: lowered lids, inward brows, a pensive mouth
       ctx.strokeStyle = BRAND_INK
+      ctx.lineCap = "round"
       ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.arc(cx, cy + 6, 8, Math.PI * 0.18, Math.PI * 0.82)
-      ctx.stroke()
-
-      // Cheeks
-      ctx.fillStyle = "rgba(255, 243, 214, 0.55)"
-      ;[-16, 16].forEach((offset) => {
+      ;[-10, 10].forEach((offset) => {
+        const tilt = offset < 0 ? 1 : -1
         ctx.beginPath()
-        ctx.arc(cx + offset, cy + 8, 3.2, 0, Math.PI * 2)
+        ctx.arc(cx + offset, cy - 4, 5, Math.PI * 0.15, Math.PI * 0.85)
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(cx + offset - 4, cy - 1.5)
+        ctx.lineTo(cx + offset + 4 * tilt * -1, cy - 1.5)
+        ctx.stroke()
+      })
+      ctx.beginPath()
+      ctx.moveTo(cx - 15, cy - 12)
+      ctx.lineTo(cx - 6, cy - 10)
+      ctx.moveTo(cx + 15, cy - 12)
+      ctx.lineTo(cx + 6, cy - 10)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(cx - 4, cy + 9)
+      ctx.quadraticCurveTo(cx, cy + 7, cx + 4, cy + 9)
+      ctx.stroke()
+      ctx.lineCap = "butt"
+
+      // Thought motes drifting from the head
+      ;[0, 1, 2].forEach((index) => {
+        const rise = reduceMotion ? 0 : ((time / 2600 + index * 0.33) % 1)
+        const bx = cx + 30 + index * 7
+        const by = cy - 26 - rise * 18 - index * 5
+        const alpha = 0.75 * (1 - rise)
+        ctx.fillStyle = `rgba(255, 243, 214, ${Math.max(0, alpha)})`
+        ctx.strokeStyle = "rgba(43, 43, 36, 0.55)"
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(bx, by, 2 + index * 0.9, 0, Math.PI * 2)
         ctx.fill()
+        ctx.stroke()
       })
 
       ctx.restore()

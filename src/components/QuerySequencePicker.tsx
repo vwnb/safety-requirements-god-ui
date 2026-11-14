@@ -64,6 +64,7 @@ export default function QuerySequencePicker({
       {running && (
         <div style={{ marginBottom: 16 }}>
           <AiProcessLoader
+            boxed={false}
             message={
               modelName
                 ? `Planning query sequence with ${modelName}…`
