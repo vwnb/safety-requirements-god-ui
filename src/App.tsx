@@ -1582,17 +1582,14 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
             </p>
             <h2>Agentic policy</h2>
             <p>
-              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. MCP is available for authenticated users.
+              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. If you use AI to generate or substantially modify WCGW content, we encourage you to use the EU AI content labels where appropriate. 
             </p>
-
-
             <div
               data-agent="landing-ai-process"
               style={{ maxWidth: 250 }}
             >
               <AiProcessCanvas />
             </div>
-
             <div className="mcp-configuration" aria-labelledby="mcp-configuration-heading">
               <h2 id="mcp-configuration-heading">MCP configuration</h2>
               <p>
