@@ -92,7 +92,7 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
       width = nextWidth
       canvas.width = Math.round(nextWidth * scale)
       canvas.height = Math.round(height * scale)
-      canvas.style.width = `${nextWidth}px`
+      // CSS width stays 100% so the canvas keeps following its container.
       canvas.style.height = `${height}px`
       ctx.setTransform(scale, 0, 0, scale, 0, 0)
     }
@@ -349,7 +349,8 @@ export default function AiProcessCanvas({ height = 120 }: { height?: number }) {
 
     const observer = new ResizeObserver(() => {
       resize()
-      if (reduceMotion) draw(0)
+      // Resizing clears the bitmap after this frame's draw; repaint now to avoid a blank frame.
+      draw(reduceMotion ? 0 : lastFrame)
     })
     observer.observe(canvas)
     return () => {

@@ -10,6 +10,7 @@ import { LlmTools } from "./components/LlmTools"
 import NewWorkItemModal from "./components/NewWorkItemModal"
 import NewConceptModal from "./components/NewConceptModal"
 import { OfflineBanner } from "./components/OfflineBanner"
+import GovernancePainDeity from "./components/GovernancePainDeity"
 import { useApiFetch } from "./lib/apiFetchContext"
 import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
 import WorkItemCard from "./components/WorkItemCard"
@@ -29,6 +30,8 @@ import TemplateList from "./components/TemplateList"
 import Modal from "./components/Modal"
 import ElapsedTime from "./components/ElapsedTime"
 import AiProcessLoader from "./components/AiProcessLoader"
+import AiProcessCanvas from "./components/AiProcessCanvas"
+import AiLabel from "./components/AiLabel"
 
 const API = import.meta.env.VITE_API_URL || ""
 
@@ -1406,6 +1409,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   return (
     <>
       <OfflineBanner />
+      <GovernancePainDeity />
       {!!user && !!collab && <CollaborationBanner
         connected={collab.connected}
         presences={collab.presences}
@@ -1576,10 +1580,16 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
             <p>
               In line with our privacy approach, we use cookies to help identify users and to analyze product usage in a quasi-anonymous manner.
             </p>
-            <h2>Agentic policy</h2>
+            <h2>Agentic policy<AiLabel variant="basic" height={36} /></h2>
             <p>
-              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. MCP is available for authenticated users.
+              Agents must operate within the permissions granted by their users, respect the integrity of shared engineering data, and remain accountable to human oversight. If you use AI to generate or substantially modify WCGW content, we encourage you to use the EU AI content labels where appropriate. 
             </p>
+            <div
+              data-agent="landing-ai-process"
+              style={{ maxWidth: 250 }}
+            >
+              <AiProcessCanvas />
+            </div>
             <div className="mcp-configuration" aria-labelledby="mcp-configuration-heading">
               <h2 id="mcp-configuration-heading">MCP configuration</h2>
               <p>
@@ -1609,7 +1619,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
               )}
               {NEVERMINED_PLAN_URL && (
                 <p>
-                  Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools priced in credits. Your client signs in over OAuth the same way{mcpClientId && <>, with the same client ID</>}. Each paid call also carries two headers: <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
+                  Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools. Every paid call costs the same number of credits, set on the Explorer plan and shown in the tool list, and is charged only when it completes successfully. Your Nevermined account is tied to the first WCGW account that spends its credits. Your client signs in over OAuth the same way{mcpClientId && <>, with the same client ID</>}. Each paid call also carries two headers: <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
                 </p>
               )}
             </div>
