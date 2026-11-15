@@ -1152,6 +1152,15 @@ section,
   margin-right: 8px;
 }
 
+/* Sized like .tag so it sits on the same line as the status tags. */
+.btn.suggestion-report-btn {
+  float: right;
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  border-left-width: 2px;
+}
+
 .suggestion-status-name {
   font-family: monospace;
   font-size: 11px;
