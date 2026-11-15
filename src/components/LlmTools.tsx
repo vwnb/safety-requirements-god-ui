@@ -3,6 +3,7 @@ import { SemanticColor } from "../lib/SemanticColor"
 import { InfoButton } from "./InfoButton"
 import Modal from "./Modal"
 import AiLabel from "./AiLabel"
+import ReportAiProblemModal from "./ReportAiProblemModal"
 import { brutal } from "../App"
 import { resolveModelName } from "../lib/resolveModelName"
 
@@ -78,7 +79,7 @@ type EvaluatorSuggestion = {
 }
 
 // Evaluation lifecycle exposed by the backend. One evaluation commits one approved selection.
-type EvaluationState = "CREATED" | "EVALUATING" | "READY_FOR_REVIEW" | "APPROVED" | "COMMITTED" | "CONFLICTED" | "SUPERSEDED"
+type EvaluationState = "CREATED" | "EVALUATING" | "READY_FOR_REVIEW" | "APPROVED" | "COMMITTED" | "CONFLICTED" | "SUPERSEDED" | "FAILED"
 type EvaluationLifecycle = {
   state?: EvaluationState
   approvedSuggestionIds?: string[]
@@ -168,6 +169,7 @@ export function LlmTools({
   const [latestReportNotFound, setLatestReportNotFound] = useState(false)
   const [evaluationResults, setEvaluationResults] = useState<Array<{ id: string; createdAt: string; userPrompt?: string; state?: EvaluationState }>>([])
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+  const [reportingSuggestion, setReportingSuggestion] = useState<EvaluatorSuggestion | null>(null)
   const [reportCreatedAt, setReportCreatedAt] = useState<string | null>(null)
   const [reportUserPrompt, setReportUserPrompt] = useState<string | null>(null)
   const [lifecycle, setLifecycle] = useState<EvaluationLifecycle | null>(null)
@@ -713,6 +715,15 @@ export function LlmTools({
                       )}
                     </div>
                   )}
+                  <button
+                    data-agent={`btn-report-ai-problem-${index}`}
+                    onClick={() => setReportingSuggestion(suggestion)}
+                    className="btn btn-xs"
+                    style={{ float: "right" }}
+                    title="Report a problem with this AI suggestion"
+                  >
+                    Report a problem
+                  </button>
                   {suggestionStatus && (
                     <span
                       className="tag suggestion-status"
@@ -731,6 +742,17 @@ export function LlmTools({
             })
         )}
       </article>
+
+      {reportingSuggestion && (
+        <ReportAiProblemModal
+          apiFetch={apiFetch}
+          api={API}
+          evaluationResultId={selectedReportId}
+          suggestionId={reportingSuggestion.id}
+          suggestionText={reportingSuggestion.text}
+          onClose={() => setReportingSuggestion(null)}
+        />
+      )}
 
       {runnerModalOpen && runnerResults && (
         <Modal
