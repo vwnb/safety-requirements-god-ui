@@ -718,8 +718,7 @@ export function LlmTools({
                   <button
                     data-agent={`btn-report-ai-problem-${index}`}
                     onClick={() => setReportingSuggestion(suggestion)}
-                    className="btn btn-xs"
-                    style={{ float: "right" }}
+                    className="btn suggestion-report-btn"
                     title="Report a problem with this AI suggestion"
                   >
                     Report a problem
