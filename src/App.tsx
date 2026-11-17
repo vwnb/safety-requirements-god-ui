@@ -23,6 +23,7 @@ import { UserSettingsModal } from "./components/UserSettingsModal"
 import { AdminLicenses } from "./components/AdminLicenses"
 import { CreateProjectModal } from "./components/CreateProjectModal"
 import { EditProjectModal } from "./components/EditProjectModal"
+import { ProjectDatasetExportModal } from "./components/ProjectDatasetExportModal"
 import { useCollaboration } from "./lib/useCollaboration"
 import { CollaborationBanner } from "./components/CollaborationBanner"
 import BaselineDetailsCard from "./components/BaselineDetailsCard"
@@ -591,6 +592,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
+  const [showDatasetExportModal, setShowDatasetExportModal] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
   const [editWorkItemName, setEditWorkItemName] = useState("")
@@ -1538,6 +1540,15 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         />
       )}
 
+      {showDatasetExportModal && selectedProject && isAdmin && (
+        <ProjectDatasetExportModal
+          apiFetch={apiFetch}
+          projectId={selectedProject.id}
+          projectKey={selectedProject.key}
+          onClose={() => setShowDatasetExportModal(false)}
+        />
+      )}
+
 
       <header data-agent="top-header" className="top-header" style={!user && { padding: 80 } || {}}>
         <img src={logo} alt="Logo" className="logo" data-agent="logo" />
@@ -1662,6 +1673,16 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                         >
                           Edit
                         </button>
+                        {isAdmin && (
+                          <button
+                            data-agent="btn-hf-project-export"
+                            onClick={() => setShowDatasetExportModal(true)}
+                            title="Export this project as an anonymized Hugging Face dataset (admin)"
+                            style={{ ...brutal.button, fontSize: 10, padding: "4px 8px" }}
+                          >
+                            HF dataset
+                          </button>
+                        )}
                         <button
                           data-agent="btn-leave-project"
                           onClick={async () => {
