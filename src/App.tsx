@@ -1545,6 +1545,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           apiFetch={apiFetch}
           projectId={selectedProject.id}
           projectKey={selectedProject.key}
+          workItems={workItems}
           onClose={() => setShowDatasetExportModal(false)}
         />
       )}
