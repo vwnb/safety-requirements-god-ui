@@ -74,11 +74,14 @@ export function ProjectDatasetExportModal({
   apiFetch,
   projectId,
   projectKey,
+  workItems,
   onClose,
 }: {
   apiFetch: ApiFetchFn
   projectId: string
   projectKey: string
+  /** The project's work items, in display order; null while loading. */
+  workItems: Array<{ id: string; key: string; name: string }> | null
   onClose: () => void
 }) {
   // Everything below lives in component state only; closing the modal drops it.
@@ -89,6 +92,8 @@ export function ProjectDatasetExportModal({
   const [uploadErrors, setUploadErrors] = useState<string[]>([])
   const [repoId, setRepoId] = useState("")
   const [isPrivate, setIsPrivate] = useState(true)
+  // null exports every work item; a set exports only those (kept in project order).
+  const [pickedIds, setPickedIds] = useState<Set<string> | null>(null)
 
   const [dryRun, setDryRun] = useState<DryRunResponse | null>(null)
   const [dryRunBody, setDryRunBody] = useState<string | null>(null)
@@ -110,9 +115,13 @@ export function ProjectDatasetExportModal({
   const retryIn = retryAt === null ? 0 : Math.max(0, Math.ceil((retryAt - now) / 1000))
 
   const redactTerms = useMemo(() => parseRedactTerms(termsText), [termsText])
+  const workItemIds = useMemo(
+    () => (pickedIds === null ? undefined : (workItems ?? []).filter((w) => pickedIds.has(w.id)).map((w) => w.id)),
+    [pickedIds, workItems]
+  )
   const form: ExportForm = useMemo(
-    () => ({ redactTerms, card, license, extraFiles, repoId, private: isPrivate }),
-    [redactTerms, card, license, extraFiles, repoId, isPrivate]
+    () => ({ redactTerms, card, license, extraFiles, repoId, private: isPrivate, workItemIds }),
+    [redactTerms, card, license, extraFiles, repoId, isPrivate, workItemIds]
   )
   const formErrors = useMemo(() => validateForm(form), [form])
   const { fileErrors } = useMemo(() => validateExtraFiles(extraFiles, redactTerms), [extraFiles, redactTerms])
@@ -122,7 +131,12 @@ export function ProjectDatasetExportModal({
   const busy = status.kind === "busy"
   const blocked = busy || retryIn > 0 || formErrors.length > 0
   const dirty =
-    !!termsText || extraFiles.length > 0 || !!repoId || CARD_FIELDS.some((f) => card[f]) || dryRun !== null
+    !!termsText ||
+    extraFiles.length > 0 ||
+    !!repoId ||
+    CARD_FIELDS.some((f) => card[f]) ||
+    pickedIds !== null ||
+    dryRun !== null
 
   const handleClose = () => {
     if (busy) return
@@ -236,9 +250,73 @@ export function ProjectDatasetExportModal({
     <Modal title={`Hugging Face dataset — ${projectKey}`} onClose={handleClose} width={900}>
       <div data-agent="hf-project-export" style={{ maxHeight: "75vh", overflow: "auto", paddingRight: 4 }}>
         <p style={{ marginTop: 0, fontSize: 13 }}>
-          Exports every work item in this project as one anonymized dataset. Run a dry run and review the report
-          before publishing. Exports are limited to one request per minute, dry runs included.
+          Exports this project's work items, all or the ones you pick, as one anonymized dataset. Run a dry run and
+          review the report before publishing. Exports are limited to one request per minute, dry runs included.
         </p>
+
+        <section style={sectionStyle} data-agent="hf-project-export-work-items">
+          <div className="title" style={{ marginBottom: 8 }}>Work items</div>
+          {workItems === null ? (
+            <p style={{ margin: 0, fontSize: 12 }}>Loading work items…</p>
+          ) : (
+            <>
+              <label style={{ display: "block", fontSize: 13 }}>
+                <input
+                  type="radio"
+                  data-agent="radio-hf-work-items-all"
+                  checked={pickedIds === null}
+                  onChange={() => setPickedIds(null)}
+                />{" "}
+                All {workItems.length} work items
+              </label>
+              <label style={{ display: "block", fontSize: 13, marginBottom: 6 }}>
+                <input
+                  type="radio"
+                  data-agent="radio-hf-work-items-pick"
+                  checked={pickedIds !== null}
+                  onChange={() => setPickedIds(new Set(workItems.map((w) => w.id)))}
+                />{" "}
+                Only the ones I pick
+              </label>
+              {pickedIds !== null && (
+                <>
+                  <p style={{ margin: "0 0 6px 0", fontSize: 12 }}>
+                    Names from work items you leave out are still redacted from the ones you include.
+                  </p>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+                    <button type="button" onClick={() => setPickedIds(new Set(workItems.map((w) => w.id)))}>
+                      Select all
+                    </button>
+                    <button type="button" onClick={() => setPickedIds(new Set())}>Select none</button>
+                    <span style={{ fontSize: 12, alignSelf: "center" }}>
+                      {pickedIds.size} of {workItems.length} selected
+                    </span>
+                  </div>
+                  <div style={{ maxHeight: 200, overflow: "auto", border: "1px solid black", padding: 6 }}>
+                    {workItems.map((w) => (
+                      <label key={w.id} style={{ display: "block", fontSize: 12, fontFamily: "monospace" }}>
+                        <input
+                          type="checkbox"
+                          data-agent={`checkbox-hf-work-item-${w.key}`}
+                          checked={pickedIds.has(w.id)}
+                          onChange={(e) =>
+                            setPickedIds((prev) => {
+                              const next = new Set(prev ?? [])
+                              if (e.target.checked) next.add(w.id)
+                              else next.delete(w.id)
+                              return next
+                            })
+                          }
+                        />{" "}
+                        {w.key} — {w.name}
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </section>
 
         <section style={sectionStyle}>
           <div className="title" style={{ marginBottom: 8 }}>Redact terms</div>

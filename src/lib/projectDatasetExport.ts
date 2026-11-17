@@ -33,6 +33,9 @@ const REPO_ID_PATTERN = /^[\w.-]{1,96}\/[\w.-]{1,96}$/
 const LICENSE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9.+-]{0,63}$/
 
 export const CARD_FIELDS = ["title", "scope", "method", "limitations", "disclosure"] as const
+/** Matches the server's MAX_WORK_ITEM_IDS. */
+export const MAX_WORK_ITEM_IDS = 500
+
 export type CardField = (typeof CARD_FIELDS)[number]
 
 export interface ExtraFile {
@@ -48,6 +51,8 @@ export interface ExportForm {
   extraFiles: ExtraFile[]
   repoId: string
   private: boolean
+  /** Work items to export; undefined means every work item in the project. */
+  workItemIds?: string[]
 }
 
 export type PatternName = "EMAIL" | "URL" | "DID" | "ID" | "ADDRESS" | "HASH" | "IP" | "PHONE"
@@ -211,6 +216,12 @@ export function validateForm(form: ExportForm): string[] {
   if (form.repoId.trim() && !REPO_ID_PATTERN.test(form.repoId.trim())) {
     errors.push("Repo ID must look like namespace/name.")
   }
+  if (form.workItemIds && form.workItemIds.length === 0) {
+    errors.push("Pick at least one work item, or export all of them.")
+  }
+  if (form.workItemIds && form.workItemIds.length > MAX_WORK_ITEM_IDS) {
+    errors.push(`At most ${MAX_WORK_ITEM_IDS} work items can be picked.`)
+  }
   const { fileErrors, listErrors } = validateExtraFiles(form.extraFiles, form.redactTerms)
   errors.push(...listErrors)
   for (const [i, error] of Object.entries(fileErrors)) {
@@ -226,6 +237,7 @@ export function buildRequestBody(
 ): Record<string, unknown> {
   const body: Record<string, unknown> = { private: form.private }
   if (form.redactTerms.length) body.redactTerms = form.redactTerms
+  if (form.workItemIds) body.workItemIds = form.workItemIds
   if (form.extraFiles.length) body.extraFiles = form.extraFiles
   for (const field of CARD_FIELDS) {
     if (form.card[field].trim()) body[field] = form.card[field]
