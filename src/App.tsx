@@ -1637,7 +1637,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
               )}
               {NEVERMINED_PLAN_URL && (
                 <p>
-                  Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools. Every paid call costs the same number of credits, set on the Explorer plan and shown in the tool list, and is charged only when it completes successfully. Your Nevermined account is tied to the first WCGW account that spends its credits. Your client signs in over OAuth the same way{mcpClientId && <>, with the same client ID</>}. Each paid call also carries two headers: <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
+                  Paid calls use a separate endpoint, <code data-agent="nvm-mcp-server-url">{NVM_MCP_SERVER_URL}</code>, which offers read, query and evaluation tools. A paid call costs 1 Explorer plan credit for every started 10 seconds of the tool's run, up to that tool's maximum, which the tool list shows. It is charged only when it completes successfully. Your Nevermined credits are not tied to a WCGW account: anyone signed in to WCGW who holds your payment token can spend them, though it never gives access to your projects. Treat the token like a password. Your client signs in over OAuth the same way{mcpClientId && <>, with the same client ID</>}. Each paid call also carries two headers: <code>payment-signature</code> with the Nevermined x402 access token, and a unique <code>Idempotency-Key</code> that you reuse on retries.
                 </p>
               )}
             </div>
