@@ -79,15 +79,15 @@ const HAZARD_RATING_GROUPS: {
     title: "ISO 13849-1 risk graph",
     help: "The required performance level (PLr) is derived from S + F + P once all three are set.",
     fields: [
-      { field: "plrSeverity", label: "Severity of injury", options: [
+      { field: "plrSeverity", label: "Severity", options: [
         { value: "S1", label: "S1 – slight, normally reversible" },
         { value: "S2", label: "S2 – serious, normally irreversible, or death" },
       ] },
-      { field: "plrFrequency", label: "Frequency / duration of exposure", options: [
+      { field: "plrFrequency", label: "Frequency", options: [
         { value: "F1", label: "F1 – seldom to less often, or short" },
         { value: "F2", label: "F2 – frequent to continuous, or long" },
       ] },
-      { field: "plrAvoidance", label: "Possibility of avoidance", options: [
+      { field: "plrAvoidance", label: "Avoidance", options: [
         { value: "P1", label: "P1 – possible under specific conditions" },
         { value: "P2", label: "P2 – scarcely possible" },
       ] },
