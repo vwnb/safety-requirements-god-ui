@@ -416,7 +416,7 @@ export default function WorkItemCard({
             />
           </div>
           <div className="form-actions">
-            <button data-agent="btn-save-changes" className="btn" onClick={handleSave}>Save changes</button>
+            <button data-agent="btn-save-changes" className="btn btn-success" onClick={handleSave}>Save changes</button>
             <button data-agent="btn-cancel-edit-work-item" className="btn btn-danger" onClick={handleCancel}>Cancel</button>
           </div>
         </>

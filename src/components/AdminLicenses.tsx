@@ -432,7 +432,7 @@ export function AdminLicenses({
             <button
               onClick={grantLicense}
               disabled={submitting || !formData.userId.trim() || !formData.expiresAt}
-              className="btn"
+              className="btn btn-success"
               style={{ opacity: (submitting || !formData.userId.trim() || !formData.expiresAt) ? 0.6 : 1, cursor: (submitting || !formData.userId.trim() || !formData.expiresAt) ? 'not-allowed' : 'pointer', background: SemanticColor.SUCCESS }}
             >
               {submitting ? "Granting..." : "Grant License"}

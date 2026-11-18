@@ -51,7 +51,7 @@ export default function NewWorkItemModal({
         <button
           data-agent="btn-create-work-item"
           onClick={handleCreate}
-          className="btn"
+          className="btn btn-success"
           style={{ opacity: (key.trim() && title.trim()) ? 1 : 0.6, cursor: (key.trim() && title.trim()) ? 'pointer' : 'not-allowed' }}
         >
           Create

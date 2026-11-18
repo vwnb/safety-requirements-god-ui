@@ -586,8 +586,8 @@ export function ProjectDatasetExportModal({
             <strong>{repoId.trim() || "the default repo"}</strong> as a <strong>{isPrivate ? "private" : "public"}</strong> Hugging Face dataset?
           </p>
           <div className="form-actions">
-            <button className="btn" onClick={() => setConfirmPublish(false)}>Cancel</button>
-            <button data-agent="btn-hf-confirm-publish" className="btn" disabled={blocked} onClick={() => void publish(false)}>
+            <button className="btn btn-danger" onClick={() => setConfirmPublish(false)}>Cancel</button>
+            <button data-agent="btn-hf-confirm-publish" className="btn btn-success" disabled={blocked} onClick={() => void publish(false)}>
               Publish
             </button>
           </div>

@@ -534,7 +534,7 @@ export function LlmTools({
               action()
             }
           }}
-          className="btn btn-generate"
+          className="btn btn-success btn-generate"
         >
           Generate new refinement report
         </button>
@@ -590,7 +590,7 @@ export function LlmTools({
                   data-agent="btn-approve-selection"
                   disabled={!selection.length}
                   onClick={() => submitSelection("approve")}
-                  className="btn"
+                  className="btn btn-success"
                 >
                   Approve selection ({selection.length})
                 </button>
@@ -688,10 +688,11 @@ export function LlmTools({
                     )}
                   </>
                   <hr className="suggestion-divider" />
+                  <div className="suggestion-footer">
                   {!suggestionStatus && (
                     <div className="suggestion-actions">
                       {isSelectable(suggestion) && (reportState === "READY_FOR_REVIEW" || reportState === "APPROVED") && (
-                        <label data-agent={`select-suggestion-${index}`}>
+                        <label className="suggestion-select" data-agent={`select-suggestion-${index}`}>
                           <input
                             type="checkbox"
                             checked={selection.includes(suggestion.id!)}
@@ -715,14 +716,6 @@ export function LlmTools({
                       )}
                     </div>
                   )}
-                  <button
-                    data-agent={`btn-report-ai-problem-${index}`}
-                    onClick={() => setReportingSuggestion(suggestion)}
-                    className="btn suggestion-report-btn"
-                    title="Report a problem with this AI suggestion"
-                  >
-                    Report a problem
-                  </button>
                   {suggestionStatus && (
                     <span
                       className="tag suggestion-status"
@@ -736,6 +729,15 @@ export function LlmTools({
                       )}
                     </span>
                   )}
+                  <button
+                    data-agent={`btn-report-ai-problem-${index}`}
+                    onClick={() => setReportingSuggestion(suggestion)}
+                    className="btn suggestion-report-btn"
+                    title="Report a problem with this AI suggestion"
+                  >
+                    Report a problem
+                  </button>
+                  </div>
                 </div>
               )
             })
@@ -789,7 +791,7 @@ export function LlmTools({
             <button
               data-agent="btn-close-runner-results"
               onClick={() => setRunnerModalOpen(false)}
-              className="btn btn-danger"
+              className="btn"
             >
               Close
             </button>
@@ -832,7 +834,7 @@ export function LlmTools({
             <button
               data-agent="btn-close-llm-warnings"
               onClick={() => setWarningsModal(null)}
-              className="btn btn-danger"
+              className="btn"
             >
               Close
             </button>

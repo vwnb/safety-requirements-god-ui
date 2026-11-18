@@ -92,7 +92,7 @@ export default function NewConceptModal({
         <button
           data-agent="btn-create-concept"
           onClick={handleCreate}
-          className="btn"
+          className="btn btn-success"
           style={{ opacity: (key.trim() && title.trim() && type) ? 1 : 0.6, cursor: (key.trim() && title.trim() && type) ? 'pointer' : 'not-allowed' }}
         >
           Create

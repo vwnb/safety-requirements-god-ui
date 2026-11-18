@@ -83,7 +83,7 @@ export function CreateProjectModal({
       <button
         onClick={handleCreate}
         disabled={submitting || !key.trim() || !name.trim()}
-        className="btn"
+        className="btn btn-success"
         style={{ opacity: (submitting || !key.trim() || !name.trim()) ? 0.6 : 1, cursor: (submitting || !key.trim() || !name.trim()) ? 'not-allowed' : 'pointer' }}
       >
         {submitting ? "Creating..." : "Create"}
