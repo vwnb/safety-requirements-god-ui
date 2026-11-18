@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { stpaFieldsOf, typeColor, type Concept, type ConceptIntegrityLevel, type HazardLevels, type HazardRatingFields, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
+import { stpaFieldsOf, typeColor, type Concept, type ConceptIntegrityLevel, type Category13849, type HazardLevels, type HazardRatingFields, type Iso13849Fields, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
 import { hazardRatingOf } from "../lib/hazardRating"
+import { iso13849FieldsOf } from "../lib/iso13849"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL", "SAFETY_FUNCTION",
@@ -113,6 +114,24 @@ function hazardLevelLabels(levels: HazardLevels | null | undefined): { label: st
   return out
 }
 
+const CATEGORIES_13849: { value: Category13849; label: string }[] = [
+  { value: "B", label: "B" },
+  { value: "CAT_1", label: "1" },
+  { value: "CAT_2", label: "2" },
+  { value: "CAT_3", label: "3" },
+  { value: "CAT_4", label: "4" },
+]
+
+const ISO13849_NUMBER_FIELDS: { field: Exclude<keyof Iso13849Fields, "category13849">; label: string; help: string; min: number; max?: number; step: string }[] = [
+  { field: "mttfdYears", label: "MTTFD per channel (years)", help: "Low 3–10, medium 10–30, high 30 and up; below 3 is not acceptable.", min: 0, step: "any" },
+  { field: "dcavgPercent", label: "DCavg (%)", help: "None < 60, low 60–90, medium 90–99, high 99 and up.", min: 0, max: 100, step: "any" },
+  { field: "ccfScore", label: "CCF score (Annex F)", help: "Whole number 0–100; Categories 2, 3 and 4 need at least 65.", min: 0, max: 100, step: "1" },
+]
+
+const categoryLabel = (value: Category13849 | null | undefined) => CATEGORIES_13849.find((c) => c.value === value)?.label
+
+const display = (value: number | null | undefined, unit = "") => (value != null ? `${value}${unit}` : "—")
+
 const labelOf = <T extends string>(options: { value: T; label: string }[], value: T | null | undefined) =>
   options.find((option) => option.value === value)?.label
 
@@ -142,6 +161,8 @@ export default function ConceptCard({
   onEditStpa,
   editHazardRating,
   onEditHazardRating,
+  editIso13849,
+  onEditIso13849,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -164,6 +185,8 @@ export default function ConceptCard({
   onEditStpa: (v: StpaFields) => void
   editHazardRating: HazardRatingFields
   onEditHazardRating: (v: HazardRatingFields) => void
+  editIso13849: Iso13849Fields
+  onEditIso13849: (v: Iso13849Fields) => void
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -230,6 +253,16 @@ export default function ConceptCard({
                   {label}
                 </span>
               ))}
+              {concept.achievedPl?.pl && (
+                <span
+                  data-agent="concept-achieved-pl"
+                  className="tag tag-risk"
+                  style={{ marginLeft: 8 }}
+                  title="Achieved PL derived by the ISO 13849-1 simplified procedure (Category, DCavg, MTTFD); does not cover PFHD, systematic failures or software"
+                >
+                  Achieved {concept.achievedPl.pl.replace("_", " ")}
+                </span>
+              )}
             </h2>
 
             <div style={{ display: "flex", gap: 8 }}>
@@ -240,6 +273,7 @@ export default function ConceptCard({
                   onEditOpbTerm(concept.opbTerm || "")
                   onEditStpa(stpaFieldsOf(concept))
                   onEditHazardRating(hazardRatingOf(concept))
+                  onEditIso13849(iso13849FieldsOf(concept))
                   setEditingState(true)
                 }}
                 className="btn"
@@ -268,6 +302,17 @@ export default function ConceptCard({
               <>
                 <span><span className="field-label">UCA type</span> {labelOf(UCA_TYPES, concept.ucaType) || "—"}</span>
                 <span style={{ overflowWrap: "anywhere" }}><span className="field-label">UCA context</span> {concept.ucaContext || "—"}</span>
+              </>
+            )}
+            {concept.type === "SAFETY_FUNCTION" && (
+              <>
+                <span><span className="field-label">Category</span> {categoryLabel(concept.category13849) || "—"}</span>
+                <span><span className="field-label">MTTFD</span> {display(concept.mttfdYears, " y")}</span>
+                <span><span className="field-label">DCavg</span> {display(concept.dcavgPercent, " %")}</span>
+                <span><span className="field-label">CCF score</span> {display(concept.ccfScore)}</span>
+                {concept.achievedPl && !concept.achievedPl.pl && concept.achievedPl.reason && (
+                  <span data-agent="concept-achieved-pl-reason"><span className="field-label">Achieved PL</span> not derived: {concept.achievedPl.reason}</span>
+                )}
               </>
             )}
           </p>
@@ -424,6 +469,51 @@ export default function ConceptCard({
               ))}
             </fieldset>
           ))}
+          {editType === "SAFETY_FUNCTION" && (
+            <fieldset data-agent="iso13849-parameters" style={{ border: "2px solid black", padding: "8px 12px", margin: "12px 0" }}>
+              <legend className="field-label">ISO 13849-1 parameters</legend>
+              <small style={{ display: "block", marginBottom: 8 }}>
+                The achieved PL is derived from Category, DCavg and MTTFD by the simplified procedure once these are set.
+              </small>
+              <div className="form-row">
+                <label className="field-label" htmlFor="edit-concept-category13849">Category</label>
+                <select
+                  id="edit-concept-category13849"
+                  data-agent="select-edit-concept-category13849"
+                  value={editIso13849.category13849}
+                  onChange={(e) => onEditIso13849({ ...editIso13849, category13849: e.target.value as Category13849 | "" })}
+                >
+                  <option value="">-- Not set --</option>
+                  {CATEGORIES_13849.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              {ISO13849_NUMBER_FIELDS.map(({ field, label, help, min, max, step }) => (
+                <div className="form-row" key={field}>
+                  <label className="field-label" htmlFor={`edit-concept-${field}`}>{label}</label>
+                  <input
+                    id={`edit-concept-${field}`}
+                    data-agent={`input-edit-concept-${field}`}
+                    type="number"
+                    inputMode="decimal"
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={editIso13849[field]}
+                    onChange={(e) => onEditIso13849({ ...editIso13849, [field]: e.target.value })}
+                    aria-describedby={`edit-concept-${field}-help`}
+                    className="license-value"
+                    style={{ opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }}
+                  />
+                  <small id={`edit-concept-${field}-help`} style={{ marginLeft: 8 }}>{help}</small>
+                </div>
+              ))}
+            </fieldset>
+          )}
+          {editType !== "SAFETY_FUNCTION" && concept.type === "SAFETY_FUNCTION" && (concept.category13849 || concept.mttfdYears != null || concept.dcavgPercent != null || concept.ccfScore != null) && (
+            <p data-agent="iso13849-clear-notice"><small>ISO 13849 parameters apply only to safety functions; saving with this type clears them.</small></p>
+          )}
           {editType !== "HAZARD" && concept.hazardLevels && (
             <p data-agent="hazard-rating-clear-notice"><small>Hazard ratings apply only to hazards; saving with this type clears them.</small></p>
           )}

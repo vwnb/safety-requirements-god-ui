@@ -17,6 +17,7 @@ import WorkItemCard from "./components/WorkItemCard"
 import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
 import { hazardRatingFieldsOrNull, hazardRatingOf } from "./lib/hazardRating"
+import { iso13849FieldsOf, iso13849FieldsOrNull, iso13849Payload } from "./lib/iso13849"
 import { SemanticColor } from "./lib/SemanticColor"
 import { InfoButton } from "./components/InfoButton"
 import { LicenseModal } from "./components/LicenseModal"
@@ -93,6 +94,27 @@ export type HazardLevels = {
   /** e.g. "S2 F1 P2". */
   plrRating: string | null
 }
+export type Category13849 = "B" | "CAT_1" | "CAT_2" | "CAT_3" | "CAT_4"
+/** ISO 13849-1 parameters being edited on a SAFETY_FUNCTION; "" means not set. Numbers are kept as input text. */
+export type Iso13849Fields = {
+  category13849: Category13849 | ""
+  mttfdYears: string
+  dcavgPercent: string
+  ccfScore: string
+}
+/**
+ * Achieved PL the backend derives for a SAFETY_FUNCTION by the ISO 13849-1 simplified procedure
+ * (Category x DCavg x MTTFD); never stored or edited directly.
+ */
+export type AchievedPl = {
+  /** Null when the parameters are incomplete or outside the table; `reason` says why. */
+  pl: PL | null
+  mttfdBand: "LOW" | "MEDIUM" | "HIGH" | null
+  dcBand: "NONE" | "LOW" | "MEDIUM" | "HIGH" | null
+  /** DCavg band actually credited (Categories B/1 get none; a higher DC than the Category uses is capped). */
+  creditedDcBand: "NONE" | "LOW" | "MEDIUM" | "HIGH" | null
+  reason: string | null
+}
 export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 export type ConceptType = string
 export type RelationType = string
@@ -134,6 +156,12 @@ export type Concept = {
   plrAvoidance?: PlrAvoidance | null
   /** Derived by the backend for HAZARD concepts with any rating set; read-only. */
   hazardLevels?: HazardLevels | null
+  category13849?: Category13849 | null
+  mttfdYears?: number | null
+  dcavgPercent?: number | null
+  ccfScore?: number | null
+  /** Derived by the backend for SAFETY_FUNCTION concepts; read-only. */
+  achievedPl?: AchievedPl | null
   psppDimension?: PsppDimension
   sotifCategory?: SotifCategory | null
   opbTerm?: string | null
@@ -626,6 +654,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const [editConceptOpbTerm, setEditConceptOpbTerm] = useState("")
   const [editConceptStpa, setEditConceptStpa] = useState<StpaFields>({ stpaRole: "", ucaType: "", ucaContext: "" })
   const [editConceptHazardRating, setEditConceptHazardRating] = useState<HazardRatingFields>(hazardRatingOf({}))
+  const [editConceptIso13849, setEditConceptIso13849] = useState<Iso13849Fields>(iso13849FieldsOf({}))
   const [saveError, setSaveError] = useState<string | null>(null)
   const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
@@ -875,6 +904,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         setEditConceptOpbTerm(concept.opbTerm || "")
         setEditConceptStpa(stpaFieldsOf(concept))
         setEditConceptHazardRating(hazardRatingOf(concept))
+        setEditConceptIso13849(iso13849FieldsOf(concept))
         setEditConceptStandards(concept.standards || [])
       }
     }
@@ -907,7 +937,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
 
   /**
    * Re-reads the backend-derived integrity and hazard levels without resetting the concept selection.
-   * Needed after a concept's type or ratings, or the work item's ASIL/SIL/PL, change.
+   * Needed after a concept's type, ratings or ISO 13849 parameters, or the work item's ASIL/SIL/PL, change.
    */
   async function refreshConceptIntegrityLevels(workItemId: string) {
     if (!workItemId) return
@@ -918,6 +948,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       integrityLevel: c.integrityLevel ?? null,
       hazardLevels: c.hazardLevels ?? null,
       ...hazardRatingFieldsOrNull(c),
+      achievedPl: c.achievedPl ?? null,
+      ...iso13849FieldsOrNull(c),
     }]))
     setConcepts((prev) => (prev ?? []).map((c) => (derivedById.has(c.id) ? { ...c, ...derivedById.get(c.id) } : c)))
     setActiveConcept((prev) => (prev && derivedById.has(prev.id) ? { ...prev, ...derivedById.get(prev.id) } : prev))
@@ -1059,6 +1091,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
     const hazardPayload = editConceptType === "HAZARD"
       ? hazardRatingFieldsOrNull(editConceptHazardRating)
       : {}
+    // ISO 13849 parameters are only accepted on SAFETY_FUNCTION concepts; same clearing rule.
+    const iso13849Update = editConceptType === "SAFETY_FUNCTION" ? iso13849Payload(editConceptIso13849) : {}
 
     return withLoading("Saving concept...", async () => {
       const response = await apiFetch(`${API}/concepts/${selectedConcept}`, {
@@ -1073,6 +1107,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           opbTerm: editConceptOpbTerm.trim() || null,
           ...stpaPayload,
           ...hazardPayload,
+          ...iso13849Update,
           standards: editConceptStandards,
           user: actorForApi
         }),
@@ -1999,6 +2034,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                       onEditStpa={setEditConceptStpa}
                       editHazardRating={editConceptHazardRating}
                       onEditHazardRating={setEditConceptHazardRating}
+                      editIso13849={editConceptIso13849}
+                      onEditIso13849={setEditConceptIso13849}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}
