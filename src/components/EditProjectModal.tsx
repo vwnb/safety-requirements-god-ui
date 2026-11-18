@@ -75,7 +75,7 @@ export function EditProjectModal({
       <button
         onClick={handleUpdate}
         disabled={submitting || !name.trim()}
-        className="btn"
+        className="btn btn-success"
         style={{ opacity: (submitting || !name.trim()) ? 0.6 : 1, cursor: (submitting || !name.trim()) ? 'not-allowed' : 'pointer' }}
       >
         {submitting ? "Saving..." : "Save"}

@@ -916,11 +916,18 @@ section,
   text-overflow: ellipsis;
 }
 
-.btn-danger {
+/*
+ * Button colour scheme (variants are compounded with .btn so they win over the
+ * base .btn rule, which is declared later and resets background to white):
+ *   .btn              white - neutral: edit, close, open, toggle, report
+ *   .btn.btn-success  green - confirm / commit: create, save, send, approve, apply
+ *   .btn.btn-danger   pink  - destructive or abort: delete, revoke, discard, cancel
+ */
+.btn.btn-danger {
   background: #F2B8B5;
 }
 
-.btn-success {
+.btn.btn-success {
   background: #BFE7C6;
 }
 
@@ -1032,11 +1039,7 @@ section,
   margin: 0;
 }
 
-.btn-success {
-  background: #BFE7C6;
-}
-
-.btn-sm {
+.btn.btn-sm {
   font-size: 11px;
   padding: 3px 10px;
   flex-shrink: 0;
@@ -1143,9 +1146,77 @@ section,
   margin: 16px 0;
 }
 
+/* One row under the divider: actions or status on the left, report button on the right. */
+.suggestion-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .suggestion-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
   gap: 4px;
+}
+
+/* Select toggle styled to match .btn (Discard) instead of a bare browser checkbox. */
+.suggestion-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 2px solid black;
+  border-left-width: 6px;
+  border-radius: 4px;
+  padding: 8px 16px 8px 12px;
+  font-family: monospace;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.suggestion-select:has(input:checked) {
+  background: #BFE7C6;
+}
+
+.suggestion-select:has(input:disabled) {
+  cursor: default;
+}
+
+.suggestion-select input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 2px solid black;
+  border-radius: 2px;
+  background: white;
+  display: grid;
+  place-content: center;
+  cursor: inherit;
+}
+
+.suggestion-select input[type="checkbox"]::after {
+  content: "";
+  width: 6px;
+  height: 3px;
+  border-left: 2px solid black;
+  border-bottom: 2px solid black;
+  transform: translateY(-1px) rotate(-45deg);
+  opacity: 0;
+}
+
+.suggestion-select input[type="checkbox"]:checked::after {
+  opacity: 1;
+}
+
+.suggestion-select input[type="checkbox"]:focus-visible {
+  outline: 2px solid black;
+  outline-offset: 2px;
 }
 
 .suggestion-status {
@@ -1154,7 +1225,7 @@ section,
 
 /* Sized like .tag so it sits on the same line as the status tags. */
 .btn.suggestion-report-btn {
-  float: right;
+  margin-left: auto;
   padding: 1px 8px;
   font-size: 11px;
   line-height: 1.4;
@@ -1167,7 +1238,7 @@ section,
   margin-left: 4px;
 }
 
-.btn-xs {
+.btn.btn-xs {
   font-size: 10px;
   padding: 4px 8px;
   margin: 0;

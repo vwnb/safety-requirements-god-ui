@@ -295,7 +295,7 @@ export default function ConceptCard({
             </>
           )}
           <div className="form-actions">
-            <button data-agent="btn-save-concept" className="btn" onClick={handleSave}>Save concept</button>
+            <button data-agent="btn-save-concept" className="btn btn-success" onClick={handleSave}>Save concept</button>
             <button data-agent="btn-cancel-edit-concept" className="btn btn-danger" onClick={handleCancel}>Cancel</button>
           </div>
         </>

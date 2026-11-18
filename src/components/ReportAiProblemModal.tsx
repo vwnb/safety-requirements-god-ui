@@ -107,7 +107,7 @@ export default function ReportAiProblemModal({
         <button
           data-agent="btn-submit-ai-problem-report"
           onClick={submit}
-          className="btn"
+          className="btn btn-success"
           disabled={!ready}
           style={{ opacity: ready ? 1 : 0.6, cursor: ready ? "pointer" : "not-allowed" }}
         >
