@@ -1,8 +1,8 @@
 import { useState } from "react"
-import { stpaFieldsOf, typeColor, type Concept, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
+import { stpaFieldsOf, typeColor, type Concept, type ConceptIntegrityLevel, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
 
 const TYPES = [
-  "ITEM", "HAZARD", "HARM", "SAFETY_GOAL",
+  "ITEM", "HAZARD", "HARM", "SAFETY_GOAL", "SAFETY_FUNCTION",
   "FUNCTIONAL_SAFETY_REQUIREMENT", "TECHNICAL_SAFETY_REQUIREMENT",
   "HARDWARE_REQUIREMENT", "SOFTWARE_REQUIREMENT",
   "HARDWARE_SAFETY_REQUIREMENT", "SOFTWARE_SAFETY_REQUIREMENT",
@@ -44,6 +44,14 @@ const UCA_TYPES: { value: UcaType; label: string }[] = [
 
 const labelOf = <T extends string>(options: { value: T; label: string }[], value: T | null | undefined) =>
   options.find((option) => option.value === value)?.label
+
+/** Read-only labels for a concept's inherited integrity level, e.g. ["ASIL B(D)", "SIL 2"]. */
+function integrityLevelLabels(level: ConceptIntegrityLevel | null | undefined): string[] {
+  if (!level) return []
+  return [level.asilNotation, level.sil, level.pl]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.replace("_", " "))
+}
 
 export default function ConceptCard({
   concept,
@@ -123,6 +131,19 @@ export default function ConceptCard({
                 {typeLabel}
               </span>
               {concept.key} {concept.title && `— ${concept.title}`}
+              {integrityLevelLabels(concept.integrityLevel).map((label) => (
+                <span
+                  key={label}
+                  data-agent="concept-integrity-level"
+                  className="tag tag-risk"
+                  style={{ marginLeft: 8 }}
+                  title={concept.integrityLevel?.source === "ASIL_DECOMPOSITION"
+                    ? "ASIL decomposition (ISO 26262-9); other levels are inherited from the work item"
+                    : "Inherited from the work item"}
+                >
+                  {label}
+                </span>
+              ))}
             </h2>
 
             <div style={{ display: "flex", gap: 8 }}>

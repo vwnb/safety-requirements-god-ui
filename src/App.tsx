@@ -97,10 +97,8 @@ export type Concept = {
   key: string
   type: string
   title: string
-  phase?: LifecyclePhase
-  asil?: ASIL
-  sil?: SIL
-  pl?: PL
+  /** Derived by the backend from the work item; read-only. Null for types that carry no integrity level. */
+  integrityLevel?: ConceptIntegrityLevel | null
   psppDimension?: PsppDimension
   sotifCategory?: SotifCategory | null
   opbTerm?: string | null
@@ -109,6 +107,20 @@ export type Concept = {
   ucaContext?: string | null
   standards?: Standard[]
   createdBy: { name: string }
+}
+
+/**
+ * A concept's integrity level, inherited from its work item. Concepts never store ASIL/SIL/PL
+ * themselves; the one exception is an ISO 26262 ASIL decomposition on a requirement.
+ */
+export type ConceptIntegrityLevel = {
+  asil: ASIL | null
+  sil: SIL | null
+  pl: PL | null
+  asilDecomposedFrom: ASIL | null
+  /** Display form of the ASIL, e.g. "ASIL B(D)" for a decomposed requirement. */
+  asilNotation: string | null
+  source: "WORK_ITEM" | "ASIL_DECOMPOSITION"
 }
 
 export const backgroundImage = background;
@@ -124,6 +136,7 @@ export const typeColor: Record<string, string> = {
   COMMON_CAUSE_FAILURE: SemanticColor.RISK,
 
   SAFETY_GOAL: SemanticColor.ARGUMENT,
+  SAFETY_FUNCTION: SemanticColor.ARGUMENT,
   SAFETY_CASE: SemanticColor.ARGUMENT,
 
   FSR: SemanticColor.FUNCTIONAL,
@@ -573,10 +586,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
 
 
   const [editConceptType, setEditConceptType] = useState("ITEM")
-  const [editConceptPhase, setEditConceptPhase] = useState("ITEM_DEFINITION")
-  const [editConceptAsil, setEditConceptAsil] = useState("QM")
-  const [editConceptSil, setEditConceptSil] = useState("")
-  const [editConceptPl, setEditConceptPl] = useState("")
   const [editConceptPsppDimension, setEditConceptPsppDimension] = useState<PsppDimension | "">("")
   const [editConceptSotifCategory, setEditConceptSotifCategory] = useState<SotifCategory | "">("")
   const [editConceptOpbTerm, setEditConceptOpbTerm] = useState("")
@@ -824,10 +833,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         setEditConceptKey(concept.key)
         setEditConceptTitle(concept.title)
         setEditConceptType(concept.type)
-        setEditConceptPhase(concept.phase || "")
-        setEditConceptAsil(concept.asil || "")
-        setEditConceptSil(concept.sil || "")
-        setEditConceptPl(concept.pl || "")
         setEditConceptPsppDimension(concept.psppDimension || "")
         setEditConceptSotifCategory(concept.sotifCategory || "")
         setEditConceptOpbTerm(concept.opbTerm || "")
@@ -860,6 +865,20 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         setEditorValue("")
       }
     })
+  }
+
+  /**
+   * Re-reads the backend-derived integrity levels without resetting the concept selection.
+   * Needed after a concept's type or the work item's ASIL/SIL/PL changes.
+   */
+  async function refreshConceptIntegrityLevels(workItemId: string) {
+    if (!workItemId) return
+    const res = await apiFetch(`${API}/work-items/${workItemId}/concepts`)
+    if (!res.ok) return
+    const data: Concept[] = await res.json()
+    const levelById = new Map(data.map((c) => [c.id, c.integrityLevel ?? null]))
+    setConcepts((prev) => (prev ?? []).map((c) => (levelById.has(c.id) ? { ...c, integrityLevel: levelById.get(c.id) } : c)))
+    setActiveConcept((prev) => (prev && levelById.has(prev.id) ? { ...prev, integrityLevel: levelById.get(prev.id) } : prev))
   }
 
   async function loadRevisions(conceptId: string) {
@@ -1003,10 +1022,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           key: editConceptKey,
           type: editConceptType,
           title: editConceptTitle,
-          phase: editConceptPhase || null,
-          asil: editConceptAsil || null,
-          sil: editConceptSil || null,
-          pl: editConceptPl || null,
           psppDimension: editConceptPsppDimension || null,
           sotifCategory: editConceptSotifCategory || null,
           opbTerm: editConceptOpbTerm.trim() || null,
@@ -1026,10 +1041,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         key: editConceptKey,
         type: editConceptType,
         title: editConceptTitle,
-        phase: editConceptPhase as LifecyclePhase,
-        asil: editConceptAsil as ASIL,
-        sil: editConceptSil as SIL,
-        pl: editConceptPl as PL,
+        integrityLevel: activeConcept?.integrityLevel ?? null,
         psppDimension: editConceptPsppDimension || undefined,
         sotifCategory: editConceptSotifCategory || null,
         opbTerm: editConceptOpbTerm.trim() || null,
@@ -1046,10 +1058,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
               key: editConceptKey,
               type: editConceptType,
               title: editConceptTitle,
-              phase: editConceptPhase as LifecyclePhase,
-              asil: editConceptAsil as ASIL,
-              sil: editConceptSil as SIL,
-              pl: editConceptPl as PL,
               psppDimension: editConceptPsppDimension || undefined,
               sotifCategory: editConceptSotifCategory || null,
               opbTerm: editConceptOpbTerm.trim() || null,
@@ -1060,6 +1068,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         )
       )
 
+      await refreshConceptIntegrityLevels(selectedWorkItem)
       await refreshGraph(selectedWorkItem)
       if (onSuccess) onSuccess()
     })
@@ -1214,6 +1223,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       })
 
       await loadWorkItemDetails(selectedWorkItemData.id)
+      await refreshConceptIntegrityLevels(selectedWorkItemData.id)
       await refreshGraph(selectedWorkItem)
 
       setWorkItems((prev) =>
@@ -1295,10 +1305,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
             key: c.key,
             type: c.type,
             title: c.title || "",
-            phase: c.phase || undefined,
-            asil: c.asil || undefined,
-            sil: c.sil || undefined,
-            pl: c.pl || undefined,
             standards: c.standards || undefined,
           })),
           relations: (importedRelations ?? []).map((r: any) => ({

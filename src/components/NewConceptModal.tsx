@@ -66,6 +66,7 @@ export default function NewConceptModal({
           <option value="FAILURE_RATE">Failure Rate</option>
           <option value="COMMON_CAUSE_FAILURE">Common Cause Failure</option>
           <option value="SAFETY_GOAL">Safety Goal</option>
+          <option value="SAFETY_FUNCTION">Safety Function</option>
           <option value="SAFETY_CASE">Safety Case</option>
           <option value="FUNCTIONAL_SAFETY_REQUIREMENT">Functional Safety Requirement</option>
           <option value="TECHNICAL_SAFETY_REQUIREMENT">Technical Safety Requirement</option>
