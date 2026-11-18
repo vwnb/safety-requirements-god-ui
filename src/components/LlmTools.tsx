@@ -609,16 +609,31 @@ export function LlmTools({
                 </button>
               </div>
             )}
-            {reportState === "APPROVED" && (
-              <button
-                data-agent="btn-apply-approved"
-                onClick={() => submitSelection("apply")}
-                className="btn btn-success"
-                style={{ marginTop: "2em", marginBottom: "1em" }}
-              >
-                Apply approved selection ({selection.length})
-              </button>
-            )}
+            {reportState === "APPROVED" && (() => {
+              // The backend applies only the exact approved set and refuses any suggestion
+              // already acted on or discarded, so offer Apply only while all of it is pending.
+              const approved = (suggestions ?? []).filter(s => s.id && selection.includes(s.id))
+              const handled = approved.filter(s => s.actedOn).length
+              if (approved.length > 0 && handled === 0) {
+                return (
+                  <button
+                    data-agent="btn-apply-approved"
+                    onClick={() => submitSelection("apply")}
+                    className="btn btn-success"
+                    style={{ marginTop: "2em", marginBottom: "1em" }}
+                  >
+                    Apply approved selection ({selection.length})
+                  </button>
+                )
+              }
+              return (
+                <p data-agent="apply-approved-unavailable" style={{ marginTop: "2em", marginBottom: "1em" }}>
+                  {handled === approved.length
+                    ? "Every approved suggestion has already been acted on or discarded, so there is nothing left to apply."
+                    : `${handled} of ${approved.length} approved suggestions were already acted on or discarded, so this approved selection can no longer be applied. Generate a new report to apply the rest.`}
+                </p>
+              )
+            })()}
             <p>The selected suggestions are committed together: if any fails or conflicts, none are applied. Each report commits one approved selection; to apply a different set, generate a new report. Suggestions that modify the same concept cannot be selected together.</p>
           </>
         )}
