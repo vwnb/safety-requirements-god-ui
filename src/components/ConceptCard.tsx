@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { stpaFieldsOf, typeColor, type Concept, type ConceptIntegrityLevel, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
+import { stpaFieldsOf, typeColor, type Concept, type ConceptIntegrityLevel, type HazardLevels, type HazardRatingFields, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
+import { hazardRatingOf } from "../lib/hazardRating"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL", "SAFETY_FUNCTION",
@@ -42,6 +43,76 @@ const UCA_TYPES: { value: UcaType; label: string }[] = [
   { value: "STOPPED_TOO_SOON_OR_TOO_LONG", label: "Stopped too soon or applied too long" },
 ]
 
+/** The six rating selects, grouped by standard. Option values are the backend enum values. */
+const HAZARD_RATING_GROUPS: {
+  title: string
+  help: string
+  fields: { field: keyof HazardRatingFields; label: string; options: { value: string; label: string }[] }[]
+}[] = [
+  {
+    title: "ISO 26262-3 hazard rating",
+    help: "The ASIL is derived from S + E + C once all three are set.",
+    fields: [
+      { field: "haraSeverity", label: "Severity", options: [
+        { value: "S0", label: "S0 – no injuries" },
+        { value: "S1", label: "S1 – light and moderate injuries" },
+        { value: "S2", label: "S2 – severe injuries, survival probable" },
+        { value: "S3", label: "S3 – life-threatening or fatal injuries" },
+      ] },
+      { field: "haraExposure", label: "Exposure", options: [
+        { value: "E0", label: "E0 – incredible" },
+        { value: "E1", label: "E1 – very low probability" },
+        { value: "E2", label: "E2 – low probability" },
+        { value: "E3", label: "E3 – medium probability" },
+        { value: "E4", label: "E4 – high probability" },
+      ] },
+      { field: "haraControllability", label: "Controllability", options: [
+        { value: "C0", label: "C0 – controllable in general" },
+        { value: "C1", label: "C1 – simply controllable" },
+        { value: "C2", label: "C2 – normally controllable" },
+        { value: "C3", label: "C3 – difficult to control or uncontrollable" },
+      ] },
+    ],
+  },
+  {
+    title: "ISO 13849-1 risk graph",
+    help: "The required performance level (PLr) is derived from S + F + P once all three are set.",
+    fields: [
+      { field: "plrSeverity", label: "Severity of injury", options: [
+        { value: "S1", label: "S1 – slight, normally reversible" },
+        { value: "S2", label: "S2 – serious, normally irreversible, or death" },
+      ] },
+      { field: "plrFrequency", label: "Frequency / duration of exposure", options: [
+        { value: "F1", label: "F1 – seldom to less often, or short" },
+        { value: "F2", label: "F2 – frequent to continuous, or long" },
+      ] },
+      { field: "plrAvoidance", label: "Possibility of avoidance", options: [
+        { value: "P1", label: "P1 – possible under specific conditions" },
+        { value: "P2", label: "P2 – scarcely possible" },
+      ] },
+    ],
+  },
+]
+
+/** Read-only tags for a hazard's derived levels, e.g. "ASIL C (S3 E3 C2)", "PLr D (S2 F1 P2)". */
+function hazardLevelLabels(levels: HazardLevels | null | undefined): { label: string; title: string }[] {
+  if (!levels) return []
+  const out: { label: string; title: string }[] = []
+  if (levels.haraRating) {
+    out.push({
+      label: levels.asil ? `${levels.asil.replace("_", " ")} (${levels.haraRating})` : `HARA ${levels.haraRating}`,
+      title: levels.asil ? "ASIL derived from the ISO 26262-3 S/E/C rating" : "ISO 26262-3 rating incomplete; ASIL not derived yet",
+    })
+  }
+  if (levels.plrRating) {
+    out.push({
+      label: levels.plr ? `PLr ${levels.plr.replace("PL_", "")} (${levels.plrRating})` : `Risk graph ${levels.plrRating}`,
+      title: levels.plr ? "PLr derived from the ISO 13849-1 risk graph" : "ISO 13849-1 rating incomplete; PLr not derived yet",
+    })
+  }
+  return out
+}
+
 const labelOf = <T extends string>(options: { value: T; label: string }[], value: T | null | undefined) =>
   options.find((option) => option.value === value)?.label
 
@@ -69,6 +140,8 @@ export default function ConceptCard({
   onEditOpbTerm,
   editStpa,
   onEditStpa,
+  editHazardRating,
+  onEditHazardRating,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -89,6 +162,8 @@ export default function ConceptCard({
   onEditOpbTerm: (v: string) => void
   editStpa: StpaFields
   onEditStpa: (v: StpaFields) => void
+  editHazardRating: HazardRatingFields
+  onEditHazardRating: (v: HazardRatingFields) => void
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -144,6 +219,17 @@ export default function ConceptCard({
                   {label}
                 </span>
               ))}
+              {hazardLevelLabels(concept.hazardLevels).map(({ label, title }) => (
+                <span
+                  key={label}
+                  data-agent="concept-hazard-level"
+                  className="tag tag-risk"
+                  style={{ marginLeft: 8 }}
+                  title={title}
+                >
+                  {label}
+                </span>
+              ))}
             </h2>
 
             <div style={{ display: "flex", gap: 8 }}>
@@ -153,6 +239,7 @@ export default function ConceptCard({
                   onEditSotifCategory(concept.sotifCategory || "")
                   onEditOpbTerm(concept.opbTerm || "")
                   onEditStpa(stpaFieldsOf(concept))
+                  onEditHazardRating(hazardRatingOf(concept))
                   setEditingState(true)
                 }}
                 className="btn"
@@ -314,6 +401,31 @@ export default function ConceptCard({
                 />
               </div>
             </>
+          )}
+          {editType === "HAZARD" && HAZARD_RATING_GROUPS.map((group) => (
+            <fieldset key={group.title} data-agent="hazard-rating-group" style={{ border: "2px solid black", padding: "8px 12px", margin: "12px 0" }}>
+              <legend className="field-label">{group.title}</legend>
+              <small style={{ display: "block", marginBottom: 8 }}>{group.help}</small>
+              {group.fields.map(({ field, label, options }) => (
+                <div className="form-row" key={field}>
+                  <label className="field-label" htmlFor={`edit-concept-${field}`}>{label}</label>
+                  <select
+                    id={`edit-concept-${field}`}
+                    data-agent={`select-edit-concept-${field}`}
+                    value={editHazardRating[field]}
+                    onChange={(e) => onEditHazardRating({ ...editHazardRating, [field]: e.target.value })}
+                  >
+                    <option value="">-- Not set --</option>
+                    {options.map(({ value, label: optionLabel }) => (
+                      <option key={value} value={value}>{optionLabel}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </fieldset>
+          ))}
+          {editType !== "HAZARD" && concept.hazardLevels && (
+            <p data-agent="hazard-rating-clear-notice"><small>Hazard ratings apply only to hazards; saving with this type clears them.</small></p>
           )}
           <div className="form-actions">
             <button data-agent="btn-save-concept" className="btn btn-success" onClick={handleSave}>Save concept</button>

@@ -16,6 +16,7 @@ import { BrutalistMarkdownEditor } from "./components/BrutalistMarkdownEditor"
 import WorkItemCard from "./components/WorkItemCard"
 import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
+import { hazardRatingFieldsOrNull, hazardRatingOf } from "./lib/hazardRating"
 import { SemanticColor } from "./lib/SemanticColor"
 import { InfoButton } from "./components/InfoButton"
 import { LicenseModal } from "./components/LicenseModal"
@@ -66,6 +67,32 @@ export type SotifCategory = "TriggeringCondition" | "FunctionalInsufficiency" | 
 export type StpaRole = "LOSS" | "CONTROLLER" | "CONTROL_ACTION" | "FEEDBACK" | "ACTUATOR" | "CONTROLLED_PROCESS" | "UCA" | "LOSS_SCENARIO"
 export type UcaType = "NOT_PROVIDED" | "PROVIDED_UNSAFE" | "WRONG_TIMING_OR_ORDER" | "STOPPED_TOO_SOON_OR_TOO_LONG"
 export type StpaFields = { stpaRole: StpaRole | ""; ucaType: UcaType | ""; ucaContext: string }
+export type HaraSeverity = "S0" | "S1" | "S2" | "S3"
+export type HaraExposure = "E0" | "E1" | "E2" | "E3" | "E4"
+export type HaraControllability = "C0" | "C1" | "C2" | "C3"
+export type PlrSeverity = "S1" | "S2"
+export type PlrFrequency = "F1" | "F2"
+export type PlrAvoidance = "P1" | "P2"
+/** Hazard rating classes being edited; "" means not set. */
+export type HazardRatingFields = {
+  haraSeverity: HaraSeverity | ""
+  haraExposure: HaraExposure | ""
+  haraControllability: HaraControllability | ""
+  plrSeverity: PlrSeverity | ""
+  plrFrequency: PlrFrequency | ""
+  plrAvoidance: PlrAvoidance | ""
+}
+/** Levels the backend derives from a HAZARD's ratings; never stored or edited directly. */
+export type HazardLevels = {
+  /** ISO 26262-3 ASIL from S + E + C; null until all three are set. */
+  asil: ASIL | null
+  /** e.g. "S3 E4 C2"; "?" marks a class not yet set. */
+  haraRating: string | null
+  /** ISO 13849-1 Annex A PLr from S + F + P; null until all three are set. */
+  plr: PL | null
+  /** e.g. "S2 F1 P2". */
+  plrRating: string | null
+}
 export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
 export type ConceptType = string
 export type RelationType = string
@@ -99,6 +126,14 @@ export type Concept = {
   title: string
   /** Derived by the backend from the work item; read-only. Null for types that carry no integrity level. */
   integrityLevel?: ConceptIntegrityLevel | null
+  haraSeverity?: HaraSeverity | null
+  haraExposure?: HaraExposure | null
+  haraControllability?: HaraControllability | null
+  plrSeverity?: PlrSeverity | null
+  plrFrequency?: PlrFrequency | null
+  plrAvoidance?: PlrAvoidance | null
+  /** Derived by the backend for HAZARD concepts with any rating set; read-only. */
+  hazardLevels?: HazardLevels | null
   psppDimension?: PsppDimension
   sotifCategory?: SotifCategory | null
   opbTerm?: string | null
@@ -590,6 +625,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const [editConceptSotifCategory, setEditConceptSotifCategory] = useState<SotifCategory | "">("")
   const [editConceptOpbTerm, setEditConceptOpbTerm] = useState("")
   const [editConceptStpa, setEditConceptStpa] = useState<StpaFields>({ stpaRole: "", ucaType: "", ucaContext: "" })
+  const [editConceptHazardRating, setEditConceptHazardRating] = useState<HazardRatingFields>(hazardRatingOf({}))
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
   const [editConceptKey, setEditConceptKey] = useState("")
@@ -837,6 +874,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         setEditConceptSotifCategory(concept.sotifCategory || "")
         setEditConceptOpbTerm(concept.opbTerm || "")
         setEditConceptStpa(stpaFieldsOf(concept))
+        setEditConceptHazardRating(hazardRatingOf(concept))
         setEditConceptStandards(concept.standards || [])
       }
     }
@@ -868,17 +906,21 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   }
 
   /**
-   * Re-reads the backend-derived integrity levels without resetting the concept selection.
-   * Needed after a concept's type or the work item's ASIL/SIL/PL changes.
+   * Re-reads the backend-derived integrity and hazard levels without resetting the concept selection.
+   * Needed after a concept's type or ratings, or the work item's ASIL/SIL/PL, change.
    */
   async function refreshConceptIntegrityLevels(workItemId: string) {
     if (!workItemId) return
     const res = await apiFetch(`${API}/work-items/${workItemId}/concepts`)
     if (!res.ok) return
     const data: Concept[] = await res.json()
-    const levelById = new Map(data.map((c) => [c.id, c.integrityLevel ?? null]))
-    setConcepts((prev) => (prev ?? []).map((c) => (levelById.has(c.id) ? { ...c, integrityLevel: levelById.get(c.id) } : c)))
-    setActiveConcept((prev) => (prev && levelById.has(prev.id) ? { ...prev, integrityLevel: levelById.get(prev.id) } : prev))
+    const derivedById = new Map(data.map((c) => [c.id, {
+      integrityLevel: c.integrityLevel ?? null,
+      hazardLevels: c.hazardLevels ?? null,
+      ...hazardRatingFieldsOrNull(c),
+    }]))
+    setConcepts((prev) => (prev ?? []).map((c) => (derivedById.has(c.id) ? { ...c, ...derivedById.get(c.id) } : c)))
+    setActiveConcept((prev) => (prev && derivedById.has(prev.id) ? { ...prev, ...derivedById.get(prev.id) } : prev))
   }
 
   async function loadRevisions(conceptId: string) {
@@ -1013,6 +1055,10 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       ucaType: isUca ? editConceptStpa.ucaType || null : null,
       ucaContext: isUca ? editConceptStpa.ucaContext.trim() || null : null,
     }
+    // Ratings are only accepted on HAZARD concepts; the backend clears them when the type changes away.
+    const hazardPayload = editConceptType === "HAZARD"
+      ? hazardRatingFieldsOrNull(editConceptHazardRating)
+      : {}
 
     return withLoading("Saving concept...", async () => {
       const response = await apiFetch(`${API}/concepts/${selectedConcept}`, {
@@ -1026,6 +1072,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           sotifCategory: editConceptSotifCategory || null,
           opbTerm: editConceptOpbTerm.trim() || null,
           ...stpaPayload,
+          ...hazardPayload,
           standards: editConceptStandards,
           user: actorForApi
         }),
@@ -1033,7 +1080,9 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
 
       if (!response.ok) {
         const error = await response.json().catch(() => null)
-        throw new Error(error?.error || "Failed to save concept")
+        // Keep the form open so the user can correct the value the backend rejected.
+        setSaveError(error?.error || "Failed to save concept")
+        return
       }
 
       setActiveConcept({
@@ -1205,7 +1254,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
     }
 
     return withLoading("Saving work item...", async () => {
-      await apiFetch(`${API}/work-items/${selectedWorkItemData.id}`, {
+      const response = await apiFetch(`${API}/work-items/${selectedWorkItemData.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1221,6 +1270,14 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           user: actorForApi
         }),
       })
+
+      if (!response.ok) {
+        // e.g. 400 when ASIL/SIL/PL don't match the tagged standards; details lists each mismatch.
+        const error = await response.json().catch(() => null)
+        const details: string[] = Array.isArray(error?.details) ? error.details : []
+        setSaveError([error?.error || "Failed to save work item", ...details].join("\n"))
+        return
+      }
 
       await loadWorkItemDetails(selectedWorkItemData.id)
       await refreshConceptIntegrityLevels(selectedWorkItemData.id)
@@ -1452,6 +1509,17 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
               style={{ ...brutal.button, background: SemanticColor.DANGER }}
             >
               {pendingConfirm.confirmLabel || "Discard & proceed"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {saveError && (
+        <Modal title="Not saved" onClose={() => setSaveError(null)} width={440}>
+          <p data-agent="save-error" style={{ margin: "0 0 16px 0", whiteSpace: "pre-line" }}>{saveError}</p>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <button data-agent="btn-dismiss-save-error" onClick={() => setSaveError(null)} style={{ ...brutal.button }}>
+              OK
             </button>
           </div>
         </Modal>
@@ -1929,6 +1997,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                       onEditOpbTerm={setEditConceptOpbTerm}
                       editStpa={editConceptStpa}
                       onEditStpa={setEditConceptStpa}
+                      editHazardRating={editConceptHazardRating}
+                      onEditHazardRating={setEditConceptHazardRating}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}
