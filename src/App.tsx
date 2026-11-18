@@ -1632,7 +1632,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
               </pre>
               {NEVERMINED_PLAN_URL && (
                 <p>
-                  Agents can also pay per use: get the <a data-agent="link-nevermined" href={NEVERMINED_PLAN_URL} target="_blank" rel="noreferrer">WCGW Safety Suite: Explorer plan on Nevermined</a>. The purchase is optional; free licenses through this web UI and self-configured MCP connections remain available.
+                  Agents can also pay per use: get the <a data-agent="link-nevermined" href={NEVERMINED_PLAN_URL} target="_blank" rel="noreferrer">WCGW Safety Suite: Explorer plan on Nevermined</a>. The purchase is optional; free licenses through this web UI and self-configured MCP connections remain available. A paid call still needs your own active WCGW license: without one, or once it has expired or used up its LLM calls, paid calls are refused and not charged. Evaluations and query planning also count one LLM call against your license, as they do without the plan.
                 </p>
               )}
               {NEVERMINED_PLAN_URL && (
