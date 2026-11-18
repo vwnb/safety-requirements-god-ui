@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { stpaFieldsOf, typeColor, type Concept, type ConceptIntegrityLevel, type Category13849, type HazardLevels, type HazardRatingFields, type Iso13849Fields, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
+import { stpaFieldsOf, typeColor, type ASIL, type AsilDecompositionIssue, type Concept, type ConceptIntegrityLevel, type Category13849, type HazardLevels, type HazardRatingFields, type Iso13849Fields, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
 import { hazardRatingOf } from "../lib/hazardRating"
 import { iso13849FieldsOf } from "../lib/iso13849"
+import { asilNotation, decompositionOptions, DECOMPOSABLE_TYPES } from "../lib/asilDecomposition"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL", "SAFETY_FUNCTION",
@@ -163,6 +164,10 @@ export default function ConceptCard({
   onEditHazardRating,
   editIso13849,
   onEditIso13849,
+  editAsilDecomposition,
+  onEditAsilDecomposition,
+  workItemAsil,
+  decompositionIssues,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -187,6 +192,10 @@ export default function ConceptCard({
   onEditHazardRating: (v: HazardRatingFields) => void
   editIso13849: Iso13849Fields
   onEditIso13849: (v: Iso13849Fields) => void
+  editAsilDecomposition: ASIL | ""
+  onEditAsilDecomposition: (v: ASIL | "") => void
+  workItemAsil: ASIL | null
+  decompositionIssues: AsilDecompositionIssue[]
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -274,6 +283,7 @@ export default function ConceptCard({
                   onEditStpa(stpaFieldsOf(concept))
                   onEditHazardRating(hazardRatingOf(concept))
                   onEditIso13849(iso13849FieldsOf(concept))
+                  onEditAsilDecomposition(concept.asilDecomposition || "")
                   setEditingState(true)
                 }}
                 className="btn"
@@ -316,6 +326,13 @@ export default function ConceptCard({
               </>
             )}
           </p>
+          {decompositionIssues.length > 0 && (
+            <ul data-agent="asil-decomposition-issues" style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+              {decompositionIssues.map((issue) => (
+                <li key={issue.message}><small>⚠ {issue.message}</small></li>
+              ))}
+            </ul>
+          )}
         </article>
       ) : (
         <>
@@ -469,6 +486,26 @@ export default function ConceptCard({
               ))}
             </fieldset>
           ))}
+          {DECOMPOSABLE_TYPES.has(editType) && (
+            <div className="form-row">
+              <label className="field-label" htmlFor="edit-concept-asil-decomposition">ASIL decomposition (ISO 26262-9)</label>
+              <select
+                id="edit-concept-asil-decomposition"
+                data-agent="select-edit-concept-asil-decomposition"
+                value={editAsilDecomposition}
+                onChange={(e) => onEditAsilDecomposition(e.target.value as ASIL | "")}
+                disabled={decompositionOptions(workItemAsil).length === 0 && !editAsilDecomposition}
+              >
+                <option value="">-- Not decomposed (inherits the work item's ASIL) --</option>
+                {decompositionOptions(workItemAsil).map((asil) => (
+                  <option key={asil} value={asil}>{asilNotation(asil, workItemAsil)}</option>
+                ))}
+              </select>
+              {decompositionOptions(workItemAsil).length === 0 && (
+                <small style={{ marginLeft: 8 }}>Needs the work item to have an ASIL of A or higher.</small>
+              )}
+            </div>
+          )}
           {editType === "SAFETY_FUNCTION" && (
             <fieldset data-agent="iso13849-parameters" style={{ border: "2px solid black", padding: "8px 12px", margin: "12px 0" }}>
               <legend className="field-label">ISO 13849-1 parameters</legend>

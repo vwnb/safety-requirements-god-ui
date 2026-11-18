@@ -17,6 +17,7 @@ import WorkItemCard from "./components/WorkItemCard"
 import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
 import { hazardRatingFieldsOrNull, hazardRatingOf } from "./lib/hazardRating"
+import { DECOMPOSABLE_TYPES } from "./lib/asilDecomposition"
 import { iso13849FieldsOf, iso13849FieldsOrNull, iso13849Payload } from "./lib/iso13849"
 import { SemanticColor } from "./lib/SemanticColor"
 import { InfoButton } from "./components/InfoButton"
@@ -148,6 +149,8 @@ export type Concept = {
   title: string
   /** Derived by the backend from the work item; read-only. Null for types that carry no integrity level. */
   integrityLevel?: ConceptIntegrityLevel | null
+  /** ISO 26262-9 decomposed ASIL; requirement types only. Null inherits the work item's ASIL. */
+  asilDecomposition?: ASIL | null
   haraSeverity?: HaraSeverity | null
   haraExposure?: HaraExposure | null
   haraControllability?: HaraControllability | null
@@ -242,10 +245,14 @@ type Revision = {
   versionPatch?: number
 }
 
+/** A problem the backend found with an ASIL decomposition in the graph (e.g. parts that don't add up). */
+export type AsilDecompositionIssue = { conceptKey: string; message: string }
+
 type GraphData = {
   concepts: Array<{ id: string; key?: string; title?: string; type: string }>
   relations: Array<{ id: string; fromId: string; toId: string; type: string }>
   revisions: Revision[]
+  asilDecompositionIssues: AsilDecompositionIssue[]
 }
 
 type GraphState = {
@@ -655,6 +662,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const [editConceptStpa, setEditConceptStpa] = useState<StpaFields>({ stpaRole: "", ucaType: "", ucaContext: "" })
   const [editConceptHazardRating, setEditConceptHazardRating] = useState<HazardRatingFields>(hazardRatingOf({}))
   const [editConceptIso13849, setEditConceptIso13849] = useState<Iso13849Fields>(iso13849FieldsOf({}))
+  const [editConceptAsilDecomposition, setEditConceptAsilDecomposition] = useState<ASIL | "">("")
   const [saveError, setSaveError] = useState<string | null>(null)
   const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
@@ -905,6 +913,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         setEditConceptStpa(stpaFieldsOf(concept))
         setEditConceptHazardRating(hazardRatingOf(concept))
         setEditConceptIso13849(iso13849FieldsOf(concept))
+        setEditConceptAsilDecomposition(concept.asilDecomposition || "")
         setEditConceptStandards(concept.standards || [])
       }
     }
@@ -949,6 +958,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       hazardLevels: c.hazardLevels ?? null,
       ...hazardRatingFieldsOrNull(c),
       achievedPl: c.achievedPl ?? null,
+      asilDecomposition: c.asilDecomposition ?? null,
       ...iso13849FieldsOrNull(c),
     }]))
     setConcepts((prev) => (prev ?? []).map((c) => (derivedById.has(c.id) ? { ...c, ...derivedById.get(c.id) } : c)))
@@ -1093,6 +1103,10 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       : {}
     // ISO 13849 parameters are only accepted on SAFETY_FUNCTION concepts; same clearing rule.
     const iso13849Update = editConceptType === "SAFETY_FUNCTION" ? iso13849Payload(editConceptIso13849) : {}
+    // A decomposed ASIL is only accepted on requirement types; the backend clears it on other types.
+    const asilDecompositionUpdate = DECOMPOSABLE_TYPES.has(editConceptType)
+      ? { asilDecomposition: editConceptAsilDecomposition || null }
+      : {}
 
     return withLoading("Saving concept...", async () => {
       const response = await apiFetch(`${API}/concepts/${selectedConcept}`, {
@@ -1108,6 +1122,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           ...stpaPayload,
           ...hazardPayload,
           ...iso13849Update,
+          ...asilDecompositionUpdate,
           standards: editConceptStandards,
           user: actorForApi
         }),
@@ -1352,6 +1367,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         concepts: Array.isArray(data?.concepts) ? data.concepts : [],
         relations: Array.isArray(data?.relations) ? data.relations : [],
         revisions: Array.isArray(data?.revisions) ? data.revisions : [],
+        asilDecompositionIssues: Array.isArray(data?.asilDecompositionIssues) ? data.asilDecompositionIssues : [],
       }
       setGraphState({ workItemId, data: normalized, error: null })
       // Re-fetching the graph should also trigger a completeness refresh
@@ -2036,6 +2052,10 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                       onEditHazardRating={setEditConceptHazardRating}
                       editIso13849={editConceptIso13849}
                       onEditIso13849={setEditConceptIso13849}
+                      editAsilDecomposition={editConceptAsilDecomposition}
+                      onEditAsilDecomposition={setEditConceptAsilDecomposition}
+                      workItemAsil={selectedWorkItemData?.asil ?? null}
+                      decompositionIssues={(graph?.asilDecompositionIssues ?? []).filter((issue) => issue.conceptKey === activeConcept?.key)}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}
