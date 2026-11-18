@@ -593,6 +593,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [showDatasetExportModal, setShowDatasetExportModal] = useState(false)
+  // Work items to preselect when the export opens from a work item card.
+  const [datasetExportPreselect, setDatasetExportPreselect] = useState<string[] | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
 
   const [editWorkItemName, setEditWorkItemName] = useState("")
@@ -1540,13 +1542,17 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         />
       )}
 
-      {showDatasetExportModal && selectedProject && isAdmin && (
+      {(showDatasetExportModal || datasetExportPreselect) && selectedProject && isAdmin && (
         <ProjectDatasetExportModal
           apiFetch={apiFetch}
           projectId={selectedProject.id}
           projectKey={selectedProject.key}
           workItems={workItems}
-          onClose={() => setShowDatasetExportModal(false)}
+          initialWorkItemIds={datasetExportPreselect ?? undefined}
+          onClose={() => {
+            setShowDatasetExportModal(false)
+            setDatasetExportPreselect(null)
+          }}
         />
       )}
 
@@ -1822,7 +1828,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                       onSave={saveWorkItem}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingWorkItemFields}
-                      apiFetch={apiFetch}
+                      onExportDataset={isAdmin ? () => setDatasetExportPreselect([selectedWorkItem]) : undefined}
                     />
                   </section>
                 )}

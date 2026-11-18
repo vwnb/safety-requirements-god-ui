@@ -75,6 +75,7 @@ export function ProjectDatasetExportModal({
   projectId,
   projectKey,
   workItems,
+  initialWorkItemIds,
   onClose,
 }: {
   apiFetch: ApiFetchFn
@@ -82,6 +83,8 @@ export function ProjectDatasetExportModal({
   projectKey: string
   /** The project's work items, in display order; null while loading. */
   workItems: Array<{ id: string; key: string; name: string }> | null
+  /** Start with only these work items picked instead of the whole project. */
+  initialWorkItemIds?: string[]
   onClose: () => void
 }) {
   // Everything below lives in component state only; closing the modal drops it.
@@ -93,7 +96,9 @@ export function ProjectDatasetExportModal({
   const [repoId, setRepoId] = useState("")
   const [isPrivate, setIsPrivate] = useState(true)
   // null exports every work item; a set exports only those (kept in project order).
-  const [pickedIds, setPickedIds] = useState<Set<string> | null>(null)
+  const [pickedIds, setPickedIds] = useState<Set<string> | null>(() =>
+    initialWorkItemIds ? new Set(initialWorkItemIds) : null
+  )
 
   const [dryRun, setDryRun] = useState<DryRunResponse | null>(null)
   const [dryRunBody, setDryRunBody] = useState<string | null>(null)
@@ -130,12 +135,14 @@ export function ProjectDatasetExportModal({
 
   const busy = status.kind === "busy"
   const blocked = busy || retryIn > 0 || formErrors.length > 0
+  const selectionKey = (ids: Iterable<string> | null | undefined) => (ids ? [...ids].sort().join(",") : null)
+  const selectionChanged = selectionKey(pickedIds) !== selectionKey(initialWorkItemIds)
   const dirty =
     !!termsText ||
     extraFiles.length > 0 ||
     !!repoId ||
     CARD_FIELDS.some((f) => card[f]) ||
-    pickedIds !== null ||
+    selectionChanged ||
     dryRun !== null
 
   const handleClose = () => {
