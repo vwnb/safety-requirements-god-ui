@@ -511,10 +511,13 @@ export function LlmTools({
   return (
     <section data-agent="llm-suggestions-section">
       <div className="llm-tools-header title">
-        Modify work item with LLM
+        Refine work item with AI
         <InfoButton
-          title="Modify work item with LLM"
-          content="LLM free prompting can be used to insert, modify or delete graph data. Refinement reports help spot missing links, overlooked hazards, and gaps in safety requirements. The prompt for the refinement report is optional."
+          title="Refine work item with AI"
+          content={
+            "Use an independent AI assessor to examine a work item and its relationships in the safety graph. It is given the results of the deterministic standards checks, but not the completeness score, and focuses on what those checks cannot see: overlooked hazards, missing links, weak assumptions, contradictions, and gaps in safety requirements.\n\n" +
+            "Optionally provide a prompt to guide the assessment, or let the AI investigate independently. Review and approve suggested changes before applying them."
+          }
         />
       </div>
 
