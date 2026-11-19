@@ -20,24 +20,27 @@ const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849", "ISO_14971", "IEC_6180
 const percentOf = ({ covered, total }: { covered: number; total: number }) =>
   total > 0 ? Math.round((covered / total) * 100) : 0
 
-/** STPA rows, shown only when the work item has UCAs. */
+const NO_UCAS = " No UCAs yet: give a concept the STPA role \"Unsafe control action (UCA)\" to count it here."
+
+/** STPA rows. Shown even without UCAs, so the metric is discoverable; skipped only for a backend that predates STPA. */
 function ucaCoverageRows(completeness: WorkItemCompleteness) {
   const link = completeness.ucaHazardLinkCoverage
   const mitigation = completeness.ucaMitigationCoverage
-  if (!link || !mitigation || link.total === 0) return []
+  if (!link || !mitigation) return []
+  const empty = link.total === 0
   return [
     {
       label: "UCA hazard link coverage",
       percent: percentOf(link),
-      totalLabel: `${link.covered}/${link.total}`,
-      description: "STPA: how many unsafe control actions (concepts with STPA role UCA) have a LEADS_TO relation to a hazard. UCAs are not counted in hazard mitigation coverage.",
+      totalLabel: empty ? "no UCAs" : `${link.covered}/${link.total}`,
+      description: "STPA: how many unsafe control actions (concepts with STPA role UCA) have a LEADS_TO relation to a hazard. UCAs are not counted in hazard mitigation coverage." + (empty ? NO_UCAS : ""),
       barColor: SemanticColor.RISK,
     },
     {
       label: "UCA mitigation coverage",
       percent: percentOf(mitigation),
-      totalLabel: `${mitigation.covered}/${mitigation.total}`,
-      description: "STPA: how many unsafe control actions have a MITIGATES relation, for example from a constraint or safety requirement that prevents them.",
+      totalLabel: empty ? "no UCAs" : `${mitigation.covered}/${mitigation.total}`,
+      description: "STPA: how many unsafe control actions have a MITIGATES relation, for example from a constraint or safety requirement that prevents them." + (empty ? NO_UCAS : ""),
       barColor: SemanticColor.RISK,
     },
   ]
@@ -179,7 +182,7 @@ export default function WorkItemCard({
       {
         label: "Reachability",
         percent: reachability1Hop !== null ? Math.round(reachability1Hop * 100) : 0,
-        totalLabel: reachability1Hop !== null ? `${(reachability1Hop * 100).toFixed(0)}% / ${(reachability2Hop ?? 0 * 100).toFixed(0)}% / ${(reachability3Hop ?? 0 * 100).toFixed(0)}%` : null,
+        totalLabel: reachability1Hop !== null ? `${(reachability1Hop * 100).toFixed(0)}% / ${((reachability2Hop ?? 0) * 100).toFixed(0)}% / ${((reachability3Hop ?? 0) * 100).toFixed(0)}%` : null,
         description: "Reachability: 1-hop, 2-hop, 3-hop percentages",
         barColor: SemanticColor.METRIC,
       },
