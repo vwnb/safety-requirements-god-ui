@@ -17,7 +17,7 @@ export function InfoButton({ title, content }: { title: string, content: string 
       {open && (
         <Modal title={title} onClose={() => setOpen(false)}>
           <article>
-            <p>{content}</p>
+            {content.split(/\n\s*\n/).map((paragraph, i) => <p key={i}>{paragraph}</p>)}
           </article>
           <div className="mt-16">
             <button
