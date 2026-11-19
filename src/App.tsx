@@ -2164,7 +2164,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                                   {r.markdown.slice(0, 100)}...
                                 </div>
 
-                                <div style={brutal.actions}>
+                                <div style={{ ...brutal.actions, whiteSpace: "nowrap", flexShrink: 0 }}>
                                   <button
                                     data-agent="btn-load-revision"
                                     onClick={() => {
