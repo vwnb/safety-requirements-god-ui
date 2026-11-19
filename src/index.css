@@ -1305,6 +1305,13 @@ section,
   overflow-y: auto;
 }
 
+/* .title sizes to max-content, which pushes long headings past narrow modals. */
+.modal-content .title {
+  width: auto;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
 /* Keep inline configuration values from inflating paragraph line boxes. */
 .mcp-configuration p {
   line-height: 1.45;
