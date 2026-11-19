@@ -1,11 +1,12 @@
 import { useState } from "react"
-import { stpaFieldsOf, typeColor, type Concept, type ConceptIntegrityLevel, type Category13849, type HazardLevels, type HazardRatingFields, type Iso13849Fields, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
+import { stpaFieldsOf, typeColor, type ASIL, type AsilDecompositionIssue, type Concept, type ConceptIntegrityLevel, type Category13849, type HazardLevels, type HazardRatingFields, type Iso13849Fields, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
 import { hazardRatingOf } from "../lib/hazardRating"
 import { iso13849FieldsOf } from "../lib/iso13849"
 import { iso14971FieldsOf, RISK_CONTROL_OPTIONS, riskLevelText, scaleOptions, type Iso14971Fields, type RiskAcceptability, type RiskControlOption, type RiskEstimate } from "../lib/iso14971"
 import { DRIVE_FUNCTION_GROUPS, DRIVE_SIL_OPTIONS, driveFunctionShort, iec61800FieldsOf, type DriveSafetyFunction, type DriveSil, type Iec61800Fields } from "../lib/iec61800"
 import type { SIL } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
+import { asilNotation, decompositionOptions, DECOMPOSABLE_TYPES } from "../lib/asilDecomposition"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL", "SAFETY_FUNCTION",
@@ -215,6 +216,10 @@ export default function ConceptCard({
   editIec61800,
   onEditIec61800,
   riskAcceptability,
+  editAsilDecomposition,
+  onEditAsilDecomposition,
+  workItemAsil,
+  decompositionIssues,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -245,6 +250,10 @@ export default function ConceptCard({
   onEditIec61800: (v: Iec61800Fields) => void
   /** The work item's ISO 14971 criteria; their scale labels name the severity and probability levels. */
   riskAcceptability: RiskAcceptability | null
+  editAsilDecomposition: ASIL | ""
+  onEditAsilDecomposition: (v: ASIL | "") => void
+  workItemAsil: ASIL | null
+  decompositionIssues: AsilDecompositionIssue[]
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -355,6 +364,7 @@ export default function ConceptCard({
                   onEditIso13849(iso13849FieldsOf(concept))
                   onEditIso14971(iso14971FieldsOf(concept))
                   onEditIec61800(iec61800FieldsOf(concept))
+                  onEditAsilDecomposition(concept.asilDecomposition || "")
                   setEditingState(true)
                 }}
                 className="btn"
@@ -422,6 +432,13 @@ export default function ConceptCard({
               <span><span className="field-label">Risk control option</span> {labelOf(RISK_CONTROL_OPTIONS, concept.riskControlOption) || "—"}</span>
             )}
           </p>
+          {decompositionIssues.length > 0 && (
+            <ul data-agent="asil-decomposition-issues" style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+              {decompositionIssues.map((issue) => (
+                <li key={issue.message}><small>⚠ {issue.message}</small></li>
+              ))}
+            </ul>
+          )}
         </article>
       ) : (
         <>
@@ -575,6 +592,26 @@ export default function ConceptCard({
               ))}
             </fieldset>
           ))}
+          {DECOMPOSABLE_TYPES.has(editType) && (
+            <div className="form-row">
+              <label className="field-label" htmlFor="edit-concept-asil-decomposition">ASIL decomposition (ISO 26262-9)</label>
+              <select
+                id="edit-concept-asil-decomposition"
+                data-agent="select-edit-concept-asil-decomposition"
+                value={editAsilDecomposition}
+                onChange={(e) => onEditAsilDecomposition(e.target.value as ASIL | "")}
+                disabled={decompositionOptions(workItemAsil).length === 0 && !editAsilDecomposition}
+              >
+                <option value="">-- Not decomposed (inherits the work item's ASIL) --</option>
+                {decompositionOptions(workItemAsil).map((asil) => (
+                  <option key={asil} value={asil}>{asilNotation(asil, workItemAsil)}</option>
+                ))}
+              </select>
+              {decompositionOptions(workItemAsil).length === 0 && (
+                <small style={{ marginLeft: 8 }}>Needs the work item to have an ASIL of A or higher.</small>
+              )}
+            </div>
+          )}
           {editType === "SAFETY_FUNCTION" && (
             <fieldset data-agent="iso13849-parameters" style={{ border: "2px solid black", padding: "8px 12px", margin: "12px 0" }}>
               <legend className="field-label">ISO 13849-1 parameters</legend>

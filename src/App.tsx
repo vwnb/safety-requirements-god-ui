@@ -17,6 +17,7 @@ import WorkItemCard from "./components/WorkItemCard"
 import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
 import { hazardRatingFieldsOrNull, hazardRatingOf } from "./lib/hazardRating"
+import { DECOMPOSABLE_TYPES } from "./lib/asilDecomposition"
 import { iso13849FieldsOf, iso13849FieldsOrNull, iso13849Payload } from "./lib/iso13849"
 import { iso14971FieldsOf, iso14971FieldsOrNull, iso14971Payload, riskAcceptabilityDraftOf, riskAcceptabilityPayload, type Iso14971Fields, type RiskAcceptability, type RiskAcceptabilityDraft, type RiskControlOption, type RiskEstimate } from "./lib/iso14971"
 import { iec61800FieldsOf, iec61800FieldsOrNull, iec61800Payload, type DriveSafetyFunction, type DriveSil, type Iec61800Fields } from "./lib/iec61800"
@@ -150,6 +151,8 @@ export type Concept = {
   title: string
   /** Derived by the backend from the work item; read-only. Null for types that carry no integrity level. */
   integrityLevel?: ConceptIntegrityLevel | null
+  /** ISO 26262-9 decomposed ASIL; requirement types only. Null inherits the work item's ASIL. */
+  asilDecomposition?: ASIL | null
   haraSeverity?: HaraSeverity | null
   haraExposure?: HaraExposure | null
   haraControllability?: HaraControllability | null
@@ -261,10 +264,14 @@ type Revision = {
   versionPatch?: number
 }
 
+/** A problem the backend found with an ASIL decomposition in the graph (e.g. parts that don't add up). */
+export type AsilDecompositionIssue = { conceptKey: string; message: string }
+
 type GraphData = {
   concepts: Array<{ id: string; key?: string; title?: string; type: string }>
   relations: Array<{ id: string; fromId: string; toId: string; type: string }>
   revisions: Revision[]
+  asilDecompositionIssues: AsilDecompositionIssue[]
 }
 
 type GraphState = {
@@ -698,6 +705,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const [editConceptIso13849, setEditConceptIso13849] = useState<Iso13849Fields>(iso13849FieldsOf({}))
   const [editConceptIso14971, setEditConceptIso14971] = useState<Iso14971Fields>(iso14971FieldsOf({}))
   const [editConceptIec61800, setEditConceptIec61800] = useState<Iec61800Fields>(iec61800FieldsOf({}))
+  const [editConceptAsilDecomposition, setEditConceptAsilDecomposition] = useState<ASIL | "">("")
   const [saveError, setSaveError] = useState<string | null>(null)
   const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
@@ -952,6 +960,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         setEditConceptIso13849(iso13849FieldsOf(concept))
         setEditConceptIso14971(iso14971FieldsOf(concept))
         setEditConceptIec61800(iec61800FieldsOf(concept))
+        setEditConceptAsilDecomposition(concept.asilDecomposition || "")
         setEditConceptStandards(concept.standards || [])
       }
     }
@@ -997,6 +1006,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       hazardLevels: c.hazardLevels ?? null,
       ...hazardRatingFieldsOrNull(c),
       achievedPl: c.achievedPl ?? null,
+      asilDecomposition: c.asilDecomposition ?? null,
       ...iso13849FieldsOrNull(c),
       riskEstimate: c.riskEstimate ?? null,
       ...iso14971FieldsOrNull(c),
@@ -1148,6 +1158,10 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
     const iec61800Update = editConceptType === "SAFETY_FUNCTION" ? iec61800Payload(editConceptIec61800) : {}
     // ISO 14971 levels go only to the type that owns them (HARM, HAZARDOUS_SITUATION, RISK_CONTROL_MEASURE).
     const iso14971Update = iso14971Payload(editConceptType, editConceptIso14971)
+    // A decomposed ASIL is only accepted on requirement types; the backend clears it on other types.
+    const asilDecompositionUpdate = DECOMPOSABLE_TYPES.has(editConceptType)
+      ? { asilDecomposition: editConceptAsilDecomposition || null }
+      : {}
 
     return withLoading("Saving concept...", async () => {
       const response = await apiFetch(`${API}/concepts/${selectedConcept}`, {
@@ -1165,6 +1179,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           ...iso13849Update,
           ...iec61800Update,
           ...iso14971Update,
+          ...asilDecompositionUpdate,
           standards: editConceptStandards,
           user: actorForApi
         }),
@@ -1408,6 +1423,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         concepts: Array.isArray(data?.concepts) ? data.concepts : [],
         relations: Array.isArray(data?.relations) ? data.relations : [],
         revisions: Array.isArray(data?.revisions) ? data.revisions : [],
+        asilDecompositionIssues: Array.isArray(data?.asilDecompositionIssues) ? data.asilDecompositionIssues : [],
       }
       setGraphState({ workItemId, data: normalized, error: null })
       // Re-fetching the graph should also trigger a completeness refresh, and re-read derived concept
@@ -2101,6 +2117,10 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                       editIec61800={editConceptIec61800}
                       onEditIec61800={setEditConceptIec61800}
                       riskAcceptability={selectedWorkItemData?.riskAcceptability ?? null}
+                      editAsilDecomposition={editConceptAsilDecomposition}
+                      onEditAsilDecomposition={setEditConceptAsilDecomposition}
+                      workItemAsil={selectedWorkItemData?.asil ?? null}
+                      decompositionIssues={(graph?.asilDecompositionIssues ?? []).filter((issue) => issue.conceptKey === activeConcept?.key)}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}
