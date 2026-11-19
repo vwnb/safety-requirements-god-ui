@@ -2,6 +2,10 @@ import { useState } from "react"
 import { stpaFieldsOf, typeColor, type Concept, type ConceptIntegrityLevel, type Category13849, type HazardLevels, type HazardRatingFields, type Iso13849Fields, type PsppDimension, type SotifCategory, type StpaFields, type StpaRole, type UcaType } from "../App"
 import { hazardRatingOf } from "../lib/hazardRating"
 import { iso13849FieldsOf } from "../lib/iso13849"
+import { iso14971FieldsOf, RISK_CONTROL_OPTIONS, riskLevelText, scaleOptions, type Iso14971Fields, type RiskAcceptability, type RiskControlOption, type RiskEstimate } from "../lib/iso14971"
+import { DRIVE_FUNCTION_GROUPS, DRIVE_SIL_OPTIONS, driveFunctionShort, iec61800FieldsOf, type DriveSafetyFunction, type DriveSil, type Iec61800Fields } from "../lib/iec61800"
+import type { SIL } from "../App"
+import { SemanticColor } from "../lib/SemanticColor"
 
 const TYPES = [
   "ITEM", "HAZARD", "HARM", "SAFETY_GOAL", "SAFETY_FUNCTION",
@@ -15,6 +19,7 @@ const TYPES = [
   "CHANGE_REQUEST", "ANOMALY",
   "FAILURE_RATE", "DIAGNOSTIC_COVERAGE", "COMMON_CAUSE_FAILURE",
   "ARCHITECTURE",
+  "HAZARDOUS_SITUATION", "RISK_CONTROL_MEASURE", "BENEFIT_RISK_ANALYSIS",
 ] as const
 
 const PSPP_DIMENSIONS: PsppDimension[] = ["PROCESS", "STRUCTURE", "PROPERTY", "PERFORMANCE"]
@@ -130,10 +135,52 @@ const ISO13849_NUMBER_FIELDS: { field: Exclude<keyof Iso13849Fields, "category13
 
 const categoryLabel = (value: Category13849 | null | undefined) => CATEGORIES_13849.find((c) => c.value === value)?.label
 
+const INPUT_STYLE = { opacity: 1, cursor: 'text', background: 'white', border: '2px solid black', padding: '6px', fontFamily: 'monospace', width: '100%' }
+
+const ISO14971_OWNER: Record<string, true> = { HARM: true, HAZARDOUS_SITUATION: true, RISK_CONTROL_MEASURE: true }
+const hasIso14971Values = (c: Concept) =>
+  c.harmSeverity != null || c.initialProbability != null || c.residualProbability != null || c.riskControlOption != null
+
 const display = (value: number | null | undefined, unit = "") => (value != null ? `${value}${unit}` : "—")
 
 const labelOf = <T extends string>(options: { value: T; label: string }[], value: T | null | undefined) =>
   options.find((option) => option.value === value)?.label
+
+/** Read-only tags for a hazardous situation's ISO 14971 risk, e.g. "Risk: Critical × Occasional · not acceptable". */
+function riskEstimateLabels(estimate: RiskEstimate | null | undefined): { label: string; title: string; acceptable: boolean }[] {
+  if (!estimate?.severityLabel) return []
+  const out: { label: string; title: string; acceptable: boolean }[] = []
+  const harm = estimate.worstHarm ? ` (worst harm ${estimate.worstHarm})` : ""
+  if (estimate.initial) {
+    out.push({
+      label: `Initial risk: ${estimate.severityLabel} × ${riskLevelText(estimate.initial)}`,
+      title: `ISO 14971 risk before risk control: worst harm severity${harm} × probability of harm, judged against the work item's risk acceptability criteria`,
+      acceptable: estimate.initial.acceptable,
+    })
+  }
+  if (estimate.residual) {
+    out.push({
+      label: `Residual risk: ${estimate.severityLabel} × ${riskLevelText(estimate.residual)}`,
+      title: `ISO 14971 risk after risk control${harm}`,
+      acceptable: estimate.residual.acceptable,
+    })
+  }
+  return out
+}
+
+/** Read-only tag for a drive safety function, e.g. "SS1-d · stop cat. 1 · drive SIL 2". */
+function driveSilLabel(fn: DriveSafetyFunction, driveSil: DriveSil | null | undefined): string {
+  const parts = [driveFunctionShort(fn)]
+  if (driveSil?.stopCategory != null) parts.push(`stop cat. ${driveSil.stopCategory}`)
+  if (driveSil?.sil) parts.push(`drive ${driveSil.sil.replace("_", " ")}`)
+  return parts.join(" · ")
+}
+
+const driveFunctionLabel = (fn: DriveSafetyFunction | null | undefined) =>
+  DRIVE_FUNCTION_GROUPS.flatMap((g) => g.options).find((o) => o.value === fn)?.label
+
+const scaleLabel = (labels: string[] | undefined, level: number | null | undefined) =>
+  level == null ? "—" : labels?.[level - 1] ? `${level} – ${labels[level - 1]}` : String(level)
 
 /** Read-only labels for a concept's inherited integrity level, e.g. ["ASIL B(D)", "SIL 2"]. */
 function integrityLevelLabels(level: ConceptIntegrityLevel | null | undefined): string[] {
@@ -163,6 +210,11 @@ export default function ConceptCard({
   onEditHazardRating,
   editIso13849,
   onEditIso13849,
+  editIso14971,
+  onEditIso14971,
+  editIec61800,
+  onEditIec61800,
+  riskAcceptability,
   onSave,
   onPendingConfirm,
   onEditingChange,
@@ -187,6 +239,12 @@ export default function ConceptCard({
   onEditHazardRating: (v: HazardRatingFields) => void
   editIso13849: Iso13849Fields
   onEditIso13849: (v: Iso13849Fields) => void
+  editIso14971: Iso14971Fields
+  onEditIso14971: (v: Iso14971Fields) => void
+  editIec61800: Iec61800Fields
+  onEditIec61800: (v: Iec61800Fields) => void
+  /** The work item's ISO 14971 criteria; their scale labels name the severity and probability levels. */
+  riskAcceptability: RiskAcceptability | null
   onSave: (onSuccess: () => void) => void
   onPendingConfirm: (confirm: { message: string; onConfirm: () => void; clearRevisionOnConfirm?: boolean } | null) => void
   onEditingChange?: (isEditing: boolean) => void
@@ -263,6 +321,27 @@ export default function ConceptCard({
                   Achieved {concept.achievedPl.pl.replace("_", " ")}
                 </span>
               )}
+              {concept.driveSafetyFunction && (
+                <span
+                  data-agent="concept-drive-sil"
+                  className="tag tag-risk"
+                  style={{ marginLeft: 8 }}
+                  title="IEC 61800-5-2 drive safety function. Drive SIL is the lower of the manufacturer's SIL capability and the PFH band; sensors and logic outside the drive are not included."
+                >
+                  {driveSilLabel(concept.driveSafetyFunction, concept.driveSil)}
+                </span>
+              )}
+              {riskEstimateLabels(concept.riskEstimate).map(({ label, title, acceptable }) => (
+                <span
+                  key={label}
+                  data-agent="concept-risk-estimate"
+                  className="tag"
+                  style={{ marginLeft: 8, background: acceptable ? SemanticColor.SUCCESS : SemanticColor.DANGER }}
+                  title={title}
+                >
+                  {label}
+                </span>
+              ))}
             </h2>
 
             <div style={{ display: "flex", gap: 8 }}>
@@ -274,6 +353,8 @@ export default function ConceptCard({
                   onEditStpa(stpaFieldsOf(concept))
                   onEditHazardRating(hazardRatingOf(concept))
                   onEditIso13849(iso13849FieldsOf(concept))
+                  onEditIso14971(iso14971FieldsOf(concept))
+                  onEditIec61800(iec61800FieldsOf(concept))
                   setEditingState(true)
                 }}
                 className="btn"
@@ -313,7 +394,32 @@ export default function ConceptCard({
                 {concept.achievedPl && !concept.achievedPl.pl && concept.achievedPl.reason && (
                   <span data-agent="concept-achieved-pl-reason"><span className="field-label">Achieved PL</span> not derived: {concept.achievedPl.reason}</span>
                 )}
+                {concept.driveSafetyFunction && (
+                  <>
+                    <span><span className="field-label">Drive function</span> {driveFunctionLabel(concept.driveSafetyFunction)}</span>
+                    <span><span className="field-label">SIL capability</span> {concept.driveSilCapability?.replace("_", " ") || "—"}</span>
+                    <span><span className="field-label">Drive PFH</span> {concept.drivePfhPerHour != null ? `${concept.drivePfhPerHour} /h` : "—"}</span>
+                    {concept.driveSil && !concept.driveSil.sil && concept.driveSil.reason && (
+                      <span data-agent="concept-drive-sil-reason"><span className="field-label">Drive SIL</span> not derived: {concept.driveSil.reason}</span>
+                    )}
+                  </>
+                )}
               </>
+            )}
+            {concept.type === "HARM" && (
+              <span><span className="field-label">Severity</span> {scaleLabel(riskAcceptability?.severityLevels, concept.harmSeverity)}</span>
+            )}
+            {concept.type === "HAZARDOUS_SITUATION" && (
+              <>
+                <span><span className="field-label">Initial probability</span> {scaleLabel(riskAcceptability?.probabilityLevels, concept.initialProbability)}</span>
+                <span><span className="field-label">Residual probability</span> {scaleLabel(riskAcceptability?.probabilityLevels, concept.residualProbability)}</span>
+                {concept.riskEstimate?.reason && (
+                  <span data-agent="concept-risk-estimate-reason"><span className="field-label">Risk</span> not fully estimated: {concept.riskEstimate.reason}</span>
+                )}
+              </>
+            )}
+            {concept.type === "RISK_CONTROL_MEASURE" && (
+              <span><span className="field-label">Risk control option</span> {labelOf(RISK_CONTROL_OPTIONS, concept.riskControlOption) || "—"}</span>
             )}
           </p>
         </article>
@@ -510,6 +616,120 @@ export default function ConceptCard({
                 </div>
               ))}
             </fieldset>
+          )}
+          {editType === "SAFETY_FUNCTION" && (
+            <fieldset data-agent="iec61800-parameters" style={{ border: "2px solid black", padding: "8px 12px", margin: "12px 0" }}>
+              <legend className="field-label">IEC 61800-5-2 drive safety function</legend>
+              <small style={{ display: "block", marginBottom: 8 }}>
+                Only for safety functions the drive implements. The drive SIL is derived from the SIL capability and PFH. Link an SS1 to its STO, an SS2 to its SOS, and a monitoring function to the stop it triggers.
+              </small>
+              <div className="form-row">
+                <label className="field-label" htmlFor="edit-concept-driveSafetyFunction">Drive function</label>
+                <select
+                  id="edit-concept-driveSafetyFunction"
+                  data-agent="select-edit-concept-driveSafetyFunction"
+                  value={editIec61800.driveSafetyFunction}
+                  onChange={(e) => onEditIec61800({ ...editIec61800, driveSafetyFunction: e.target.value as DriveSafetyFunction | "" })}
+                >
+                  <option value="">-- Not a drive function --</option>
+                  {DRIVE_FUNCTION_GROUPS.map((group) => (
+                    <optgroup key={group.kind} label={group.label}>
+                      {group.options.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              <div className="form-row">
+                <label className="field-label" htmlFor="edit-concept-driveSilCapability">SIL capability</label>
+                <select
+                  id="edit-concept-driveSilCapability"
+                  data-agent="select-edit-concept-driveSilCapability"
+                  value={editIec61800.driveSilCapability}
+                  onChange={(e) => onEditIec61800({ ...editIec61800, driveSilCapability: e.target.value as SIL | "" })}
+                >
+                  <option value="">-- Not set --</option>
+                  {DRIVE_SIL_OPTIONS.map((sil) => <option key={sil} value={sil}>{sil.replace("_", " ")}</option>)}
+                </select>
+              </div>
+              <div className="form-row">
+                <label className="field-label" htmlFor="edit-concept-drivePfhPerHour">Drive PFH (per hour)</label>
+                <input
+                  id="edit-concept-drivePfhPerHour"
+                  data-agent="input-edit-concept-drivePfhPerHour"
+                  inputMode="decimal"
+                  value={editIec61800.drivePfhPerHour}
+                  onChange={(e) => onEditIec61800({ ...editIec61800, drivePfhPerHour: e.target.value })}
+                  placeholder="e.g. 2e-9"
+                  aria-describedby="edit-concept-drivePfhPerHour-help"
+                  className="license-value"
+                  style={INPUT_STYLE}
+                />
+                <small id="edit-concept-drivePfhPerHour-help" style={{ marginLeft: 8 }}>SIL 1 from 1e-6, SIL 2 from 1e-7, SIL 3 below 1e-7 (up to 1e-5).</small>
+              </div>
+            </fieldset>
+          )}
+          {editType === "HARM" && (
+            <fieldset data-agent="iso14971-harm" style={{ border: "2px solid black", padding: "8px 12px", margin: "12px 0" }}>
+              <legend className="field-label">ISO 14971 severity</legend>
+              <small style={{ display: "block", marginBottom: 8 }}>
+                {riskAcceptability ? "Levels come from the work item's risk acceptability criteria." : "The work item has no risk acceptability criteria yet; levels are shown as numbers."}
+              </small>
+              <div className="form-row">
+                <label className="field-label" htmlFor="edit-concept-harmSeverity">Severity</label>
+                <select
+                  id="edit-concept-harmSeverity"
+                  data-agent="select-edit-concept-harmSeverity"
+                  value={editIso14971.harmSeverity}
+                  onChange={(e) => onEditIso14971({ ...editIso14971, harmSeverity: e.target.value })}
+                >
+                  <option value="">-- Not set --</option>
+                  {scaleOptions(riskAcceptability?.severityLevels).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </div>
+            </fieldset>
+          )}
+          {editType === "HAZARDOUS_SITUATION" && (
+            <fieldset data-agent="iso14971-situation" style={{ border: "2px solid black", padding: "8px 12px", margin: "12px 0" }}>
+              <legend className="field-label">ISO 14971 probability of harm</legend>
+              <small style={{ display: "block", marginBottom: 8 }}>
+                Probability that this situation occurs and leads to harm (P1 × P2); record the reasoning in the revision. Risk is derived with the worst severity of the linked harms.
+              </small>
+              {(["initialProbability", "residualProbability"] as const).map((field) => (
+                <div className="form-row" key={field}>
+                  <label className="field-label" htmlFor={`edit-concept-${field}`}>{field === "initialProbability" ? "Before risk control" : "After risk control"}</label>
+                  <select
+                    id={`edit-concept-${field}`}
+                    data-agent={`select-edit-concept-${field}`}
+                    value={editIso14971[field]}
+                    onChange={(e) => onEditIso14971({ ...editIso14971, [field]: e.target.value })}
+                  >
+                    <option value="">-- Not set --</option>
+                    {scaleOptions(riskAcceptability?.probabilityLevels).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                </div>
+              ))}
+            </fieldset>
+          )}
+          {editType === "RISK_CONTROL_MEASURE" && (
+            <fieldset data-agent="iso14971-control" style={{ border: "2px solid black", padding: "8px 12px", margin: "12px 0" }}>
+              <legend className="field-label">ISO 14971 risk control option</legend>
+              <small style={{ display: "block", marginBottom: 8 }}>Use in priority order; information for safety alone needs a justification.</small>
+              <div className="form-row">
+                <label className="field-label" htmlFor="edit-concept-riskControlOption">Option</label>
+                <select
+                  id="edit-concept-riskControlOption"
+                  data-agent="select-edit-concept-riskControlOption"
+                  value={editIso14971.riskControlOption}
+                  onChange={(e) => onEditIso14971({ ...editIso14971, riskControlOption: e.target.value as RiskControlOption | "" })}
+                >
+                  <option value="">-- Not set --</option>
+                  {RISK_CONTROL_OPTIONS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </div>
+            </fieldset>
+          )}
+          {ISO14971_OWNER[concept.type] && editType !== concept.type && hasIso14971Values(concept) && (
+            <p data-agent="iso14971-clear-notice"><small>ISO 14971 values apply only to {concept.type.replaceAll("_", " ").toLowerCase()} concepts; saving with this type clears them.</small></p>
           )}
           {editType !== "SAFETY_FUNCTION" && concept.type === "SAFETY_FUNCTION" && (concept.category13849 || concept.mttfdYears != null || concept.dcavgPercent != null || concept.ccfScore != null) && (
             <p data-agent="iso13849-clear-notice"><small>ISO 13849 parameters apply only to safety functions; saving with this type clears them.</small></p>
