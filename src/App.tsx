@@ -18,6 +18,8 @@ import ConceptCard from "./components/ConceptCard"
 import background from "./assets/background.jpg"
 import { hazardRatingFieldsOrNull, hazardRatingOf } from "./lib/hazardRating"
 import { iso13849FieldsOf, iso13849FieldsOrNull, iso13849Payload } from "./lib/iso13849"
+import { iso14971FieldsOf, iso14971FieldsOrNull, iso14971Payload, riskAcceptabilityDraftOf, riskAcceptabilityPayload, type Iso14971Fields, type RiskAcceptability, type RiskAcceptabilityDraft, type RiskControlOption, type RiskEstimate } from "./lib/iso14971"
+import { iec61800FieldsOf, iec61800FieldsOrNull, iec61800Payload, type DriveSafetyFunction, type DriveSil, type Iec61800Fields } from "./lib/iec61800"
 import { SemanticColor } from "./lib/SemanticColor"
 import { InfoButton } from "./components/InfoButton"
 import { LicenseModal } from "./components/LicenseModal"
@@ -115,7 +117,7 @@ export type AchievedPl = {
   creditedDcBand: "NONE" | "LOW" | "MEDIUM" | "HIGH" | null
   reason: string | null
 }
-export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849"
+export type Standard = "ISO_26262" | "IEC_61508" | "ISO_13849" | "ISO_14971" | "IEC_61800"
 export type ConceptType = string
 export type RelationType = string
 
@@ -162,6 +164,19 @@ export type Concept = {
   ccfScore?: number | null
   /** Derived by the backend for SAFETY_FUNCTION concepts; read-only. */
   achievedPl?: AchievedPl | null
+  /** ISO 14971: severity level on HARM; probability levels on HAZARDOUS_SITUATION; option on RISK_CONTROL_MEASURE. */
+  harmSeverity?: number | null
+  initialProbability?: number | null
+  residualProbability?: number | null
+  riskControlOption?: RiskControlOption | null
+  /** Derived by the backend for HAZARDOUS_SITUATION concepts; read-only. */
+  riskEstimate?: RiskEstimate | null
+  /** IEC 61800-5-2 drive safety function of a SAFETY_FUNCTION. */
+  driveSafetyFunction?: DriveSafetyFunction | null
+  driveSilCapability?: SIL | null
+  drivePfhPerHour?: number | null
+  /** Derived by the backend for drive safety functions; read-only. */
+  driveSil?: DriveSil | null
   psppDimension?: PsppDimension
   sotifCategory?: SotifCategory | null
   opbTerm?: string | null
@@ -229,6 +244,10 @@ export const typeColor: Record<string, string> = {
   CHANGE_REQUEST: SemanticColor.PROCESS,
 
   DIAGNOSTIC_COVERAGE: SemanticColor.METRIC,
+
+  HAZARDOUS_SITUATION: SemanticColor.RISK,
+  RISK_CONTROL_MEASURE: SemanticColor.FUNCTIONAL,
+  BENEFIT_RISK_ANALYSIS: SemanticColor.ARGUMENT,
 };
 
 type Revision = {
@@ -266,6 +285,8 @@ export type WorkItem = {
   sil?: SIL
   pl?: PL
   standards?: Standard[]
+  /** ISO 14971 risk acceptability criteria; null when not defined. */
+  riskAcceptability?: RiskAcceptability | null
   applicationContext?: string
   systemBoundary?: string
 }
@@ -325,8 +346,28 @@ export type WorkItemCompleteness = {
   /** Absent when the backend predates STPA support. */
   ucaHazardLinkCoverage?: { covered: number; total: number }
   ucaMitigationCoverage?: { covered: number; total: number }
+  /** Checks for the standards the work item is tagged with; not part of the completeness score. */
+  standardChecks?: StandardChecksResult
   entropy: EntropyResult
   breadth: BreadthResult
+}
+
+export type StandardCheck = {
+  id: string
+  standard: Standard
+  reference: string
+  title: string
+  covered: number
+  total: number
+  /** Keys of the concepts that fail the check. */
+  missing: string[]
+  note?: string
+}
+
+export type StandardChecksResult = {
+  standards: Standard[]
+  checks: StandardCheck[]
+  note: string
 }
 
 export function stpaFieldsOf(concept: Pick<Concept, "stpaRole" | "ucaType" | "ucaContext">): StpaFields {
@@ -655,6 +696,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const [editConceptStpa, setEditConceptStpa] = useState<StpaFields>({ stpaRole: "", ucaType: "", ucaContext: "" })
   const [editConceptHazardRating, setEditConceptHazardRating] = useState<HazardRatingFields>(hazardRatingOf({}))
   const [editConceptIso13849, setEditConceptIso13849] = useState<Iso13849Fields>(iso13849FieldsOf({}))
+  const [editConceptIso14971, setEditConceptIso14971] = useState<Iso14971Fields>(iso14971FieldsOf({}))
+  const [editConceptIec61800, setEditConceptIec61800] = useState<Iec61800Fields>(iec61800FieldsOf({}))
   const [saveError, setSaveError] = useState<string | null>(null)
   const [editConceptStandards, setEditConceptStandards] = useState<Standard[]>([])
   const [editConceptTitle, setEditConceptTitle] = useState("")
@@ -679,6 +722,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const [editWorkItemSil, setEditWorkItemSil] = useState<SIL | "">("")
   const [editWorkItemPl, setEditWorkItemPl] = useState<PL | "">("")
   const [editWorkItemStandards, setEditWorkItemStandards] = useState<Standard[]>([])
+  const [editWorkItemRiskAcceptability, setEditWorkItemRiskAcceptability] = useState<RiskAcceptabilityDraft>(riskAcceptabilityDraftOf(null))
   const [editWorkItemApplicationContext, setEditWorkItemApplicationContext] = useState("")
   const [editWorkItemSystemBoundary, setEditWorkItemSystemBoundary] = useState("")
   const [workItemCompleteness, setWorkItemCompleteness] = useState<WorkItemCompleteness | null>(null)
@@ -886,6 +930,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       setEditWorkItemSil(selectedWorkItemData.sil || "")
       setEditWorkItemPl(selectedWorkItemData.pl || "")
       setEditWorkItemStandards(selectedWorkItemData.standards || [])
+      setEditWorkItemRiskAcceptability(riskAcceptabilityDraftOf(selectedWorkItemData.riskAcceptability))
       setEditWorkItemApplicationContext(selectedWorkItemData.applicationContext || "")
       setEditWorkItemSystemBoundary(selectedWorkItemData.systemBoundary || "")
     }
@@ -905,6 +950,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         setEditConceptStpa(stpaFieldsOf(concept))
         setEditConceptHazardRating(hazardRatingOf(concept))
         setEditConceptIso13849(iso13849FieldsOf(concept))
+        setEditConceptIso14971(iso14971FieldsOf(concept))
+        setEditConceptIec61800(iec61800FieldsOf(concept))
         setEditConceptStandards(concept.standards || [])
       }
     }
@@ -936,10 +983,11 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   }
 
   /**
-   * Re-reads the backend-derived integrity and hazard levels without resetting the concept selection.
-   * Needed after a concept's type, ratings or ISO 13849 parameters, or the work item's ASIL/SIL/PL, change.
+   * Re-reads the backend-derived levels (integrity level, hazard ASIL/PLr, achieved PL, drive SIL,
+   * ISO 14971 risk estimate) without resetting the concept selection. Needed after a concept's type,
+   * ratings or parameters, or the work item's levels or risk acceptability criteria, change.
    */
-  async function refreshConceptIntegrityLevels(workItemId: string) {
+  async function refreshDerivedConceptValues(workItemId: string) {
     if (!workItemId) return
     const res = await apiFetch(`${API}/work-items/${workItemId}/concepts`)
     if (!res.ok) return
@@ -950,6 +998,10 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       ...hazardRatingFieldsOrNull(c),
       achievedPl: c.achievedPl ?? null,
       ...iso13849FieldsOrNull(c),
+      riskEstimate: c.riskEstimate ?? null,
+      ...iso14971FieldsOrNull(c),
+      driveSil: c.driveSil ?? null,
+      ...iec61800FieldsOrNull(c),
     }]))
     setConcepts((prev) => (prev ?? []).map((c) => (derivedById.has(c.id) ? { ...c, ...derivedById.get(c.id) } : c)))
     setActiveConcept((prev) => (prev && derivedById.has(prev.id) ? { ...prev, ...derivedById.get(prev.id) } : prev))
@@ -1093,6 +1145,9 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       : {}
     // ISO 13849 parameters are only accepted on SAFETY_FUNCTION concepts; same clearing rule.
     const iso13849Update = editConceptType === "SAFETY_FUNCTION" ? iso13849Payload(editConceptIso13849) : {}
+    const iec61800Update = editConceptType === "SAFETY_FUNCTION" ? iec61800Payload(editConceptIec61800) : {}
+    // ISO 14971 levels go only to the type that owns them (HARM, HAZARDOUS_SITUATION, RISK_CONTROL_MEASURE).
+    const iso14971Update = iso14971Payload(editConceptType, editConceptIso14971)
 
     return withLoading("Saving concept...", async () => {
       const response = await apiFetch(`${API}/concepts/${selectedConcept}`, {
@@ -1108,6 +1163,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           ...stpaPayload,
           ...hazardPayload,
           ...iso13849Update,
+          ...iec61800Update,
+          ...iso14971Update,
           standards: editConceptStandards,
           user: actorForApi
         }),
@@ -1152,7 +1209,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         )
       )
 
-      await refreshConceptIntegrityLevels(selectedWorkItem)
       await refreshGraph(selectedWorkItem)
       if (onSuccess) onSuccess()
     })
@@ -1300,6 +1356,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           sil: editWorkItemSil || null,
           pl: editWorkItemPl || null,
           standards: editWorkItemStandards.length > 0 ? editWorkItemStandards : null,
+          riskAcceptability: riskAcceptabilityPayload(editWorkItemRiskAcceptability),
           applicationContext: editWorkItemApplicationContext,
           systemBoundary: editWorkItemSystemBoundary,
           user: actorForApi
@@ -1315,7 +1372,6 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
       }
 
       await loadWorkItemDetails(selectedWorkItemData.id)
-      await refreshConceptIntegrityLevels(selectedWorkItemData.id)
       await refreshGraph(selectedWorkItem)
 
       setWorkItems((prev) =>
@@ -1354,8 +1410,10 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
         revisions: Array.isArray(data?.revisions) ? data.revisions : [],
       }
       setGraphState({ workItemId, data: normalized, error: null })
-      // Re-fetching the graph should also trigger a completeness refresh
+      // Re-fetching the graph should also trigger a completeness refresh, and re-read derived concept
+      // values: a new or removed relation can change a risk estimate (situation → harm links).
       loadWorkItemCompleteness(workItemId)
+      void refreshDerivedConceptValues(workItemId)
     } catch (error) {
       if (requestId === graphRequestRef.current && selectedWorkItemRef.current === workItemId) {
         console.error("Failed to refresh graph", error)
@@ -1923,6 +1981,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                       editSil={editWorkItemSil}
                       editPl={editWorkItemPl}
                       editStandards={editWorkItemStandards}
+                      editRiskAcceptability={editWorkItemRiskAcceptability}
+                      onEditRiskAcceptability={setEditWorkItemRiskAcceptability}
                       editApplicationContext={editWorkItemApplicationContext}
                       editSystemBoundary={editWorkItemSystemBoundary}
                       onEditName={setEditWorkItemName}
@@ -2036,6 +2096,11 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
                       onEditHazardRating={setEditConceptHazardRating}
                       editIso13849={editConceptIso13849}
                       onEditIso13849={setEditConceptIso13849}
+                      editIso14971={editConceptIso14971}
+                      onEditIso14971={setEditConceptIso14971}
+                      editIec61800={editConceptIec61800}
+                      onEditIec61800={setEditConceptIec61800}
+                      riskAcceptability={selectedWorkItemData?.riskAcceptability ?? null}
                       onSave={saveConcept}
                       onPendingConfirm={setPendingConfirm}
                       onEditingChange={setIsEditingConceptFields}

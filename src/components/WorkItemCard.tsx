@@ -2,6 +2,9 @@ import { useState, useEffect } from "react"
 import { type LifecyclePhase, type ASIL, type SIL, type PL, type Standard, type WorkItem, type WorkItemCompleteness } from "../App"
 import { SemanticColor } from "../lib/SemanticColor"
 import { InfoButton } from "./InfoButton"
+import { RiskAcceptabilityEditor, RiskAcceptabilityView } from "./RiskAcceptability"
+import StandardChecksPanel from "./StandardChecksPanel"
+import type { RiskAcceptabilityDraft } from "../lib/iso14971"
 
 const PHASES = [
   "ITEM_DEFINITION", "HARA", "FUNCTIONAL_SAFETY", "TECHNICAL_SAFETY",
@@ -12,7 +15,7 @@ const PHASES = [
 const ASIL_OPTIONS = ["QM", "ASIL_A", "ASIL_B", "ASIL_C", "ASIL_D"] as ASIL[]
 const SIL_OPTIONS = ["SIL_1", "SIL_2", "SIL_3", "SIL_4"] as SIL[]
 const PL_OPTIONS = ["PL_A", "PL_B", "PL_C", "PL_D", "PL_E"] as PL[]
-const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849"] as Standard[]
+const STANDARDS = ["ISO_26262", "IEC_61508", "ISO_13849", "ISO_14971", "IEC_61800"] as Standard[]
 
 const percentOf = ({ covered, total }: { covered: number; total: number }) =>
   total > 0 ? Math.round((covered / total) * 100) : 0
@@ -51,6 +54,8 @@ export default function WorkItemCard({
   editSil,
   editPl,
   editStandards,
+  editRiskAcceptability,
+  onEditRiskAcceptability,
   editApplicationContext,
   editSystemBoundary,
   onEditName,
@@ -76,6 +81,8 @@ export default function WorkItemCard({
   editSil: SIL | ""
   editPl: PL | ""
   editStandards: Standard[]
+  editRiskAcceptability: RiskAcceptabilityDraft
+  onEditRiskAcceptability: (v: RiskAcceptabilityDraft) => void
   editApplicationContext: string
   editSystemBoundary: string
   onEditName: (v: string) => void
@@ -241,6 +248,8 @@ export default function WorkItemCard({
             ))}
           </p>
 
+          {workItem.riskAcceptability && <RiskAcceptabilityView policy={workItem.riskAcceptability} />}
+
           <p className="info-row">
             {workItem.applicationContext && (
               <span><span className="field-label">Application Context</span> {workItem.applicationContext}</span>
@@ -275,6 +284,7 @@ export default function WorkItemCard({
                   </div>
                 ))}
               </div>
+              {completeness.standardChecks && <StandardChecksPanel result={completeness.standardChecks} />}
               <hr />
             </>
           )}
@@ -395,6 +405,9 @@ export default function WorkItemCard({
               ))}
             </div>
           </div>
+          {(editStandards.includes("ISO_14971") || editRiskAcceptability.severityLevels.trim() || editRiskAcceptability.probabilityLevels.trim()) && (
+            <RiskAcceptabilityEditor draft={editRiskAcceptability} onChange={onEditRiskAcceptability} />
+          )}
           <div className="form-row">
             <div className="field-label">Application Context</div>
             <input
