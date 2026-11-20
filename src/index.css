@@ -475,7 +475,8 @@ main.revise-active {
     background: rgb(233, 237, 233);
     border: none;
     margin: 0;
-    height: calc(100vh - 38px);
+    height: 100vh;
+    height: 100dvh;
   }
 }
 
