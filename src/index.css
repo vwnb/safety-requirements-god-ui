@@ -651,6 +651,13 @@ section,
   font-weight: bold;
 }
 
+.modal,
+.admin-modal-overlay,
+.loading-overlay {
+  height: 100vh;
+  height: 100dvh;
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;

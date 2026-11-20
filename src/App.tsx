@@ -41,11 +41,11 @@ import AiLabel from "./components/AiLabel"
 
 const API = import.meta.env.VITE_API_URL || ""
 
-const AI_PROCESS_LOADING_HINTS = [
-  "Generating suggestions",
-  "Evaluating",
-  "Approving selection",
-  "Applying approved selection",
+const AI_PROCESS_LOADING_TITLES: { hint: string; title: string }[] = [
+  { hint: "Applying approved selection", title: "Applying refinement report" },
+  { hint: "Approving selection", title: "Approving refinement selection" },
+  { hint: "Generating suggestions", title: "Generating refinement report" },
+  { hint: "Evaluating", title: "Evaluating refinement report" },
 ]
 
 const MCP_SERVER_URL = "https://wcgw-safety-suite.vercel.app/wcgwmcp"
@@ -782,7 +782,8 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
   const loadingCountRef = useRef(0)
   const loading = loadingCount > 0
   const [loadingMessage, setLoadingMessage] = useState("Loading...")
-  const aiProcessLoading = AI_PROCESS_LOADING_HINTS.some((hint) => loadingMessage.includes(hint))
+  const aiProcessTitle = AI_PROCESS_LOADING_TITLES.find(({ hint }) => loadingMessage.includes(hint))?.title
+  const aiProcessLoading = aiProcessTitle !== undefined
 
   const pushLoading = (message?: string) => {
     setLoadingCount((c) => {
@@ -1649,7 +1650,7 @@ export default function App({ auth0Enabled, mcpClientId = null }: { auth0Enabled
           }}
         >
           {aiProcessLoading ? (
-            <AiProcessLoader title="Generating refinement report" message={loadingMessage} />
+            <AiProcessLoader title={aiProcessTitle} message={loadingMessage} />
           ) : (
             <div
               className="loading-message"
