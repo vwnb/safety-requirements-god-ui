@@ -620,6 +620,7 @@ section,
 
 .form-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
@@ -873,12 +874,6 @@ section,
 .collab-error {
   font-size: 10px;
   opacity: 0.5;
-}
-
-@media (max-width: 1280px) {
-  .collab-status-dot.collab-green {
-    display: none !important;
-  }
 }
 
 .graph-node-label {
@@ -1310,6 +1305,43 @@ section,
   width: auto;
   max-width: 100%;
   overflow-wrap: break-word;
+}
+
+.dataset-export-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: min(90svh, 900px);
+  overflow: hidden;
+}
+
+.dataset-export-modal > * {
+  flex: none;
+}
+
+.dataset-export-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 8px;
+}
+
+.export-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 720px) {
+  .dataset-export-modal {
+    max-height: calc(100svh - 40px);
+    padding: 14px;
+  }
+
+  .dataset-export-modal input,
+  .dataset-export-modal textarea,
+  .dataset-export-modal select {
+    font-size: 16px;
+  }
 }
 
 /* Keep inline configuration values from inflating paragraph line boxes. */

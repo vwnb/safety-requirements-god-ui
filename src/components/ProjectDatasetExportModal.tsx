@@ -254,8 +254,8 @@ export function ProjectDatasetExportModal({
   const previewFile = dryRun?.files.find((f) => f.path === previewPath) ?? null
 
   return (
-    <Modal title={`Hugging Face dataset — ${projectKey}`} onClose={handleClose} width={900}>
-      <div data-agent="hf-project-export" style={{ maxHeight: "75vh", overflow: "auto", paddingRight: 4 }}>
+    <Modal title={`Hugging Face dataset — ${projectKey}`} onClose={handleClose} width={900} className="dataset-export-modal">
+      <div data-agent="hf-project-export" className="dataset-export-body">
         <p style={{ marginTop: 0, fontSize: 13 }}>
           Exports this project's work items, all or the ones you pick, as one anonymized dataset. Run a dry run and
           review the report before publishing. Exports are limited to one request per minute, dry runs included.
@@ -394,33 +394,35 @@ export function ProjectDatasetExportModal({
             <div key={err} style={{ background: SemanticColor.DANGER, padding: 4, marginTop: 4, fontSize: 12 }}>{err}</div>
           ))}
           {extraFiles.length > 0 && (
-            <table style={{ ...tableStyle, marginTop: 8 }}>
-              <thead>
-                <tr><th style={cellStyle}>Path</th><th style={cellStyle}>Type</th><th style={cellStyle}>Bytes</th><th style={cellStyle} /></tr>
-              </thead>
-              <tbody>
-                {extraFiles.map((file, i) => (
-                  <tr key={i} style={fileErrors[i] ? { background: SemanticColor.DANGER } : undefined}>
-                    <td style={cellStyle}>
-                      <input
-                        aria-label={`Path of extra file ${i + 1}`}
-                        value={file.path}
-                        onChange={(e) => renameFile(i, e.target.value)}
-                        style={{ ...inputStyle, padding: 2 }}
-                      />
-                      {fileErrors[i] && <div style={{ marginTop: 2 }}>{fileErrors[i]}</div>}
-                    </td>
-                    <td style={cellStyle}>{file.contentType}</td>
-                    <td style={cellStyle}>{utf8Bytes(file.content).toLocaleString()}</td>
-                    <td style={cellStyle}>
-                      <button className="btn btn-xs" onClick={() => setExtraFiles((prev) => prev.filter((_, j) => j !== i))}>
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="export-table-scroll">
+              <table style={{ ...tableStyle, marginTop: 8 }}>
+                <thead>
+                  <tr><th style={cellStyle}>Path</th><th style={cellStyle}>Type</th><th style={cellStyle}>Bytes</th><th style={cellStyle} /></tr>
+                </thead>
+                <tbody>
+                  {extraFiles.map((file, i) => (
+                    <tr key={i} style={fileErrors[i] ? { background: SemanticColor.DANGER } : undefined}>
+                      <td style={cellStyle}>
+                        <input
+                          aria-label={`Path of extra file ${i + 1}`}
+                          value={file.path}
+                          onChange={(e) => renameFile(i, e.target.value)}
+                          style={{ ...inputStyle, padding: 2 }}
+                        />
+                        {fileErrors[i] && <div style={{ marginTop: 2 }}>{fileErrors[i]}</div>}
+                      </td>
+                      <td style={cellStyle}>{file.contentType}</td>
+                      <td style={cellStyle}>{utf8Bytes(file.content).toLocaleString()}</td>
+                      <td style={cellStyle}>
+                        <button className="btn btn-xs" onClick={() => setExtraFiles((prev) => prev.filter((_, j) => j !== i))}>
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
 
@@ -498,35 +500,39 @@ export function ProjectDatasetExportModal({
             {report.possibleLeaks.length > 0 && (
               <div style={{ background: SemanticColor.DANGER, border: "2px solid black", padding: 8, marginBottom: 8 }} data-agent="hf-project-export-possible-leaks">
                 <strong>{report.possibleLeaks.length} possible leaks</strong> — a term or original key still appears in the output, e.g. inside a longer word.
-                <table style={{ ...tableStyle, marginTop: 6, background: "white" }}>
-                  <thead><tr><th style={cellStyle}>Term</th><th style={cellStyle}>Source</th><th style={cellStyle}>File</th><th style={cellStyle}>Count</th></tr></thead>
-                  <tbody>
-                    {report.possibleLeaks.map((l, i) => (
-                      <tr key={i}>
-                        <td style={cellStyle}>{l.term}</td>
-                        <td style={cellStyle}>{l.source}</td>
-                        <td style={cellStyle}>
-                          <button className="btn btn-xs" onClick={() => setPreviewPath(l.path)}>{l.path}</button>
-                        </td>
-                        <td style={cellStyle}>{l.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="export-table-scroll">
+                  <table style={{ ...tableStyle, marginTop: 6, background: "white" }}>
+                    <thead><tr><th style={cellStyle}>Term</th><th style={cellStyle}>Source</th><th style={cellStyle}>File</th><th style={cellStyle}>Count</th></tr></thead>
+                    <tbody>
+                      {report.possibleLeaks.map((l, i) => (
+                        <tr key={i}>
+                          <td style={cellStyle}>{l.term}</td>
+                          <td style={cellStyle}>{l.source}</td>
+                          <td style={cellStyle}>
+                            <button className="btn btn-xs" onClick={() => setPreviewPath(l.path)}>{l.path}</button>
+                          </td>
+                          <td style={cellStyle}>{l.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
               <div style={{ flex: "1 1 260px" }}>
                 <div className="field-label">Matched terms</div>
-                <table style={tableStyle}>
-                  <tbody>
-                    {report.terms.length === 0 && <tr><td style={cellStyle}>None</td></tr>}
-                    {report.terms.map((t) => (
-                      <tr key={t.term}><td style={cellStyle}>{t.term}</td><td style={cellStyle}>{t.count}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="export-table-scroll">
+                  <table style={tableStyle}>
+                    <tbody>
+                      {report.terms.length === 0 && <tr><td style={cellStyle}>None</td></tr>}
+                      {report.terms.map((t) => (
+                        <tr key={t.term}><td style={cellStyle}>{t.term}</td><td style={cellStyle}>{t.count}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
               <div style={{ flex: "1 1 200px" }}>
                 <div className="field-label">Unmatched terms</div>
@@ -534,38 +540,42 @@ export function ProjectDatasetExportModal({
                   {report.unmatchedTerms.length === 0 ? "None" : report.unmatchedTerms.join(", ")}
                 </div>
                 <div className="field-label" style={{ marginTop: 8 }}>Patterns</div>
-                <table style={tableStyle}>
-                  <tbody>
-                    {PATTERN_LABELS.map((p) => (
-                      <tr key={p}><td style={cellStyle}>{p}</td><td style={cellStyle}>{report.patterns[p] ?? 0}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="export-table-scroll">
+                  <table style={tableStyle}>
+                    <tbody>
+                      {PATTERN_LABELS.map((p) => (
+                        <tr key={p}><td style={cellStyle}>{p}</td><td style={cellStyle}>{report.patterns[p] ?? 0}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
             <div className="field-label" style={{ marginTop: 12 }}>Files</div>
-            <table style={tableStyle}>
-              <thead><tr><th style={cellStyle}>Path</th><th style={cellStyle}>Bytes</th><th style={cellStyle}>Redactions</th><th style={cellStyle} /></tr></thead>
-              <tbody>
-                {report.files.map((f) => (
-                  <tr key={f.path} style={leaksByPath.has(f.path) ? { background: SemanticColor.DANGER } : undefined}>
-                    <td style={cellStyle}>{f.path}</td>
-                    <td style={cellStyle}>{f.bytes.toLocaleString()}</td>
-                    <td style={cellStyle}>{f.redactions}</td>
-                    <td style={cellStyle}>
-                      <button
-                        data-agent="btn-hf-preview-file"
-                        className="btn btn-xs"
-                        onClick={() => setPreviewPath(previewPath === f.path ? null : f.path)}
-                      >
-                        {previewPath === f.path ? "Hide" : "Preview"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="export-table-scroll">
+              <table style={tableStyle}>
+                <thead><tr><th style={cellStyle}>Path</th><th style={cellStyle}>Bytes</th><th style={cellStyle}>Redactions</th><th style={cellStyle} /></tr></thead>
+                <tbody>
+                  {report.files.map((f) => (
+                    <tr key={f.path} style={leaksByPath.has(f.path) ? { background: SemanticColor.DANGER } : undefined}>
+                      <td style={cellStyle}>{f.path}</td>
+                      <td style={cellStyle}>{f.bytes.toLocaleString()}</td>
+                      <td style={cellStyle}>{f.redactions}</td>
+                      <td style={cellStyle}>
+                        <button
+                          data-agent="btn-hf-preview-file"
+                          className="btn btn-xs"
+                          onClick={() => setPreviewPath(previewPath === f.path ? null : f.path)}
+                        >
+                          {previewPath === f.path ? "Hide" : "Preview"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {previewFile && (
               <div style={{ marginTop: 8 }} data-agent="hf-project-export-preview">

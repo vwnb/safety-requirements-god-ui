@@ -7,11 +7,13 @@ export default function Modal({
   children,
   onClose,
   width,
+  className,
 }: {
   title?: string
   children: ReactNode
   onClose: () => void
   width?: number | string
+  className?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
@@ -34,8 +36,8 @@ export default function Modal({
       <Panel
         dataAgent="modal-content"
         ref={ref}
-        className="modal-content"
-        style={width !== undefined ? { maxWidth: width, width: width } : undefined}
+        className={className ? `modal-content ${className}` : "modal-content"}
+        style={width !== undefined ? { maxWidth: width, width: "100%" } : undefined}
       >
         {title && <div className="title" style={{ marginBottom: 16 }}>{title}</div>}
         {children}
