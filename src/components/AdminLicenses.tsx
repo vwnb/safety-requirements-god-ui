@@ -221,7 +221,7 @@ export function AdminLicenses({
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [openProjects, setOpenProjects] = useState<Set<string>>(new Set())
-  const [usageDays, setUsageDays] = useState<number>(30)
+  const [usageDays, setUsageDays] = useState<number | "all">(30)
   const [usage, setUsage] = useState<UsageResponse | null>(null)
   const [usageError, setUsageError] = useState(false)
 
@@ -270,8 +270,8 @@ export function AdminLicenses({
   }, [API, apiFetch, usageDays])
 
   const usageByUser = new Map((usage?.users ?? []).map((u) => [u.userId, u]))
-  const licensedUserIds = new Set(licenses.map((l) => l.userId))
-  const unlicensedUsage = (usage?.users ?? []).filter((u) => !licensedUserIds.has(u.userId))
+  const paidLicenseUserIds = new Set(licenses.map((l) => l.userId))
+  const usageWithoutPaidLicense = (usage?.users ?? []).filter((u) => !paidLicenseUserIds.has(u.userId))
   const reconciliationTotal = (usage?.users ?? []).reduce((sum, u) => sum + u.paid.needsReconciliation, 0)
 
   const grantLicense = async () => {
@@ -357,10 +357,10 @@ export function AdminLicenses({
             Usage window{" "}
             <select
               value={usageDays}
-              onChange={(e) => setUsageDays(Number(e.target.value))}
+              onChange={(e) => setUsageDays(e.target.value === "all" ? "all" : Number(e.target.value))}
               aria-label="Usage window"
             >
-              {USAGE_WINDOWS.map((d) => <option key={d} value={d}>Last {d} days</option>)}
+              {USAGE_WINDOWS.map((d) => <option key={d} value={d}>{d === "all" ? "All time" : `Last ${d} days`}</option>)}
             </select>
           </label>
         </div>
@@ -375,10 +375,10 @@ export function AdminLicenses({
             </p>
           </div>
         )}
-        {unlicensedUsage.length > 0 && (
+        {usageWithoutPaidLicense.length > 0 && (
           <p style={{ fontSize: 13, opacity: 0.8 }}>
-            {unlicensedUsage.length} {unlicensedUsage.length === 1 ? "user without a license has" : "users without a license have"} usage in this window
-            ({unlicensedUsage.reduce((s, u) => s + u.llm.calls, 0)} provider calls).
+            {usageWithoutPaidLicense.length} {usageWithoutPaidLicense.length === 1 ? "user without a paid license has" : "users without a paid license have"} usage in the selected window
+            ({usageWithoutPaidLicense.reduce((s, u) => s + u.llm.calls, 0)} provider calls).
           </p>
         )}
 

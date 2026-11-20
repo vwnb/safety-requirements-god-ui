@@ -21,9 +21,13 @@ export type UserUsage = {
   nevermined: { payer: string; planId: string; balance: string | null; balanceAt: string | null }[]
 }
 
-export type UsageResponse = { window: { days: number; since: string }; users: UserUsage[] }
+export type UsageResponse = { window: { days: number | null; since: string }; users: UserUsage[] }
 
-export const USAGE_WINDOWS = [7, 30, 90] as const
+export const USAGE_WINDOWS = [7, 30, 90, "all"] as const
+
+export function usageWindowLabel(days: number | null): string {
+  return days === null ? "all time" : `last ${days} days`
+}
 
 export function formatUsd(value: number): string {
   if (value === 0) return "$0"

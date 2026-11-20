@@ -2,7 +2,7 @@
 // Nevermined paid operations and the payer accounts bound to the user. Shown
 // next to the license counter, which counts licensed operations instead.
 
-import { formatUsd, shortAddress, type UserUsage } from "../lib/licenseUsage"
+import { formatUsd, shortAddress, usageWindowLabel, type UserUsage } from "../lib/licenseUsage"
 
 const number = new Intl.NumberFormat("en-US")
 
@@ -17,9 +17,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 const hint = { marginLeft: 8, fontSize: 11, opacity: 0.7 } as const
 
-export function LicenseUsageRows({ usage, days }: { usage: UserUsage | undefined; days: number }) {
+export function LicenseUsageRows({ usage, days }: { usage: UserUsage | undefined; days: number | null }) {
+  const windowLabel = usageWindowLabel(days)
   if (!usage) {
-    return <Row label="Usage">No LLM calls or paid calls in the last {days} days</Row>
+    return <Row label="Usage">No LLM calls or paid calls ({windowLabel})</Row>
   }
   const { llm, paid, nevermined } = usage
   return (
@@ -27,7 +28,7 @@ export function LicenseUsageRows({ usage, days }: { usage: UserUsage | undefined
       <Row label="Provider calls">
         {number.format(llm.calls)}
         <span style={hint}>
-          {llm.failedCalls > 0 ? `${number.format(llm.failedCalls)} failed · ` : ""}last {days} days, retries included
+          {llm.failedCalls > 0 ? `${number.format(llm.failedCalls)} failed · ` : ""}{windowLabel}, retries included
         </span>
       </Row>
       <Row label="Tokens">
