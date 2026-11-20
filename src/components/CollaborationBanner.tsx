@@ -42,7 +42,6 @@ export function CollaborationBanner({
     return 0
   })
 
-  // Hide the green (connected) status indicator on sub-1280px screens.
   const [isSub1280, setIsSub1280] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
     if (typeof window.matchMedia === "function") {
@@ -64,7 +63,6 @@ export function CollaborationBanner({
     }
     const mq = window.matchMedia("(max-width: 1280px)")
     const handler = (e: MediaQueryListEvent) => setIsSub1280(e.matches)
-    setIsSub1280(mq.matches)
     if (typeof mq.addEventListener === "function") {
       mq.addEventListener("change", handler)
       return () => mq.removeEventListener("change", handler)
@@ -74,7 +72,7 @@ export function CollaborationBanner({
     return () => mq.removeListener(handler)
   }, [])
 
-  const hideGreen = isSub1280 && connected
+  if (isSub1280) return null
 
   return (
     <div
@@ -96,20 +94,18 @@ export function CollaborationBanner({
         zIndex: 1000,
       }}
     >
-      {!hideGreen && (
-        <span
-          className={`collab-status-dot${connected ? " collab-green" : " collab-red"}`}
-          data-agent="collaboration-banner-status-dot"
-          style={{
-            display: "inline-block",
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            background: connected ? "#22c55e" : "#ef4444",
-            flexShrink: 0,
-          }}
-        />
-      )}
+      <span
+        className={`collab-status-dot${connected ? " collab-green" : " collab-red"}`}
+        data-agent="collaboration-banner-status-dot"
+        style={{
+          display: "inline-block",
+          width: 10,
+          height: 10,
+          borderRadius: "50%",
+          background: connected ? "#22c55e" : "#ef4444",
+          flexShrink: 0,
+        }}
+      />
 
       <span>
         {connected ? "Collaboration: Connected" : "Collaboration: Disconnected"}
